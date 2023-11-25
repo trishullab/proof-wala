@@ -1,1 +1,5 @@
-python3 -m pip install -e imports/itp-interface
+chmod -R 777 imports/itp-interface
+pushd imports/itp-interface
+python3 -m pip install --upgrade build
+python3 -m build
+popd
