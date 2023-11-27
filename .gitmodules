@@ -1,4 +1,4 @@
 [submodule "imports/itp-interface"]
 	path = imports/itp-interface
 	url = https://github.com/trishullab/itp-interface.git
-	ignore = all
+	ignore = dirty
