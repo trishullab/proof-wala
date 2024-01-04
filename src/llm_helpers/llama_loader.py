@@ -4,18 +4,22 @@ import typing
 from enum import Enum
 from dataclasses import dataclass, field
 from dataclasses_json import dataclass_json
+from datasets import Dataset
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
+    EvalPrediction,
     StoppingCriteria,
     StoppingCriteriaList,
-    BitsAndBytesConfig,
     TrainingArguments,
-    pipeline,
-    logging,
+    Trainer,
+    TrainerCallback,
+    # BitsAndBytesConfig,
+    # pipeline,
+    # logging,
 )
-from peft import LoraConfig
-from trl import SFTTrainer
+# from peft import LoraConfig
+# from trl import SFTTrainer
 
 class AutoRegressiveSequenceSearch(Enum):
     NucleusSampling = "nucleus_sampling"
@@ -99,8 +103,8 @@ class Model(object):
         tokenizer_args = {k: v for k, v in self._kwargs.items() if k in
                 ["token", "pad_token", "eos_token", "bos_token", "unk_token", "mask_token", "additional_special_tokens", "max_length"]
         }
-        self._model : transformers.LlamaForCausalLM = transformers.AutoModelForCausalLM.from_pretrained(self.name, **model_args).to(self.device)
-        self._tokenizer : transformers.LlamaTokenizer = transformers.AutoTokenizer.from_pretrained(self.name, **tokenizer_args)
+        self._model : AutoModelForCausalLM = AutoModelForCausalLM.from_pretrained(self.name, **model_args).to(self.device)
+        self._tokenizer : AutoTokenizer = AutoTokenizer.from_pretrained(self.name, **tokenizer_args)
         if "pad_token" not in tokenizer_args:
             tokenizer_args["pad_token"] = self._tokenizer.eos_token
         if "padding_side" not in tokenizer_args:
@@ -173,7 +177,29 @@ class Model(object):
             generation_results.results.append(GenerationResult(input_text=text, generated_text=generated_text))
         return generation_results
 
-    def train(self, **kwargs):
+    def train(self, 
+            train_dataset: Dataset, 
+            eval_dataset: typing.Union[Dataset, typing.Dict[str, Dataset]] = None, 
+            compute_metrics: typing.Callable[[EvalPrediction], dict] = None,
+            callbacks: typing.List[TrainerCallback] = None):
+        assert self._is_loaded, "Model is not loaded"
+        assert self.training_args is not None, "Please provide training arguments"
+        trainer = Trainer(
+            model=self._model,
+            args=self.training_args,
+            train_dataset=train_dataset,
+            eval_dataset=eval_dataset,
+            tokenizer=self._tokenizer,
+            callbacks=callbacks,
+            compute_metrics=compute_metrics,
+        )
+        if self.training_args.do_train:
+            if self.training_args.resume_from_checkpoint is not None:
+                trainer.train(resume_from_checkpoint=self.training_args.resume_from_checkpoint) # Resume from a specific checkpoint
+            else:
+                trainer.train(resume_from_checkpoint=True) # Resume from the latest checkpoint
+        if self.training_args.do_eval:
+            trainer.evaluate()
         pass
 
 if __name__ == '__main__':
