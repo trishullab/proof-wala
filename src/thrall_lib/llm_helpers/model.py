@@ -19,7 +19,10 @@ from transformers import (
     # pipeline,
     # logging,
 )
-from cuda_context import CudaContext
+try:
+    from .cuda_context import CudaContext
+except ImportError:
+    from cuda_context import CudaContext
 # from peft import LoraConfig
 # from trl import SFTTrainer
 
