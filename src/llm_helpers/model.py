@@ -14,10 +14,12 @@ from transformers import (
     TrainingArguments,
     Trainer,
     TrainerCallback,
+    # default_data_collator,
     # BitsAndBytesConfig,
     # pipeline,
     # logging,
 )
+from cuda_context import CudaContext
 # from peft import LoraConfig
 # from trl import SFTTrainer
 
@@ -47,17 +49,17 @@ class GenerationResults(object):
 
 class StopOnTokens(StoppingCriteria):
     """Stopping criteria based on a list of tokens"""
-    def __init__(self, stop_tokens: typing.List[str], tokenizer: AutoTokenizer, input_length: int, device: str = None):
+    def __init__(self, stop_tokens: typing.List[str], tokenizer: AutoTokenizer, input_length: int):
         self.stop_token_ids = stop_tokens
         # self.input_length = input_length
         self.tokenizer = tokenizer
         self.stop_tokens = stop_tokens
-        self.device = device if device is not None else ("cuda:0" if torch.cuda.is_available() else "cpu")
+        self.cuda_context = CudaContext.get_default_context()
         stop_token_ids = [self.tokenizer.encode(stop_word, add_special_tokens=False)
                     for stop_word in self.stop_tokens]
-        stop_token_ids = [torch.LongTensor(x).to(self.device) for x in stop_token_ids]
+        stop_token_ids = [self.cuda_context.try_get_gpu(torch.LongTensor(x)) for x in stop_token_ids]
         self.max_stop_token_id_length = max([len(x) for x in self.stop_token_ids])
-        self.pad_token_tensor = torch.LongTensor([self.tokenizer.pad_token_id]).to(self.device)
+        self.pad_token_tensor = self.cuda_context.try_get_gpu(torch.LongTensor([self.tokenizer.pad_token_id]))
         self.stop_decisions = {}
         self.input_length = input_length
 
@@ -84,11 +86,10 @@ class StopOnTokens(StoppingCriteria):
 class Model(object):
     """Wrapper for a Llama model"""
 
-    def __init__(self, name: str, device: str = None, training_args: TrainingArguments = None, **kwargs):
+    def __init__(self, name: str, training_args: TrainingArguments = None, **kwargs):
         assert name is not None, "Please provide a model name"
-        assert device is None or device.startswith("cuda") or device.startswith("cpu"), "Please provide a valid device"
         self.name = name
-        self.device = (device if device is not None else "cuda:0") if torch.cuda.is_available() else "cpu"
+        self.cuda_context = CudaContext.get_default_context()
         self.training_args = training_args
         self._is_loaded = False
         self._kwargs = kwargs
@@ -103,7 +104,7 @@ class Model(object):
         tokenizer_args = {k: v for k, v in self._kwargs.items() if k in
                 ["token", "pad_token", "eos_token", "bos_token", "unk_token", "mask_token", "additional_special_tokens", "max_length"]
         }
-        self._model : AutoModelForCausalLM = AutoModelForCausalLM.from_pretrained(self.name, **model_args).to(self.device)
+        self._model : AutoModelForCausalLM = self.cuda_context.try_get_gpu(AutoModelForCausalLM.from_pretrained(self.name, **model_args))
         self._tokenizer : AutoTokenizer = AutoTokenizer.from_pretrained(self.name, **tokenizer_args)
         if "pad_token" not in tokenizer_args:
             tokenizer_args["pad_token"] = self._tokenizer.eos_token
@@ -139,11 +140,11 @@ class Model(object):
         tokenized_input = self._tokenizer(
             inputs, 
             return_tensors="pt",
-            **tokenizer_args).to(self.device)
-        input_ids=tokenized_input['input_ids']
-        attention_mask=tokenized_input['attention_mask']
+            **tokenizer_args)
+        input_ids=self.cuda_context.try_get_gpu(tokenized_input['input_ids'])
+        attention_mask=self.cuda_context.try_get_gpu(tokenized_input['attention_mask'])
         max_input_length = input_ids.shape[-1]
-        stopping_criteria = StopOnTokens(stop_tokens, tokenizer=self._tokenizer, input_length=max_input_length, device=self.device)
+        stopping_criteria = StopOnTokens(stop_tokens, tokenizer=self._tokenizer, input_length=max_input_length)
         stopping_criteria = StoppingCriteriaList([stopping_criteria])
         if auto_regressive_sequence_search == AutoRegressiveSequenceSearch.NucleusSampling:
             generate_args = {k: v for k, v in kwargs.items() if k in
@@ -176,6 +177,31 @@ class Model(object):
                 generated_text = [x[len(text):] for x in generated_text]
             generation_results.results.append(GenerationResult(input_text=text, generated_text=generated_text))
         return generation_results
+    
+    def _collate_fn(self, batch):
+        assert self._is_loaded, "Model is not loaded"
+        assert len(batch) > 0, "Please provide a non-empty batch"
+        x_batch = []
+        y_batch = []
+        for x, y in batch:
+            x_batch.append(x)
+            y_batch.append(y)
+        tokenized_input = self._tokenizer(
+            x_batch, 
+            return_tensors="pt",
+            padding=True)
+        input_ids=self.cuda_context.try_get_gpu(tokenized_input['input_ids'])
+        attention_mask=self.cuda_context.try_get_gpu(tokenized_input['attention_mask'])
+        tokenized_output = self._tokenizer(
+            y_batch, 
+            return_tensors="pt",
+            padding=True)
+        labels=self.cuda_context.try_get_gpu(tokenized_output['input_ids'])
+        return {
+            "input_ids": input_ids,
+            "attention_mask": attention_mask,
+            "labels": labels,
+        }
 
     def train(self, 
             train_dataset: Dataset, 
@@ -187,6 +213,7 @@ class Model(object):
         trainer = Trainer(
             model=self._model,
             args=self.training_args,
+            data_collator=self._collate_fn,
             train_dataset=train_dataset,
             eval_dataset=eval_dataset,
             tokenizer=self._tokenizer,
@@ -206,14 +233,12 @@ if __name__ == '__main__':
     # Model from Hugging Face hub
     import os
     import json
-    import transformers
     assert os.path.exists(".secrets/huggingface_token.json"), "Please create a .secrets file with your HF token"
     model_name = "meta-llama/Llama-2-7b-hf"
     # model_name = "meta-llama/Llama-2-7b-chat-hf"
     with open(".secrets/huggingface_token.json", "r") as f:
         token = json.load(f)["token"]
-    device = "cuda:8"
-    model = Model(model_name, device=device, token=token)
+    model = Model(model_name, token=token)
     main_prompt = "Do simple math problems (Answer only the number and use '[END]' to finish the response):\nQuestion: 2 + 2\nAnswer: 4\n[END]"
     with model:
         for response in model.generate(
