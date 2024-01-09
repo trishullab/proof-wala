@@ -1,0 +1,36 @@
+#!/usr/bin/env python3
+
+import sys
+from typing import Any
+root_dir = f"{__file__.split('thrall_lib')[0]}"
+if root_dir not in sys.path:
+    sys.path.append(root_dir)
+import typing
+from itp_interface.tools.training_data_format import TrainingDataFormat
+from thrall_lib.llm_helpers.model import TrainingDataFormatterCallback
+
+class BasicTrainingDataFormatterCallback(TrainingDataFormatterCallback):
+    def __init__(self):
+        pass
+    
+    def __call__(self, training_data_format_examples: typing.List[typing.Dict[str, str]]) -> typing.List[str]:
+        output_texts = []
+        all_goals = training_data_format_examples["goals"]
+        all_proofsteps = training_data_format_examples["proofstep"]
+        stopping_token = self.get_stopping_token()
+        for goals, proofstep in zip(all_goals, all_proofsteps):
+            output_text = f"{goals}{proofstep}{stopping_token}"
+            output_texts.append(output_text)
+        return output_texts
+    
+    def get_prompt_and_completion(self, training_data_examples: typing.List[typing.Dict[str, str]]) -> typing.List[typing.Tuple[str, str]]:
+        all_goals = training_data_examples["goals"]
+        all_proofsteps = training_data_examples["proofstep"]
+        prompt_and_completions = []
+        for goals, proofstep in zip(all_goals, all_proofsteps):
+            prompt_and_completion = (goals, proofstep + self.get_stopping_token())
+            prompt_and_completions.append(prompt_and_completion)
+        return prompt_and_completions
+    
+    def get_stopping_token(self):
+        return "[END]"

@@ -1,36 +1,60 @@
 import os
 import torch
 import typing
+import logging
+import random
+import shutil
 from enum import Enum
 from dataclasses import dataclass, field
 from dataclasses_json import dataclass_json
-from datasets import Dataset
+from sklearn.metrics import f1_score
+from torch.utils.data import Dataset
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
+    BitsAndBytesConfig,
     EvalPrediction,
     StoppingCriteria,
     StoppingCriteriaList,
     TrainingArguments,
-    Trainer,
-    TrainerCallback,
+    TrainerCallback
     # default_data_collator,
-    # BitsAndBytesConfig,
     # pipeline,
     # logging,
 )
+from transformers.trainer_callback import TrainerControl, TrainerState
+from trl import SFTTrainer
+from peft import LoraConfig
+from comet_ml import Experiment
+
 try:
     from .cuda_context import CudaContext
 except ImportError:
     from cuda_context import CudaContext
-# from peft import LoraConfig
-# from trl import SFTTrainer
+
+try:
+    from .comet_helper import CometHelper
+except ImportError:
+    from comet_helper import CometHelper
 
 class AutoRegressiveSequenceSearch(Enum):
     NucleusSampling = "nucleus_sampling"
     BeamSearch = "beam_search"
     def __str__(self):
         return self.value
+
+class TrainingDataFormatterCallback:
+    def __init__(self):
+        pass
+    
+    def __call__(self, training_data_example: typing.Any) -> typing.List[str]:
+        raise NotImplementedError
+    
+    def get_prompt_and_completion(self, training_data_example: typing.Any) -> typing.List[typing.Tuple[str, str]]:
+        raise NotImplementedError
+    
+    def get_stopping_token(self):
+        raise NotImplementedError
 
 @dataclass_json
 @dataclass
@@ -89,34 +113,84 @@ class StopOnTokens(StoppingCriteria):
 class Model(object):
     """Wrapper for a Llama model"""
 
-    def __init__(self, name: str, training_args: TrainingArguments = None, **kwargs):
+    def __init__(self, name: str, training_args: TrainingArguments = None, logger = None, **kwargs):
         assert name is not None, "Please provide a model name"
         self.name = name
         self.cuda_context = CudaContext.get_default_context()
         self.training_args = training_args
+        self.logger = logger if logger is not None else logging.getLogger(__name__)
         self._is_loaded = False
         self._kwargs = kwargs
+        self._should_load_model = self._kwargs.get("load_model", True)
+        self._should_use_lora = self._kwargs.get("use_lora", True)
+        self._comet_experiment_name = self._kwargs.get("comet_experiment", None)
+        self._should_use_comet = self._comet_experiment_name is not None
+        self._comet_experiment = None
         pass
 
     def load(self):
         if self._is_loaded:
             return
+        if self._should_use_lora and "quantization_config" not in self._kwargs:
+            quantization_config = BitsAndBytesConfig(
+                load_in_4bit=True,
+                bnb_4bit_quant_type="nf4",
+                bnb_4bit_compute_dtype=getattr(torch,"float16"),
+                bnb_4bit_use_double_quant=False,
+            )
+            self._kwargs["quantization_config"] = quantization_config
+        quantization_config: BitsAndBytesConfig = self._kwargs.get("quantization_config", None)
+        if quantization_config is not None and quantization_config.bnb_4bit_compute_dtype == torch.float16 and quantization_config.load_in_4bit:
+            major, _ = torch.cuda.get_device_capability()
+            if major >= 8:
+                self.logger.info("The GPU supports bfloat16: accelerate training with bf16=True")
+        if self._should_use_lora and "lor_config" not in self._kwargs:
+            lora_config = LoraConfig(
+                lora_alpha=16,
+                lora_dropout=0.1,
+                r=64,
+                bias="none",
+                task_type="CAUSAL_LM",
+            )
+            self._kwargs["lora_config"] = lora_config
         model_args = {k: v for k, v in self._kwargs.items() if k in
-                ["token"]
+                ["token", "quantization_config"]
         }
         tokenizer_args = {k: v for k, v in self._kwargs.items() if k in
                 ["token", "pad_token", "eos_token", "bos_token", "unk_token", "mask_token", "additional_special_tokens", "max_length"]
         }
-        self._model : AutoModelForCausalLM = self.cuda_context.try_get_gpu(AutoModelForCausalLM.from_pretrained(self.name, **model_args))
+        if self._should_load_model:
+            if quantization_config is None:
+                self._model : AutoModelForCausalLM = self.cuda_context.try_get_gpu(AutoModelForCausalLM.from_pretrained(self.name, **model_args))
+            else:
+                self._model : AutoModelForCausalLM = AutoModelForCausalLM.from_pretrained(self.name, **model_args)
+            if hasattr(self._model, "config"):
+                if hasattr(self._model.config, "use_cache"):
+                    self._model.config.use_cache = False
+                if hasattr(self._model.config, "pretraining_tp"):
+                    self._model.config.pretraining_tp = 1
+        else:
+            self._model = None
         self._tokenizer : AutoTokenizer = AutoTokenizer.from_pretrained(self.name, **tokenizer_args)
         if "pad_token" not in tokenizer_args:
             tokenizer_args["pad_token"] = self._tokenizer.eos_token
         if "padding_side" not in tokenizer_args:
             tokenizer_args["padding_side"] = "left" # This is very import for the stop token logic
+        if "cls_token" not in tokenizer_args:
+            tokenizer_args["cls_token"] = tokenizer_args["pad_token"]
+        if "sep_token" not in tokenizer_args:
+            tokenizer_args["sep_token"] = tokenizer_args["pad_token"]
+        if "mask_token" not in tokenizer_args:
+            tokenizer_args["mask_token"] = tokenizer_args["pad_token"]
         self._tokenizer.pad_token = tokenizer_args["pad_token"]
+        self._tokenizer.cls_token = tokenizer_args["cls_token"]
+        self._tokenizer.sep_token = tokenizer_args["sep_token"]
+        self._tokenizer.mask_token = tokenizer_args["mask_token"]
         self._tokenizer.padding_side = tokenizer_args["padding_side"]
         self._is_loaded = True
-        pass
+        self._model_args = model_args
+        self._tokenizer_args = tokenizer_args
+
 
     def __enter__(self):
         self.load()
@@ -126,7 +200,8 @@ class Model(object):
         pass
 
     def generate(self, inputs: typing.Union[typing.List[str], str], **kwargs) -> GenerationResults:
-        assert self._is_loaded, "Model is not loaded"
+        assert self._is_loaded, "Model or tokenizer is not loaded"
+        assert self._model is not None, "Model is not loaded"
         if isinstance(inputs, str):
             inputs = [inputs]
         if "stop_tokens" in kwargs:
@@ -180,56 +255,158 @@ class Model(object):
                 generated_text = [x[len(text):] for x in generated_text]
             generation_results.results.append(GenerationResult(input_text=text, generated_text=generated_text))
         return generation_results
+   
+    def _exact_match_metric_callback(self, callback: TrainingDataFormatterCallback):
+        def _compute_metric_callback(p: EvalPrediction):
+            # Ignore all the predictions because we want to regenerate the text
+            eval_datasets = self._eval_dataset
+            if eval_datasets is None:
+                return {}
+            if not isinstance(eval_datasets, dict):
+                eval_datasets = [eval_datasets]
+            avg = {
+                'exact_match': 0.0,
+                'f1': 0.0
+            }
+            for idx, dataset in enumerate(eval_datasets):
+                prompts_and_completions = callback.get_prompt_and_completion(dataset)
+                all_prompts = [x[0] for x in prompts_and_completions]
+                all_completions = [x[1] for x in prompts_and_completions]
+                all_completions_tokenized = self._tokenizer(all_completions, return_tensors="pt", padding=True, return_length=True)
+                max_new_tokens = max(all_completions_tokenized["length"])
+                # Now generate all the completions
+                generated_completions = self.generate(all_prompts,
+                                max_new_tokens=max_new_tokens,
+                                temperature=0.1, # Nucleus sampling
+                                do_sample=True, # Nucleus sampling
+                                top_k=5, # Nucleus sampling
+                                # num_beams=5, # Beam search
+                                num_return_sequences=1,
+                                stop_tokens=[callback.get_stopping_token(), self._tokenizer.eos_token],
+                                padding=True,
+                                #truncation=True,
+                                return_full_text=False)
+                # Now compare the completions
+                labels = all_completions
+                preds = [gen_res.generated_text[0] for gen_res in generated_completions]
+                correct_pred_idx = []
+                for idx, (label, pred) in enumerate(zip(labels, preds)):
+                    if label == pred:
+                        correct_pred_idx.append(idx)
+                # Calculate Exact Match (EM)
+                wrong_pred_idx = list(set(range(len(labels))) - set(correct_pred_idx))
+                em = len(correct_pred_idx) / len(labels)
+                # Calculate F1-score
+                f1 = f1_score(labels, preds, average='macro')
+                avg['exact_match'] += em
+                avg['f1'] += f1
+                self.logger.info(f"Evaluation result on dataset: {idx + 1}")
+                # Sample some examples and log them
+                min_num_examples = 3
+                sampled_correct_pred_idx = random.sample(correct_pred_idx, min(min_num_examples, len(correct_pred_idx)))
+                for idx in sampled_correct_pred_idx:
+                    self.logger.info(f"Prompt [{idx + 1}]: {all_prompts[idx]}")
+                    self.logger.info(f"Label [{idx + 1}]: {labels[idx]}")
+                    self.logger.info(f"Correct Prediction [{idx + 1}]: {preds[idx]}")
+                sampled_wrong_pred_idx = random.sample(wrong_pred_idx, min(min_num_examples, len(wrong_pred_idx)))
+                for idx in sampled_wrong_pred_idx:
+                    self.logger.info(f"Prompt [{idx + 1}]: {all_prompts[idx]}")
+                    self.logger.info(f"Label [{idx + 1}]: {labels[idx]}")
+                    self.logger.info(f"Wrong Prediction [{idx + 1}]: {preds[idx]}")
+            avg['exact_match'] /= len(eval_datasets)
+            avg['f1'] /= len(eval_datasets)
+            return avg
+        return _compute_metric_callback
     
-    def _collate_fn(self, batch):
+    def _log_metric_callback(self) -> TrainerCallback:
         assert self._is_loaded, "Model is not loaded"
-        assert len(batch) > 0, "Please provide a non-empty batch"
-        x_batch = []
-        y_batch = []
-        for x, y in batch:
-            x_batch.append(x)
-            y_batch.append(y)
-        tokenized_input = self._tokenizer(
-            x_batch, 
-            return_tensors="pt",
-            padding=True)
-        input_ids=self.cuda_context.try_get_gpu(tokenized_input['input_ids'])
-        attention_mask=self.cuda_context.try_get_gpu(tokenized_input['attention_mask'])
-        tokenized_output = self._tokenizer(
-            y_batch, 
-            return_tensors="pt",
-            padding=True)
-        labels=self.cuda_context.try_get_gpu(tokenized_output['input_ids'])
-        return {
-            "input_ids": input_ids,
-            "attention_mask": attention_mask,
-            "labels": labels,
-        }
+        class LogMetricCallback(TrainerCallback):
+            def __init__(self, model: Model):
+                self.model = model
+            def on_step_end(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
+                if len(state.log_history) > 0:
+                    if self.model._should_use_comet:
+                        metrics = state.log_history[-1]
+                        self.model._comet_experiment.log_metrics(metrics, step=state.global_step, epoch=state.epoch)
+                    self.model.logger.info(f"Training metric (focus on *{args.metric_for_best_model}*) [Step = {state.global_step}, Epoch = {state.epoch}]: {metrics}")
+            def on_evaluate(self, args, state, control, **kwargs):
+                if len(state.log_history) > 0:
+                    metrics = state.log_history[-1]
+                    if self.model._should_use_comet:
+                        self.model._comet_experiment.log_metrics(metrics, step=state.global_step, epoch=state.epoch)
+                    self.model.logger.info(f"Evaluation metric (focus on *{args.metric_for_best_model}*) [Step = {state.global_step}, Epoch = {state.epoch}]: {metrics}")
+        return LogMetricCallback(self)
 
-    def train(self, 
+    def train(self,
+            training_data_formatter_callback: TrainingDataFormatterCallback,
             train_dataset: Dataset, 
             eval_dataset: typing.Union[Dataset, typing.Dict[str, Dataset]] = None, 
             compute_metrics: typing.Callable[[EvalPrediction], dict] = None,
             callbacks: typing.List[TrainerCallback] = None):
-        assert self._is_loaded, "Model is not loaded"
+        assert self._is_loaded, "Model or tokenizer is not loaded"
         assert self.training_args is not None, "Please provide training arguments"
-        trainer = Trainer(
-            model=self._model,
+        if compute_metrics is None:
+            self._eval_dataset = eval_dataset # Save the eval dataset for later
+            compute_metrics = self._exact_match_metric_callback(training_data_formatter_callback)
+        if callbacks is None:
+            callbacks = []
+        callbacks.append(self._log_metric_callback())
+        # unload the model from the GPU
+        self.cuda_context.free_cuda_cache_if_possible()
+        lora_config = self._kwargs.get("lora_config", None)
+        max_seq_length = self._kwargs.get("max_seq_length", None)
+        if self._should_use_comet:
+            self._comet_helper = CometHelper()
+            self._comet_experiment : Experiment = self._comet_helper.get_experiment(self._comet_experiment_name)
+            self._comet_experiment.log_parameters(self._kwargs)
+        trainer = SFTTrainer(
+            model=(self.name if self._model is None else self._model), # This will anyway create a new model
             args=self.training_args,
-            data_collator=self._collate_fn,
+            # data_collator=self._collate_fn,
             train_dataset=train_dataset,
             eval_dataset=eval_dataset,
             tokenizer=self._tokenizer,
-            callbacks=callbacks,
             compute_metrics=compute_metrics,
+            callbacks=callbacks,
+            # dataset_text_field="text",
+            packing=False,
+            dataset_batch_size=self.training_args.train_batch_size,
+            formatting_func=training_data_formatter_callback.__call__,
+            model_init_kwargs=self._model_args if self._model is None else None,
+            peft_config=lora_config,
+            max_seq_length=max_seq_length,
         )
         if self.training_args.do_train:
             if self.training_args.resume_from_checkpoint is not None:
                 trainer.train(resume_from_checkpoint=self.training_args.resume_from_checkpoint) # Resume from a specific checkpoint
             else:
-                trainer.train(resume_from_checkpoint=True) # Resume from the latest checkpoint
+                # Check if a checkpoint exists
+                no_checkpoint = True
+                try:
+                    trainer.train(resume_from_checkpoint=True)
+                except:
+                    # Eat the exception
+                    no_checkpoint = True
+                if no_checkpoint:
+                    trainer.train()
         if self.training_args.do_eval:
             trainer.evaluate()
+        # Change the model name and save it
+        # load the best model
+        if self.training_args.load_best_model_at_end:
+            # Copy the best model to a new model
+            best_model_path = trainer.state.best_model_checkpoint
+            os.makedirs(self.training_args.output_dir, exist_ok=True)
+            new_model_name = f"{self.training_args.output_dir}/best_model"
+            if os.path.exists(new_model_name):
+                os.remove(new_model_name)
+            # Recursively copy the best model
+            self.logger.info(f"Copying the best model from {best_model_path} to {new_model_name}")
+            shutil.copytree(best_model_path, new_model_name)
+        else:
+            best_model_path = None
+        if best_model_path is None:
+            trainer.save_model()
         pass
 
 if __name__ == '__main__':
@@ -244,6 +421,14 @@ if __name__ == '__main__':
     model = Model(model_name, token=token)
     main_prompt = "Do simple math problems (Answer only the number and use '[END]' to finish the response):\nQuestion: 2 + 2\nAnswer: 4\n[END]"
     with model:
+        # prompt = f"{main_prompt}\nQuestion: 4 + 5\nAnswer:"
+        # label = "9"
+        # tokenized_prompt = model._tokenizer(prompt, return_tensors="pt", padding=True)
+        # input_ids = model.cuda_context.try_get_gpu(tokenized_prompt['input_ids'])
+        # attention_mask = model.cuda_context.try_get_gpu(tokenized_prompt['attention_mask'])
+        # labels = model._tokenizer(label, return_tensors="pt", padding=True)
+        # labels = model.cuda_context.try_get_gpu(labels['input_ids'])
+        # inp = model._model(input_ids=input_ids, attention_mask=attention_mask, labels=labels, return_dict=True)
         for response in model.generate(
                 [
                     f"{main_prompt}\nQuestion: 4 + 5\nAnswer:",

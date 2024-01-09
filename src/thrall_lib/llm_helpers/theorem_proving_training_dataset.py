@@ -1,22 +1,16 @@
-import typing
-from datasets import Dataset
+import ray
+from torch.utils.data import Dataset
+from datasets import Dataset as HFDataset
 from itp_interface.tools.training_data import TrainingData
-from itp_interface.tools.training_data_format import TrainingDataFormat
-
-class TheoremProvingTrainingDataFormatCallback:
-    def __init__(self):
-        pass
-    
-    def __call__(self, training_data_format: TrainingDataFormat) -> typing.Tuple[str, str]:
-        raise NotImplementedError
 
 class TheoremProvingTrainingDataset(Dataset):
-    def __init__(self, training_data: TrainingData, format_callback: TheoremProvingTrainingDataFormatCallback):
+    def __init__(self, training_data: TrainingData):
         self.training_data = training_data
-        self._format_callback = format_callback
     
     def load(self, **kwargs):
         self.training_data.load()
+        ray.shutdown() # Force shutdown ray because everything is in memory now.
+        # execute ray stop in terminal to stop ray
 
     def unload(self):
         self.training_data.unload()
@@ -35,5 +29,22 @@ class TheoremProvingTrainingDataset(Dataset):
     
     def __getitem__(self, idx):
         assert self.training_data._is_loaded, "Training data not loaded"
-        x, y = self._format_callback(self.training_data[idx])
-        return x, y
+        example = self.training_data[idx]
+        goals = []
+        for idx, goal in enumerate(example.start_goals):
+            if len(goal.hypotheses) > 0:
+                hyps = '\n'.join(goal.hypotheses)
+                goals.append(f"[GOAL] {idx + 1}\n{goal.goal}\n[HYPOTHESES] {idx + 1}\n{hyps}")
+            else:
+                goals.append(f"[GOAL] {idx + 1}\n{goal.goal}")
+        goals = '\n'.join(goals)
+        proofstep = '\n'.join(example.proof_steps)
+        proofstep = f"\n[PROOFSTEP]\n{proofstep}"
+        return {
+            "goals": goals,
+            "proofstep": proofstep
+        }
+    
+    def get_hf_dataset(self):
+        assert self.training_data._is_loaded, "Training data not loaded"
+        return HFDataset.from_list(self)
