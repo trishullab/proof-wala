@@ -31,8 +31,7 @@ def train(
     model_logs = f"{logging_folder}/model_logs"
     os.makedirs(code_logs, exist_ok=True)
     os.makedirs(model_logs, exist_ok=True)
-    model_logger = setup_logger("ModelLogs", f"{model_logs}/model.log")
-    model = Model(model_name, training_args, model_logger, **kwargs)
+    model = Model(model_name, training_args, model_logs, **kwargs)
     with model:
         training_data = TrainingData(training_data_folder, meta_filename, logger=setup_logger("TrainingData", f"{code_logs}/training_data.log"))
         with TheoremProvingTrainingDataset(training_data) as training_dataset:
@@ -62,31 +61,51 @@ if __name__ == "__main__":
     import json
     RayUtils.init_ray(num_of_cpus=10, object_store_memory_in_gb=100, memory_in_gb=50)
     model_name = "meta-llama/Llama-2-7b-hf"
-    new_model_name = "thrall/Llama-2-7b-hf-compcert"
     with open(".secrets/huggingface_token.json", "r") as f:
         hf_token = json.load(f)["token"]
     time_str = time.strftime("%Y%m%d-%H%M%S")
+    seq_length = 3720
+    new_model_name = "thrall-Llama-2-7b-hf-compcert-{seq_length}-001-001".format(seq_length=seq_length)
     test_folder = "/mnt/sdd1/amthakur/data/compcert/test/20240105-021512/"
     train_folder = "/mnt/sdd1/amthakur/data/compcert/train/20240105-021649/"
+    train_percentage=1.0
+    eval_percentage=0.1
+    eval_steps = 500
+    save_steps = 500
+    num_train_epochs = 3
+    train_batch_size_per_device = 2
+    eval_batch_size_per_device = 2
+    # seq_length = 1024
+    # new_model_name = "thrall-Llama-2-7b-hf-toycoq-{seq_length}-001-001".format(seq_length=seq_length)
+    # test_folder = ".log/train"
+    # train_folder = ".log/train"
+    # train_percentage=1.0
+    # eval_percentage=0.1
+    # eval_steps = 6
+    # save_steps = 6
+    # num_train_epochs = 6
+    # train_batch_size_per_device = 10
+    # eval_batch_size_per_device = 10
     train(
         model_name, 
         train_folder, 
         "local.meta.json", 
         f".log/run_training/{model_name}/logs/{time_str}",
         TrainingArguments(
-            output_dir=f".log/run_training/{new_model_name}/outputs",
+            output_dir=f".log/run_training/{new_model_name}",
             overwrite_output_dir=False,
             do_train=True,
             do_eval=True,
             do_predict=False,
             evaluation_strategy=IntervalStrategy.STEPS,
-            per_device_train_batch_size=2,
-            per_device_eval_batch_size=2,
+            auto_find_batch_size=True,
+            #per_device_train_batch_size=train_batch_size_per_device,
+            per_device_eval_batch_size=eval_batch_size_per_device,
             gradient_accumulation_steps=1,
             learning_rate=2e-4,
             weight_decay=0.001,
             max_grad_norm=0.3, # Gradient clipping
-            num_train_epochs=3,
+            num_train_epochs=num_train_epochs,
             max_steps=-1,
             lr_scheduler_type=SchedulerType.COSINE,
             warmup_ratio=0.03,
@@ -96,7 +115,7 @@ if __name__ == "__main__":
             logging_steps=1,
             logging_first_step=True,
             save_strategy=IntervalStrategy.STEPS,
-            save_steps=500,
+            save_steps=save_steps,
             save_total_limit=3,
             # no_cuda=False,
             # use_cpu=False,
@@ -104,7 +123,7 @@ if __name__ == "__main__":
             data_seed=42,
             bf16=False,
             fp16=False,
-            eval_steps=500,
+            eval_steps=eval_steps,
             load_best_model_at_end=True,
             metric_for_best_model="exact_match",
             greater_is_better=True,
@@ -114,8 +133,8 @@ if __name__ == "__main__":
             gradient_checkpointing=True
         ),
         eval_data_folder=test_folder,
-        train_percentage=0.1,
-        eval_percentage=0.1,
+        train_percentage=train_percentage,
+        eval_percentage=eval_percentage,
         token=hf_token,
-        max_seq_length=1024,
-        comet_experiment="thrall-llama-2-7b-compcert-1024-001-001")
+        max_seq_length=3720,
+        comet_experiment=f"{time_str}-{new_model_name}")

@@ -27,6 +27,11 @@ class BasicTrainingDataFormatterCallback(TrainingDataFormatterCallback):
         all_goals = training_data_examples["goals"]
         all_proofsteps = training_data_examples["proofstep"]
         prompt_and_completions = []
+        if isinstance(all_goals, str):
+            all_goals = [all_goals]
+            assert isinstance(all_proofsteps, str)
+            all_proofsteps = [all_proofsteps]
+        assert len(all_goals) == len(all_proofsteps)
         for goals, proofstep in zip(all_goals, all_proofsteps):
             prompt_and_completion = (goals, proofstep + self.get_stopping_token())
             prompt_and_completions.append(prompt_and_completion)

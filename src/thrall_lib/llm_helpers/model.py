@@ -2,28 +2,24 @@ import os
 import torch
 import typing
 import logging
+import json
 import random
 import shutil
 from enum import Enum
 from dataclasses import dataclass, field
 from dataclasses_json import dataclass_json
-from sklearn.metrics import f1_score
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
     BitsAndBytesConfig,
-    EvalPrediction,
     StoppingCriteria,
     StoppingCriteriaList,
     TrainingArguments,
     TrainerCallback
-    # default_data_collator,
-    # pipeline,
-    # logging,
 )
+from itp_interface.tools.log_utils import setup_logger
 from transformers.trainer_callback import TrainerControl, TrainerState
-from trl import SFTTrainer
 from peft import LoraConfig
 from comet_ml import Experiment
 
@@ -36,6 +32,11 @@ try:
     from .comet_helper import CometHelper
 except ImportError:
     from comet_helper import CometHelper
+
+try:
+    from .custom_sft_trainer import GenerateEvalSFTTrainer
+except ImportError:
+    from custom_sft_trainer import GenerateEvalSFTTrainer
 
 class AutoRegressiveSequenceSearch(Enum):
     NucleusSampling = "nucleus_sampling"
@@ -55,6 +56,30 @@ class TrainingDataFormatterCallback:
     
     def get_stopping_token(self):
         raise NotImplementedError
+
+class LogMetricCallback(TrainerCallback):
+    def __init__(self, model: "Model"):
+        self.model = model
+        self._idx = 0
+
+    def on_step_end(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
+        # Check if we should run evaluation
+        if state.global_step == 2: # Just force evaluation at the beginning to ensure that the model is working
+            control.should_log = True
+            control.should_evaluate = True
+        super().on_step_end(args, state, control, **kwargs)
+        return control
+
+    def on_log(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
+        if len(state.log_history) > 0:
+            metrices = state.log_history[self._idx:]
+            for metrics in metrices:
+                if self.model._should_use_comet:
+                    self.model._comet_experiment.log_metrics(metrics, step=state.global_step, epoch=state.epoch)
+                metric_json = json.dumps(metrics)
+                self.model.metric_logger.info(metric_json)
+            self._idx = len(state.log_history)
+        super().on_log(args, state, control, **kwargs)
 
 @dataclass_json
 @dataclass
@@ -113,12 +138,16 @@ class StopOnTokens(StoppingCriteria):
 class Model(object):
     """Wrapper for a Llama model"""
 
-    def __init__(self, name: str, training_args: TrainingArguments = None, logger = None, **kwargs):
+    def __init__(self, name: str, training_args: TrainingArguments = None, log_folder: str = None, **kwargs):
         assert name is not None, "Please provide a model name"
         self.name = name
         self.cuda_context = CudaContext.get_default_context()
         self.training_args = training_args
-        self.logger = logger if logger is not None else logging.getLogger(__name__)
+        code_logger = logging.getLogger("ModelCode") if log_folder is None else setup_logger("ModelCode", f"{log_folder}/model_code.log")
+        metric_format = '{"time": "%(asctime)s", "metrics": %(message)s}'
+        metric_logger = logging.getLogger("ModelMetrics") if log_folder is None else setup_logger("ModelMetrics", f"{log_folder}/model_metrics.jsonl", format=metric_format)
+        self.code_logger = code_logger
+        self.metric_logger = metric_logger
         self._is_loaded = False
         self._kwargs = kwargs
         self._should_load_model = self._kwargs.get("load_model", True)
@@ -143,7 +172,7 @@ class Model(object):
         if quantization_config is not None and quantization_config.bnb_4bit_compute_dtype == torch.float16 and quantization_config.load_in_4bit:
             major, _ = torch.cuda.get_device_capability()
             if major >= 8:
-                self.logger.info("The GPU supports bfloat16: accelerate training with bf16=True")
+                self.code_logger.info("The GPU supports bfloat16: accelerate training with bf16=True")
         if self._should_use_lora and "lor_config" not in self._kwargs:
             lora_config = LoraConfig(
                 lora_alpha=16,
@@ -256,101 +285,162 @@ class Model(object):
             generation_results.results.append(GenerationResult(input_text=text, generated_text=generated_text))
         return generation_results
    
-    def _exact_match_metric_callback(self, callback: TrainingDataFormatterCallback):
-        def _compute_metric_callback(p: EvalPrediction):
-            # Ignore all the predictions because we want to regenerate the text
-            eval_datasets = self._eval_dataset
-            if eval_datasets is None:
+    def _generate_completion_callback(self, formatter_callback: TrainingDataFormatterCallback):
+        def _callback(dataset: Dataset):
+            prompts_and_completions = formatter_callback.get_prompt_and_completion(dataset)
+            batch_prompts = [x[0] for x in prompts_and_completions]
+            batch_completions = [x[1] for x in prompts_and_completions]
+            batch_completions_tokenized = self._tokenizer(batch_completions, return_tensors="pt", padding=True, return_length=True)
+            max_new_tokens = max(batch_completions_tokenized["length"])
+            # Now generate all the completions
+            generated_completions = self.generate(batch_prompts,
+                            max_new_tokens=max_new_tokens,
+                            temperature=0.1, # Nucleus sampling
+                            do_sample=True, # Nucleus sampling
+                            top_k=5, # Nucleus sampling
+                            # num_beams=5, # Beam search
+                            num_return_sequences=1,
+                            stop_tokens=[formatter_callback.get_stopping_token(), self._tokenizer.eos_token],
+                            padding=True,
+                            #truncation=True,
+                            return_full_text=False)
+            # Now compare the completions
+            labels = batch_completions
+            preds = [gen_res.generated_text for gen_res in generated_completions]
+            return batch_prompts, labels, preds
+        return _callback
+
+    def _exact_match_metric_callback(self, datasets, formatter_callback: TrainingDataFormatterCallback, completion_callback: typing.Callable[[Dataset], typing.Tuple[typing.List[str], typing.List[str], typing.List[str]]]):
+        actual_eval_datasets = datasets 
+        def _callback(batch_size: int, trainer_state: TrainerState):
+            nonlocal actual_eval_datasets
+            if actual_eval_datasets is None:
                 return {}
-            if not isinstance(eval_datasets, dict):
-                eval_datasets = [eval_datasets]
+            if not isinstance(actual_eval_datasets, dict):
+                eval_datasets = {"eval_dataset": actual_eval_datasets}
             avg = {
-                'exact_match': 0.0,
-                'f1': 0.0
+                'exact_match': 0.0
             }
-            for idx, dataset in enumerate(eval_datasets):
-                prompts_and_completions = callback.get_prompt_and_completion(dataset)
-                all_prompts = [x[0] for x in prompts_and_completions]
-                all_completions = [x[1] for x in prompts_and_completions]
-                all_completions_tokenized = self._tokenizer(all_completions, return_tensors="pt", padding=True, return_length=True)
-                max_new_tokens = max(all_completions_tokenized["length"])
-                # Now generate all the completions
-                generated_completions = self.generate(all_prompts,
-                                max_new_tokens=max_new_tokens,
-                                temperature=0.1, # Nucleus sampling
-                                do_sample=True, # Nucleus sampling
-                                top_k=5, # Nucleus sampling
-                                # num_beams=5, # Beam search
-                                num_return_sequences=1,
-                                stop_tokens=[callback.get_stopping_token(), self._tokenizer.eos_token],
-                                padding=True,
-                                #truncation=True,
-                                return_full_text=False)
-                # Now compare the completions
-                labels = all_completions
-                preds = [gen_res.generated_text[0] for gen_res in generated_completions]
+            for eval_dataset_name in eval_datasets:
+                eval_dataset = eval_datasets[eval_dataset_name]
+                # create a dataloader with batch_size
+                dataloader = DataLoader(eval_dataset, batch_size=batch_size, shuffle=False)
+                all_prompts = []
+                all_completions = []
+                all_predictions = []
                 correct_pred_idx = []
-                for idx, (label, pred) in enumerate(zip(labels, preds)):
-                    if label == pred:
-                        correct_pred_idx.append(idx)
+                for batch_idx, dataset in enumerate(dataloader):
+                    prompts_and_completions = formatter_callback.get_prompt_and_completion(dataset)
+                    batch_prompts = [x[0] for x in prompts_and_completions]
+                    batch_completions = [x[1] for x in prompts_and_completions]
+                    all_prompts.extend(batch_prompts)
+                    all_completions.extend(batch_completions)
+                    batch_completions_tokenized = self._tokenizer(batch_completions, return_tensors="pt", padding=True, return_length=True)
+                    max_new_tokens = max(batch_completions_tokenized["length"])
+                    # Now generate all the completions
+                    generated_completions = self.generate(batch_prompts,
+                                    max_new_tokens=max_new_tokens,
+                                    temperature=0.1, # Nucleus sampling
+                                    do_sample=True, # Nucleus sampling
+                                    top_k=5, # Nucleus sampling
+                                    # num_beams=5, # Beam search
+                                    num_return_sequences=1,
+                                    stop_tokens=[formatter_callback.get_stopping_token(), self._tokenizer.eos_token],
+                                    padding=True,
+                                    #truncation=True,
+                                    return_full_text=False)
+                    # Now compare the completions
+                    labels = batch_completions
+                    preds = [gen_res.generated_text[0] for gen_res in generated_completions]
+                    all_predictions.extend(preds)
+                    for _idx, (label, pred) in enumerate(zip(labels, preds)):
+                        if label == pred:
+                            correct_pred_idx.append(batch_idx * batch_size + _idx)
                 # Calculate Exact Match (EM)
-                wrong_pred_idx = list(set(range(len(labels))) - set(correct_pred_idx))
-                em = len(correct_pred_idx) / len(labels)
-                # Calculate F1-score
-                f1 = f1_score(labels, preds, average='macro')
+                wrong_pred_idx = list(set(range(len(all_completions))) - set(correct_pred_idx))
+                em = len(correct_pred_idx) / len(all_completions)
                 avg['exact_match'] += em
-                avg['f1'] += f1
-                self.logger.info(f"Evaluation result on dataset: {idx + 1}")
+                prefix = f"[Step = {trainer_state.global_step}] [Epoch = {trainer_state.epoch}] [Dataset = {eval_dataset_name}]"
+                self.code_logger.info(f"{prefix} [EM = {em}]")
                 # Sample some examples and log them
                 min_num_examples = 3
                 sampled_correct_pred_idx = random.sample(correct_pred_idx, min(min_num_examples, len(correct_pred_idx)))
-                for idx in sampled_correct_pred_idx:
-                    self.logger.info(f"Prompt [{idx + 1}]: {all_prompts[idx]}")
-                    self.logger.info(f"Label [{idx + 1}]: {labels[idx]}")
-                    self.logger.info(f"Correct Prediction [{idx + 1}]: {preds[idx]}")
+                for _idx in sampled_correct_pred_idx:
+                    self.code_logger.info(f"{prefix} Prompt [{_idx + 1}]: {all_prompts[_idx]}")
+                    self.code_logger.info(f"{prefix} Label [{_idx + 1}]: {all_completions[_idx]}")
+                    self.code_logger.info(f"{prefix} Correct Prediction [{_idx + 1}]: {all_predictions[_idx]}")
+                    if self._comet_experiment:
+                        full_text = f"{prefix}\nPrompt:\n{all_prompts[_idx]}\nLabel:\n{all_completions[_idx]}\nCorrect Prediction:\n{all_predictions[_idx]}"
+                        self._comet_experiment.log_text(full_text, step=trainer_state.global_step, metadata={"type": "correct_prediction"})
                 sampled_wrong_pred_idx = random.sample(wrong_pred_idx, min(min_num_examples, len(wrong_pred_idx)))
-                for idx in sampled_wrong_pred_idx:
-                    self.logger.info(f"Prompt [{idx + 1}]: {all_prompts[idx]}")
-                    self.logger.info(f"Label [{idx + 1}]: {labels[idx]}")
-                    self.logger.info(f"Wrong Prediction [{idx + 1}]: {preds[idx]}")
+                for _idx in sampled_wrong_pred_idx:
+                    self.code_logger.info(f"{prefix} Prompt [{_idx + 1}]: {all_prompts[_idx]}")
+                    self.code_logger.info(f"{prefix} Label [{_idx + 1}]: {all_completions[_idx]}")
+                    self.code_logger.info(f"{prefix} Wrong Prediction [{_idx + 1}]: {all_predictions[_idx]}")
+                    if self._comet_experiment:
+                        full_text = f"{prefix}\nPrompt:\n{all_prompts[_idx]}\nLabel:\n{all_completions[_idx]}\nWrong Prediction:\n{all_predictions[_idx]}"
+                        self._comet_experiment.log_text(full_text, step=trainer_state.global_step, metadata={"type": "wrong_prediction"})
             avg['exact_match'] /= len(eval_datasets)
-            avg['f1'] /= len(eval_datasets)
             return avg
-        return _compute_metric_callback
+        return _callback
+    
+    def _generative_compute_metrics(self):
+        def _compute_metrics_callback(
+                eval_dataset_name: str,
+                trainer_state: TrainerState,
+                prompts: typing.List[str], 
+                labels: typing.List[str], 
+                completions: typing.List[typing.List[str]]):
+                avg = {'exact_match': 0.0}
+                correct_pred_idx = []
+                for _idx, (label, completion) in enumerate(zip(labels, completions)):
+                    for _completion in completion:
+                        if label == _completion:
+                            correct_pred_idx.append(_idx)
+                            break
+                wrong_pred_idx = list(set(range(len(labels))) - set(correct_pred_idx))
+                em = len(correct_pred_idx) / len(labels)
+                avg['exact_match'] += em
+                prefix = f"[Step = {trainer_state.global_step}] [Epoch = {trainer_state.epoch}] [Dataset = {eval_dataset_name}]"
+                self.code_logger.info(f"{prefix} [EM = {em}]")
+                # Sample some examples and log them
+                min_num_examples = 3
+                sampled_correct_pred_idx = random.sample(correct_pred_idx, min(min_num_examples, len(correct_pred_idx)))
+                for _idx in sampled_correct_pred_idx:
+                    self.code_logger.info(f"{prefix} Prompt [{_idx + 1}]: {prompts[_idx]}")
+                    self.code_logger.info(f"{prefix} Label [{_idx + 1}]: {labels[_idx]}")
+                    self.code_logger.info(f"{prefix} Correct Prediction [{_idx + 1}]: {completions[_idx]}")
+                    if self._comet_experiment:
+                        full_text = f"{prefix}\nPrompt:\n{prompts[_idx]}\nLabel:\n{labels[_idx]}\nCorrect Prediction:\n{completions[_idx]}"
+                        self._comet_experiment.log_text(full_text, step=trainer_state.global_step, metadata={"type": "correct_prediction"})
+                sampled_wrong_pred_idx = random.sample(wrong_pred_idx, min(min_num_examples, len(wrong_pred_idx)))
+                for _idx in sampled_wrong_pred_idx:
+                    self.code_logger.info(f"{prefix} Prompt [{_idx + 1}]: {prompts[_idx]}")
+                    self.code_logger.info(f"{prefix} Label [{_idx + 1}]: {labels[_idx]}")
+                    self.code_logger.info(f"{prefix} Wrong Prediction [{_idx + 1}]: {completions[_idx]}")
+                    if self._comet_experiment:
+                        full_text = f"{prefix}\nPrompt:\n{prompts[_idx]}\nLabel:\n{labels[_idx]}\nWrong Prediction:\n{completions[_idx]}"
+                        self._comet_experiment.log_text(full_text, step=trainer_state.global_step, metadata={"type": "wrong_prediction"})
+                return avg
+        return _compute_metrics_callback
+
     
     def _log_metric_callback(self) -> TrainerCallback:
-        assert self._is_loaded, "Model is not loaded"
-        class LogMetricCallback(TrainerCallback):
-            def __init__(self, model: Model):
-                self.model = model
-            def on_step_end(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
-                if len(state.log_history) > 0:
-                    if self.model._should_use_comet:
-                        metrics = state.log_history[-1]
-                        self.model._comet_experiment.log_metrics(metrics, step=state.global_step, epoch=state.epoch)
-                    self.model.logger.info(f"Training metric (focus on *{args.metric_for_best_model}*) [Step = {state.global_step}, Epoch = {state.epoch}]: {metrics}")
-            def on_evaluate(self, args, state, control, **kwargs):
-                if len(state.log_history) > 0:
-                    metrics = state.log_history[-1]
-                    if self.model._should_use_comet:
-                        self.model._comet_experiment.log_metrics(metrics, step=state.global_step, epoch=state.epoch)
-                    self.model.logger.info(f"Evaluation metric (focus on *{args.metric_for_best_model}*) [Step = {state.global_step}, Epoch = {state.epoch}]: {metrics}")
         return LogMetricCallback(self)
 
     def train(self,
             training_data_formatter_callback: TrainingDataFormatterCallback,
             train_dataset: Dataset, 
             eval_dataset: typing.Union[Dataset, typing.Dict[str, Dataset]] = None, 
-            compute_metrics: typing.Callable[[EvalPrediction], dict] = None,
+            compute_metrics: typing.Optional[typing.Callable[[str, TrainerState, typing.List[str], typing.List[str], typing.List[typing.List[str]]], typing.Dict]] = None,
             callbacks: typing.List[TrainerCallback] = None):
         assert self._is_loaded, "Model or tokenizer is not loaded"
         assert self.training_args is not None, "Please provide training arguments"
         if compute_metrics is None:
-            self._eval_dataset = eval_dataset # Save the eval dataset for later
-            compute_metrics = self._exact_match_metric_callback(training_data_formatter_callback)
+            compute_metrics = self._generative_compute_metrics()
+            # paramless_compute_metrics = self._exact_match_metric_callback(eval_dataset, training_data_formatter_callback)
         if callbacks is None:
             callbacks = []
-        callbacks.append(self._log_metric_callback())
         # unload the model from the GPU
         self.cuda_context.free_cuda_cache_if_possible()
         lora_config = self._kwargs.get("lora_config", None)
@@ -359,14 +449,14 @@ class Model(object):
             self._comet_helper = CometHelper()
             self._comet_experiment : Experiment = self._comet_helper.get_experiment(self._comet_experiment_name)
             self._comet_experiment.log_parameters(self._kwargs)
-        trainer = SFTTrainer(
+        fake_logit_tensor = torch.tensor([0.0])
+        trainer = GenerateEvalSFTTrainer(
             model=(self.name if self._model is None else self._model), # This will anyway create a new model
             args=self.training_args,
             # data_collator=self._collate_fn,
             train_dataset=train_dataset,
             eval_dataset=eval_dataset,
             tokenizer=self._tokenizer,
-            compute_metrics=compute_metrics,
             callbacks=callbacks,
             # dataset_text_field="text",
             packing=False,
@@ -375,7 +465,12 @@ class Model(object):
             model_init_kwargs=self._model_args if self._model is None else None,
             peft_config=lora_config,
             max_seq_length=max_seq_length,
+            preprocess_logits_for_metrics=(lambda _x, _y: fake_logit_tensor), # no need to compute logits and reduce memory usage
+            generate_callback=self._generate_completion_callback(training_data_formatter_callback),
+            generative_compute_metrics=compute_metrics,
+            logger=self.code_logger
         )
+        trainer.add_callback(self._log_metric_callback())
         if self.training_args.do_train:
             if self.training_args.resume_from_checkpoint is not None:
                 trainer.train(resume_from_checkpoint=self.training_args.resume_from_checkpoint) # Resume from a specific checkpoint
@@ -389,7 +484,7 @@ class Model(object):
                     no_checkpoint = True
                 if no_checkpoint:
                     trainer.train()
-        if self.training_args.do_eval:
+        if self.training_args.do_eval and eval_dataset is not None:
             trainer.evaluate()
         # Change the model name and save it
         # load the best model
@@ -401,7 +496,7 @@ class Model(object):
             if os.path.exists(new_model_name):
                 os.remove(new_model_name)
             # Recursively copy the best model
-            self.logger.info(f"Copying the best model from {best_model_path} to {new_model_name}")
+            self.code_logger.info(f"Copying the best model from {best_model_path} to {new_model_name}")
             shutil.copytree(best_model_path, new_model_name)
         else:
             best_model_path = None
