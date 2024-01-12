@@ -10,3 +10,4 @@ torch==2.1.1
 transformers==4.34.0
 peft==0.7.1
 trl==0.7.7
+parglare==0.16.1
