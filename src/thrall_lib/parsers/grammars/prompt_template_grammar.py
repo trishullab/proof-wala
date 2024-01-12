@@ -2,9 +2,9 @@
 import os
 import typing
 try:
-    from .interpreter import Grammar
+    from .grammar import Grammar
 except ImportError:
-    from interpreter import Grammar
+    from grammar import Grammar
 
 class PromptGrammar(Grammar):
     grammar = """

@@ -6,7 +6,7 @@ if root_dir not in sys.path:
     sys.path.append(root_dir)
 from thrall_lib.llm_helpers.model import Model
 from thrall_lib.llm_helpers.llama2_chat_format import Llama2ChatFormat
-from thrall_lib.parsers.prompt_template_parsers import PromptGrammar
+from thrall_lib.parsers.grammars.prompt_template_grammar import PromptGrammar
 
 
 class LlamaChatBot(object):
