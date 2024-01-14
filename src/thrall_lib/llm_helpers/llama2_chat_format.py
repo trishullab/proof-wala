@@ -73,10 +73,13 @@ class Llama2ChatFormat(object):
                 raise ValueError(f"Unknown role: {message['role']}")
         sys_prompt = self._format_system_messages(system_messages)
         user_prompt = self._format_user_assistant_messages(user_messages, assistant_messages)
-        prompt = \
+        if len(sys_prompt) > 0:
+            prompt = \
 f"""{sys_prompt}
 
 {user_prompt}"""
+        else:
+            prompt = user_prompt
         return prompt, role_names
 
     def _format_system_messages(self, system_message):
@@ -98,12 +101,14 @@ f"""{main_system_message}
 An example of user and assistant interaction is as follows:
 {example_message}"""
         else:
-            system_message = \
-f"""{main_system_message}"""
-        system_prompt = \
-f"""{Llama2ChatFormat.start_token}{Llama2ChatFormat.inst_start} {Llama2ChatFormat.sys_start}
+            system_message = main_system_message
+        if len(system_message) > 0:
+            system_prompt = \
+    f"""{Llama2ChatFormat.start_token}{Llama2ChatFormat.inst_start} {Llama2ChatFormat.sys_start}
 {system_message}
 {Llama2ChatFormat.sys_end}"""
+        else:
+            system_prompt = ""
         return system_prompt
     
     def _format_user_assistant_messages(self, user_messages, assistant_messages):
@@ -113,7 +118,10 @@ f"""{Llama2ChatFormat.start_token}{Llama2ChatFormat.inst_start} {Llama2ChatForma
         user_messages = [user_msg["content"] for user_msg in user_messages]
         user_messages = [f"{user_msg} {Llama2ChatFormat.inst_end} " for user_msg in user_messages]
         assistant_messages = [assistant_msg["content"] for assistant_msg in assistant_messages]
-        assistant_messages = [f"{assistant_msg} {Llama2ChatFormat.end_token}{Llama2ChatFormat.start_token}{Llama2ChatFormat.inst_start} " for assistant_msg in assistant_messages]
+        if len(assistant_messages) >= len(user_messages):
+            assistant_messages = [f"{assistant_msg} {Llama2ChatFormat.end_token}{Llama2ChatFormat.start_token}{Llama2ChatFormat.inst_start} " for assistant_msg in assistant_messages[:-1]] + [f"{assistant_messages[-1]} {Llama2ChatFormat.end_token}"]
+        else:
+            assistant_messages = [f"{assistant_msg} {Llama2ChatFormat.end_token}{Llama2ChatFormat.start_token}{Llama2ChatFormat.inst_start} " for assistant_msg in assistant_messages]
         # Combine the messages one after the other
         messages = []
         idx = 0
@@ -219,6 +227,55 @@ if __name__ == "__main__":
         {
             "role": "user",
             "content": "We changed the direction of the project, but we don't have time to do it.",
+        }
+    ]
+    llama2_format_chat = Llama2ChatFormat()
+    prompt, role_names = llama2_format_chat(messages)
+    print(prompt)
+    print('='*50)
+    print(role_names)
+    messages = [
+        {
+            "role": "system",
+            "content": "You are a helpful, pattern-following assistant that translates corporate jargon into plain English.",
+        },
+        {
+            "role": "system",
+            "name": "example_user",
+            "content": "New synergies will help drive top-line growth.",
+        },
+        {
+            "role": "system",
+            "name": "example_assistant",
+            "content": "Things working well together will increase revenue.",
+        },
+        {
+            "role": "system",
+            "name": "example_user",
+            "content": "Let's circle back when we have more bandwidth to touch base on opportunities for increased leverage.",
+        },
+        {
+            "role": "system",
+            "name": "example_assistant",
+            "content": "Let's talk later when we're less busy about how to do better.",
+        },
+        {
+            "role": "system",
+            "name": "example_user",
+            "content": "This late pivot means we don't have time to boil the ocean for the client deliverable.",
+        },
+        {
+            "role": "system",
+            "name": "example_assistant", 
+            "content": "Our idea seems to be scooped, don't know how to change direction now."
+        },
+        {
+            "role": "user",
+            "content": "We changed the direction of the project, but we don't have time to do it.",
+        },
+        {
+            "role": "assistant", 
+            "content": "Our idea seems to be scooped, don't know how to change direction now."
         }
     ]
     llama2_format_chat = Llama2ChatFormat()

@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
 
 import sys
-from typing import Any
 root_dir = f"{__file__.split('thrall_lib')[0]}"
 if root_dir not in sys.path:
     sys.path.append(root_dir)
 import typing
-from itp_interface.tools.training_data_format import TrainingDataFormat
 from thrall_lib.llm_helpers.model import TrainingDataFormatterCallback
 
 class BasicTrainingDataFormatterCallback(TrainingDataFormatterCallback):
