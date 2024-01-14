@@ -83,9 +83,10 @@ class CopraTrainingDataset(TheoremProvingTrainingDataset):
         last_step = tdf.proof_steps if tdf is not None and tdf.proof_id == last_tdf.proof_id else None
         tdf = self.training_data[idx - 2] if idx > 1 else None
         steps : typing.List[str] = []
-        while idx > 1 and last_tdf.proof_id == tdf.proof_id:
+        while tdf is not None and last_tdf.proof_id == tdf.proof_id:
             steps.extend(reversed(tdf.proof_steps))
             idx -= 1
+            tdf = self.training_data[idx - 1] if idx > 1 else None
         steps.reverse()
         response = CoqGptResponse(
             success=True,
