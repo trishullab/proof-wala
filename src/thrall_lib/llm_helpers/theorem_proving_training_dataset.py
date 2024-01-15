@@ -38,8 +38,9 @@ class TheoremProvingTrainingDataset(Dataset):
             else:
                 goals.append(f"[GOAL] {idx + 1}\n{goal.goal}")
         goals = '\n'.join(goals)
+        goals = goals + '\n[PROOFSTEP]\n'
         proofstep = '\n'.join(example.proof_steps)
-        proofstep = f"\n[PROOFSTEP]\n{proofstep}"
+        proofstep = f"{proofstep}"
         return {
             "goals": goals,
             "proofstep": proofstep

@@ -22,6 +22,7 @@ from itp_interface.tools.log_utils import setup_logger
 from transformers.trainer_callback import TrainerControl, TrainerState
 from peft import LoraConfig
 from comet_ml import Experiment
+from datetime import datetime
 
 try:
     from .cuda_context import CudaContext
@@ -429,6 +430,7 @@ class Model(object):
         return LogMetricCallback(self)
 
     def train(self,
+            time_str: str,
             training_data_formatter_callback: TrainingDataFormatterCallback,
             train_dataset: Dataset, 
             eval_dataset: typing.Union[Dataset, typing.Dict[str, Dataset]] = None, 
@@ -488,21 +490,26 @@ class Model(object):
             trainer.evaluate()
         # Change the model name and save it
         # load the best model
-        if self.training_args.load_best_model_at_end:
+        if self.training_args.do_train:
+            os.makedirs(self.training_args.output_dir, exist_ok=True)
+            new_model_name = os.path.join(self.training_args.output_dir, f"best-model-{time_str}")
+            if os.path.exists(new_model_name):
+                shutil.move(new_model_name, f"{new_model_name}-before-{time_str}")
+            os.makedirs(new_model_name, exist_ok=True)
+        if self.training_args.load_best_model_at_end and trainer.state.best_model_checkpoint is not None and self.training_args.do_train:
             # Copy the best model to a new model
             best_model_path = trainer.state.best_model_checkpoint
-            os.makedirs(self.training_args.output_dir, exist_ok=True)
-            new_model_name = f"{self.training_args.output_dir}/best_model"
-            if os.path.exists(new_model_name):
-                os.remove(new_model_name)
             # Recursively copy the best model
             self.code_logger.info(f"Copying the best model from {best_model_path} to {new_model_name}")
-            shutil.copytree(best_model_path, new_model_name)
+            shutil.copytree(best_model_path, new_model_name)    
         else:
             best_model_path = None
-        if best_model_path is None:
+        if best_model_path is None and self.training_args.do_train:
+            trainer.args.output_dir = new_model_name
+            self.code_logger.info(f"Saving the model to {new_model_name}")
             trainer.save_model()
-        pass
+        if self._should_use_comet:
+            self._comet_experiment.end()
 
 if __name__ == '__main__':
     # Model from Hugging Face hub

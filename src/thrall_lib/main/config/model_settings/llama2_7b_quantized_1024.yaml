@@ -1,0 +1,8 @@
+name_or_path: meta-llama/Llama-2-7b-hf
+logging_dir: .log/run_training/logs/model_logs
+model_args:
+  max_seq_length: 1024
+  load_model: True
+  use_lora: True
+  token:
+  comet_experiment:
