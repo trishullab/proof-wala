@@ -7,39 +7,26 @@ from torch.utils.data import DataLoader, Dataset
 from typing import List, Union, Optional, Callable, Dict, Tuple
 from transformers import PreTrainedModel, TrainingArguments, PreTrainedTokenizerBase, TrainerCallback, DataCollator
 from transformers.trainer_utils import EvalLoopOutput, EvalPrediction, denumpify_detensorize, find_executable_batch_size
-from trl import SFTTrainer
 from transformers.trainer_callback import TrainerState
 from transformers.trainer import logger as hf_trainer_logger
 from transformers.integrations.deepspeed import deepspeed_init
-from transformers import DataCollator
+from transformers import DataCollator, Seq2SeqTrainer, Seq2SeqTrainingArguments
 
-class GenerateEvalSFTTrainer(SFTTrainer):
+class GenerateEvalS2STrainer(Seq2SeqTrainer):
     def __init__(
         self,
-        model: Union[PreTrainedModel, nn.Module, str] = None,
-        args: TrainingArguments = None,
-        data_collator: Optional[DataCollator] = None,
+        model: Union["PreTrainedModel", nn.Module] = None,
+        args: "TrainingArguments" = None,
+        data_collator: Optional["DataCollator"] = None,
         train_dataset: Optional[Dataset] = None,
         eval_dataset: Optional[Union[Dataset, Dict[str, Dataset]]] = None,
-        tokenizer: Optional[PreTrainedTokenizerBase] = None,
-        model_init: Optional[Callable[[], PreTrainedModel]] = None,
-        compute_metrics: Optional[Callable[[EvalPrediction], Dict]] = None,
-        callbacks: Optional[List[TrainerCallback]] = None,
+        tokenizer: Optional["PreTrainedTokenizerBase"] = None,
+        model_init: Optional[Callable[[], "PreTrainedModel"]] = None,
+        compute_metrics: Optional[Callable[["EvalPrediction"], Dict]] = None,
+        callbacks: Optional[List["TrainerCallback"]] = None,
         optimizers: Tuple[torch.optim.Optimizer, torch.optim.lr_scheduler.LambdaLR] = (None, None),
         preprocess_logits_for_metrics: Optional[Callable[[torch.Tensor, torch.Tensor], torch.Tensor]] = None,
-        peft_config: Optional["PeftConfig"] = None,
-        dataset_text_field: Optional[str] = None,
-        packing: Optional[bool] = False,
-        formatting_func: Optional[Callable] = None,
-        max_seq_length: Optional[int] = None,
-        infinite: Optional[bool] = None,
-        num_of_sequences: Optional[int] = 1024,
-        chars_per_token: Optional[float] = 3.6,
-        dataset_num_proc: Optional[int] = None,
-        dataset_batch_size: int = 1000,
-        neftune_noise_alpha: Optional[float] = None,
-        model_init_kwargs: Optional[Dict] = None,
-        dataset_kwargs: Optional[Dict] = None,
+        tokenizer_func: Optional[Callable[[Dataset], Dataset]] = None,
         generative_compute_metrics: Optional[Callable[[str, TrainerState, List[str], List[str], List[List[str]]], Dict]] = None,
         generate_callback: Optional[Callable[[Dataset], Tuple[List[str], List[str], List[List[str]]]]] = None,
         logger: Logger = None,
@@ -48,31 +35,36 @@ class GenerateEvalSFTTrainer(SFTTrainer):
         args.prediction_loss_only = True
         args.remove_unused_columns = False
         args.include_inputs_for_metrics = True
+        if tokenizer_func is not None:
+            transformed_train_dataset = train_dataset.map(tokenizer_func, batched=True, remove_columns=train_dataset.column_names)
+            if eval_dataset is not None:
+                if isinstance(eval_dataset, dict):
+                    transformed_eval_dataset = {}
+                    for dataset_name, dataset in eval_dataset.items():
+                        transformed_eval_dataset[dataset_name] = dataset.map(tokenizer_func, batched=True, remove_columns=dataset.column_names)
+                else:
+                    transformed_eval_dataset = eval_dataset.map(tokenizer_func, batched=True, remove_columns=eval_dataset.column_names)
+        else:
+            transformed_train_dataset = train_dataset
+            transformed_eval_dataset = eval_dataset
+        # Convert the TrainingArguments to Seq2SeqTrainingArguments here
+        # so that we can use the same Trainer
+        if not isinstance(args, Seq2SeqTrainingArguments):
+            # Convert to Seq2SeqTrainingArguments
+            args_dict = args.to_dict()
+            args = Seq2SeqTrainingArguments(**args_dict)
         super().__init__(
             model=model,
             args=args,
             data_collator=data_collator,
-            train_dataset=train_dataset,
-            eval_dataset=eval_dataset,
+            train_dataset=transformed_train_dataset,
+            eval_dataset=transformed_eval_dataset,
             tokenizer=tokenizer,
             model_init=model_init,
             compute_metrics=compute_metrics,
             callbacks=callbacks,
             optimizers=optimizers,
             preprocess_logits_for_metrics=preprocess_logits_for_metrics,
-            peft_config=peft_config,
-            dataset_text_field=dataset_text_field,
-            packing=packing,
-            formatting_func=formatting_func,
-            max_seq_length=max_seq_length,
-            infinite=infinite,
-            num_of_sequences=num_of_sequences,
-            chars_per_token=chars_per_token,
-            dataset_num_proc=dataset_num_proc,
-            dataset_batch_size=dataset_batch_size,
-            neftune_noise_alpha=neftune_noise_alpha,
-            model_init_kwargs=model_init_kwargs,
-            dataset_kwargs=dataset_kwargs
         )
         self.original_training_dataset = train_dataset
         self.original_eval_dataset = eval_dataset
@@ -209,6 +201,3 @@ class GenerateEvalSFTTrainer(SFTTrainer):
         all_preds = None
         num_samples = _eval_cnt
         return EvalLoopOutput(predictions=all_preds, label_ids=all_labels, metrics=metrics, num_samples=num_samples)
-    
-if __name__ == "__main__":
-    trainer = GenerateEvalSFTTrainer()

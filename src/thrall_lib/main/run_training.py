@@ -9,11 +9,7 @@ import os
 import time
 from itp_interface.tools.training_data import TrainingData
 from itp_interface.tools.log_utils import setup_logger
-from itp_interface.tools.ray_utils import RayUtils
-from transformers import TrainingArguments, IntervalStrategy, SchedulerType
 from thrall_lib.llm_helpers.model import Model
-from thrall_lib.llm_helpers.theorem_proving_training_dataset import TheoremProvingTrainingDataset
-from thrall_lib.itp.training_data_formatter import BasicTrainingDataFormatterCallback
 from thrall_lib.main.config import Experiment, ExperimentType
 
 def train_experiment(experiment: Experiment):

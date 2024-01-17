@@ -10,19 +10,21 @@ from dataclasses import dataclass, field
 from dataclasses_json import dataclass_json
 from torch.utils.data import Dataset, DataLoader
 from transformers import (
+    AutoModelForSeq2SeqLM,
     AutoModelForCausalLM,
     AutoTokenizer,
     BitsAndBytesConfig,
+    DataCollatorForSeq2Seq,
+    RobertaTokenizer,
     StoppingCriteria,
     StoppingCriteriaList,
     TrainingArguments,
-    TrainerCallback
+    TrainerCallback,
 )
 from itp_interface.tools.log_utils import setup_logger
 from transformers.trainer_callback import TrainerControl, TrainerState
 from peft import LoraConfig
 from comet_ml import Experiment
-from datetime import datetime
 
 try:
     from .cuda_context import CudaContext
@@ -38,6 +40,11 @@ try:
     from .custom_sft_trainer import GenerateEvalSFTTrainer
 except ImportError:
     from custom_sft_trainer import GenerateEvalSFTTrainer
+
+try:
+    from .custom_s2s_trainer import GenerateEvalS2STrainer
+except ImportError:
+    from custom_s2s_trainer import GenerateEvalS2STrainer
 
 class AutoRegressiveSequenceSearch(Enum):
     NucleusSampling = "nucleus_sampling"
@@ -117,7 +124,7 @@ class StopOnTokens(StoppingCriteria):
         self.input_length = input_length
 
     def __call__(self, input_ids: torch.LongTensor, scores: torch.FloatTensor, **kwargs) -> bool:
-        if input_ids.shape[-1] <= self.input_length:
+        if input_ids.shape[-1] <= self.input_length and not isinstance(self.tokenizer, RobertaTokenizer):
             return False
         stop_decisions = [-1] * input_ids.shape[0]
         for idx in range(input_ids.shape[0]):
@@ -155,6 +162,7 @@ class Model(object):
         self._should_use_lora = self._kwargs.get("use_lora", True)
         self._comet_experiment_name = self._kwargs.get("comet_experiment", None)
         self._should_use_comet = self._comet_experiment_name is not None
+        self._is_seq2seq = self._kwargs.get("is_seq2seq", False)
         self._comet_experiment = None
         pass
 
@@ -187,13 +195,19 @@ class Model(object):
                 ["token", "quantization_config"]
         }
         tokenizer_args = {k: v for k, v in self._kwargs.items() if k in
-                ["token", "pad_token", "eos_token", "bos_token", "unk_token", "mask_token", "additional_special_tokens", "max_length"]
+                ["token", "pad_token", "eos_token", "bos_token", "unk_token", "mask_token", "additional_special_tokens", "max_length", "padding", "truncation", "cls_token", "sep_token", "mask_token", "padding_side"]
         }
         if self._should_load_model:
             if quantization_config is None:
-                self._model : AutoModelForCausalLM = self.cuda_context.try_get_gpu(AutoModelForCausalLM.from_pretrained(self.name, **model_args))
+                if self.is_sequence_2_sequence():
+                    self._model : AutoModelForSeq2SeqLM = self.cuda_context.try_get_gpu(AutoModelForSeq2SeqLM.from_pretrained(self.name, **model_args))
+                else:
+                    self._model : AutoModelForCausalLM = self.cuda_context.try_get_gpu(AutoModelForCausalLM.from_pretrained(self.name, **model_args))
             else:
-                self._model : AutoModelForCausalLM = AutoModelForCausalLM.from_pretrained(self.name, **model_args)
+                if self.is_sequence_2_sequence():
+                    self._model : AutoModelForSeq2SeqLM = AutoModelForSeq2SeqLM.from_pretrained(self.name, **model_args)
+                else:
+                    self._model : AutoModelForCausalLM = AutoModelForCausalLM.from_pretrained(self.name, **model_args)
             if hasattr(self._model, "config"):
                 if hasattr(self._model.config, "use_cache"):
                     self._model.config.use_cache = False
@@ -201,22 +215,39 @@ class Model(object):
                     self._model.config.pretraining_tp = 1
         else:
             self._model = None
+        # if "t5" in self.name.lower():
+        #     self._tokenizer : RobertaTokenizer = RobertaTokenizer.from_pretrained(self.name, **tokenizer_args)
+        # else:
         self._tokenizer : AutoTokenizer = AutoTokenizer.from_pretrained(self.name, **tokenizer_args)
-        if "pad_token" not in tokenizer_args:
-            tokenizer_args["pad_token"] = self._tokenizer.eos_token
-        if "padding_side" not in tokenizer_args:
-            tokenizer_args["padding_side"] = "left" # This is very import for the stop token logic
-        if "cls_token" not in tokenizer_args:
-            tokenizer_args["cls_token"] = tokenizer_args["pad_token"]
-        if "sep_token" not in tokenizer_args:
-            tokenizer_args["sep_token"] = tokenizer_args["pad_token"]
-        if "mask_token" not in tokenizer_args:
-            tokenizer_args["mask_token"] = tokenizer_args["pad_token"]
-        self._tokenizer.pad_token = tokenizer_args["pad_token"]
-        self._tokenizer.cls_token = tokenizer_args["cls_token"]
-        self._tokenizer.sep_token = tokenizer_args["sep_token"]
-        self._tokenizer.mask_token = tokenizer_args["mask_token"]
-        self._tokenizer.padding_side = tokenizer_args["padding_side"]
+        if "llama-2" in self.name.lower():
+            if "pad_token" not in tokenizer_args:
+                tokenizer_args["pad_token"] = self._tokenizer.eos_token
+            if "padding_side" not in tokenizer_args:
+                tokenizer_args["padding_side"] = "left" # This is very import for the stop token logic
+            if "cls_token" not in tokenizer_args:
+                tokenizer_args["cls_token"] = tokenizer_args["pad_token"]
+            if "sep_token" not in tokenizer_args:
+                tokenizer_args["sep_token"] = tokenizer_args["pad_token"]
+            if "mask_token" not in tokenizer_args:
+                tokenizer_args["mask_token"] = tokenizer_args["pad_token"]
+        if "pad_token" in tokenizer_args:
+            self._tokenizer.pad_token = tokenizer_args["pad_token"]
+        if "eos_token" in tokenizer_args:
+            self._tokenizer.eos_token = tokenizer_args["eos_token"]
+        if "bos_token" in tokenizer_args:
+            self._tokenizer.bos_token = tokenizer_args["bos_token"]
+        if "unk_token" in tokenizer_args:
+            self._tokenizer.unk_token = tokenizer_args["unk_token"]
+        if "additional_special_tokens" in tokenizer_args:
+            self._tokenizer.additional_special_tokens = tokenizer_args["additional_special_tokens"]
+        if "cls_token" in tokenizer_args:
+            self._tokenizer.cls_token = tokenizer_args["cls_token"]
+        if "sep_token" in tokenizer_args:
+            self._tokenizer.sep_token = tokenizer_args["sep_token"]
+        if "mask_token" in tokenizer_args:
+            self._tokenizer.mask_token = tokenizer_args["mask_token"]
+        if "padding_side" in tokenizer_args:
+            self._tokenizer.padding_side = tokenizer_args["padding_side"]
         self._is_loaded = True
         self._model_args = model_args
         self._tokenizer_args = tokenizer_args
@@ -229,11 +260,16 @@ class Model(object):
     def __exit__(self, exc_type, exc_value, traceback):
         pass
 
+    
+    def is_sequence_2_sequence(self):
+        return self._is_seq2seq
+
     def generate(self, inputs: typing.Union[typing.List[str], str], **kwargs) -> GenerationResults:
         assert self._is_loaded, "Model or tokenizer is not loaded"
         assert self._model is not None, "Model is not loaded"
         if isinstance(inputs, str):
             inputs = [inputs]
+        stop_tokens_are_present = "stop_tokens" in kwargs
         if "stop_tokens" in kwargs:
             stop_tokens = kwargs["stop_tokens"]
         else:
@@ -252,8 +288,11 @@ class Model(object):
         input_ids=self.cuda_context.try_get_gpu(tokenized_input['input_ids'])
         attention_mask=self.cuda_context.try_get_gpu(tokenized_input['attention_mask'])
         max_input_length = input_ids.shape[-1]
-        stopping_criteria = StopOnTokens(stop_tokens, tokenizer=self._tokenizer, input_length=max_input_length)
-        stopping_criteria = StoppingCriteriaList([stopping_criteria])
+        if "llama-2" in self.name.lower() or stop_tokens_are_present:
+            stopping_criteria = StopOnTokens(stop_tokens, tokenizer=self._tokenizer, input_length=max_input_length)
+            stopping_criteria = StoppingCriteriaList([stopping_criteria])
+        else:
+            stopping_criteria = None
         if auto_regressive_sequence_search == AutoRegressiveSequenceSearch.NucleusSampling:
             generate_args = {k: v for k, v in kwargs.items() if k in
             ["do_sample", "top_k", "top_p", "num_return_sequences", "temperature", "max_new_tokens"]}
@@ -265,13 +304,21 @@ class Model(object):
         if "num_return_sequences" not in generate_args:
             generate_args["num_return_sequences"] = 1
         num_return_sequences = generate_args["num_return_sequences"]
-        generated_output = self._model.generate(
-            input_ids=input_ids, 
-            attention_mask=attention_mask,
-            stopping_criteria=stopping_criteria,
-            eos_token_id=self._tokenizer.eos_token_id,
-            return_dict_in_generate=True,
-            **generate_args)
+        if "llama-2" in self.name.lower():
+            generated_output = self._model.generate(
+                input_ids=input_ids, 
+                attention_mask=attention_mask,
+                stopping_criteria=stopping_criteria,
+                eos_token_id=self._tokenizer.eos_token_id,
+                return_dict_in_generate=True,
+                **generate_args)
+        else:
+            generated_output = self._model.generate(
+                input_ids=input_ids, 
+                attention_mask=attention_mask,
+                stopping_criteria=stopping_criteria,
+                return_dict_in_generate=True,
+                **generate_args)
         target = generated_output["sequences"]
         skip_special_tokens = kwargs.get("skip_special_tokens", True)
         decoded_str = self._tokenizer.batch_decode(target, skip_special_tokens=skip_special_tokens)
@@ -281,7 +328,7 @@ class Model(object):
         for text in inputs:
             generated_text = decoded_str[idx: idx + num_return_sequences]
             idx += num_return_sequences
-            if not return_full_text:
+            if not return_full_text and "llama-2" in self.name.lower():
                 generated_text = [x[len(text):] for x in generated_text]
             generation_results.results.append(GenerationResult(input_text=text, generated_text=generated_text))
         return generation_results
@@ -424,10 +471,23 @@ class Model(object):
                         self._comet_experiment.log_text(full_text, step=trainer_state.global_step, metadata={"type": "wrong_prediction"})
                 return avg
         return _compute_metrics_callback
-
     
     def _log_metric_callback(self) -> TrainerCallback:
         return LogMetricCallback(self)
+
+    def _seq2seq_tokenizer(self, dataset: Dataset, training_data_formatter_callback: TrainingDataFormatterCallback, max_seq_length: int = 512):
+        prompts_and_completions = training_data_formatter_callback.get_prompt_and_completion(dataset)
+        inputs = [x[0] for x in prompts_and_completions]
+        labels = [x[1] for x in prompts_and_completions]
+        tokenizer_args = {k: v for k, v in self._tokenizer_args.items() if k in 
+        ["max_length", "padding", "truncation"]}
+        model_inputs = self._tokenizer(inputs, return_tensors="pt", **tokenizer_args)
+        label_args = {k: v for k, v in self._tokenizer_args.items() if k in
+        ["padding", "truncation"]}
+        label_args["max_length"] = max_seq_length
+        model_labels = self._tokenizer(labels, return_tensors="pt", **label_args)
+        model_inputs["labels"] = model_labels["input_ids"]
+        return model_inputs
 
     def train(self,
             time_str: str,
@@ -450,28 +510,46 @@ class Model(object):
         if self._should_use_comet:
             self._comet_helper = CometHelper()
             self._comet_experiment : Experiment = self._comet_helper.get_experiment(self._comet_experiment_name)
+            # Check if the experiment exists
             self._comet_experiment.log_parameters(self._kwargs)
-        fake_logit_tensor = torch.tensor([0.0])
-        trainer = GenerateEvalSFTTrainer(
-            model=(self.name if self._model is None else self._model), # This will anyway create a new model
-            args=self.training_args,
-            # data_collator=self._collate_fn,
-            train_dataset=train_dataset,
-            eval_dataset=eval_dataset,
-            tokenizer=self._tokenizer,
-            callbacks=callbacks,
-            # dataset_text_field="text",
-            packing=False,
-            dataset_batch_size=self.training_args.train_batch_size,
-            formatting_func=training_data_formatter_callback.__call__,
-            model_init_kwargs=self._model_args if self._model is None else None,
-            peft_config=lora_config,
-            max_seq_length=max_seq_length,
-            preprocess_logits_for_metrics=(lambda _x, _y: fake_logit_tensor), # no need to compute logits and reduce memory usage
-            generate_callback=self._generate_completion_callback(training_data_formatter_callback),
-            generative_compute_metrics=compute_metrics,
-            logger=self.code_logger
-        )
+        if self.is_sequence_2_sequence():
+            data_collator = DataCollatorForSeq2Seq(tokenizer=self._tokenizer, model=self._model)
+            trainer = GenerateEvalS2STrainer(
+                model=(self.name if self._model is None else self._model), # This will anyway create a new model
+                args=self.training_args,
+                data_collator=data_collator,
+                train_dataset=train_dataset,
+                eval_dataset=eval_dataset,
+                tokenizer=self._tokenizer,
+                callbacks=callbacks,
+                preprocess_logits_for_metrics=(lambda _x, _y: fake_logit_tensor), # no need to compute logits and reduce memory usage
+                tokenizer_func=lambda x: self._seq2seq_tokenizer(x, training_data_formatter_callback, max_seq_length=max_seq_length),
+                generate_callback=self._generate_completion_callback(training_data_formatter_callback),
+                generative_compute_metrics=compute_metrics,
+                logger=self.code_logger
+            )
+        else:
+            fake_logit_tensor = torch.tensor([0.0])
+            trainer = GenerateEvalSFTTrainer(
+                model=(self.name if self._model is None else self._model), # This will anyway create a new model
+                args=self.training_args,
+                # data_collator=self._collate_fn,
+                train_dataset=train_dataset,
+                eval_dataset=eval_dataset,
+                tokenizer=self._tokenizer,
+                callbacks=callbacks,
+                # dataset_text_field="text",
+                packing=False,
+                dataset_batch_size=self.training_args.train_batch_size,
+                formatting_func=training_data_formatter_callback.__call__,
+                model_init_kwargs=self._model_args if self._model is None else None,
+                peft_config=lora_config,
+                max_seq_length=max_seq_length,
+                preprocess_logits_for_metrics=(lambda _x, _y: fake_logit_tensor), # no need to compute logits and reduce memory usage
+                generate_callback=self._generate_completion_callback(training_data_formatter_callback),
+                generative_compute_metrics=compute_metrics,
+                logger=self.code_logger
+            )
         trainer.add_callback(self._log_metric_callback())
         if self.training_args.do_train:
             if self.training_args.resume_from_checkpoint is not None:
@@ -501,7 +579,7 @@ class Model(object):
             best_model_path = trainer.state.best_model_checkpoint
             # Recursively copy the best model
             self.code_logger.info(f"Copying the best model from {best_model_path} to {new_model_name}")
-            shutil.copytree(best_model_path, new_model_name)    
+            shutil.copytree(best_model_path, new_model_name, dirs_exist_ok=True)    
         else:
             best_model_path = None
         if best_model_path is None and self.training_args.do_train:
@@ -516,21 +594,14 @@ if __name__ == '__main__':
     import os
     import json
     assert os.path.exists(".secrets/huggingface_token.json"), "Please create a .secrets file with your HF token"
-    model_name = "meta-llama/Llama-2-7b-hf"
+    # model_name = "meta-llama/Llama-2-7b-hf"
     # model_name = "meta-llama/Llama-2-7b-chat-hf"
+    model_name = "Salesforce/codet5-small"
     with open(".secrets/huggingface_token.json", "r") as f:
         token = json.load(f)["token"]
-    model = Model(model_name, token=token)
+    model = Model(model_name, token=token, use_lora=False)
     main_prompt = "Do simple math problems (Answer only the number and use '[END]' to finish the response):\nQuestion: 2 + 2\nAnswer: 4\n[END]"
     with model:
-        # prompt = f"{main_prompt}\nQuestion: 4 + 5\nAnswer:"
-        # label = "9"
-        # tokenized_prompt = model._tokenizer(prompt, return_tensors="pt", padding=True)
-        # input_ids = model.cuda_context.try_get_gpu(tokenized_prompt['input_ids'])
-        # attention_mask = model.cuda_context.try_get_gpu(tokenized_prompt['attention_mask'])
-        # labels = model._tokenizer(label, return_tensors="pt", padding=True)
-        # labels = model.cuda_context.try_get_gpu(labels['input_ids'])
-        # inp = model._model(input_ids=input_ids, attention_mask=attention_mask, labels=labels, return_dict=True)
         for response in model.generate(
                 [
                     f"{main_prompt}\nQuestion: 4 + 5\nAnswer:",
@@ -543,7 +614,8 @@ if __name__ == '__main__':
                 top_k=5, # Nucleus sampling
                 # num_beams=5, # Beam search
                 num_return_sequences=5,
-                stop_tokens=["[END]", model._tokenizer.eos_token],
+                stop_tokens=["[END]"],#, model._tokenizer.eos_token],
+                skip_special_tokens=True,
                 padding=True,
                 #truncation=True,
                 return_full_text=False):

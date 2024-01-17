@@ -1,0 +1,12 @@
+name_or_path: Salesforce/codet5-small
+logging_dir: .log/run_training/logs/model_logs
+model_args:
+  padding: True
+  truncation: True
+  max_seq_length: 128
+  max_length: 1024
+  load_model: True
+  use_lora: False
+  is_seq2seq: True # T5 is a sequence to sequence model
+  token:
+  comet_experiment:

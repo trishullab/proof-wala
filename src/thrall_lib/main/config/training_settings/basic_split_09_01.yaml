@@ -32,14 +32,11 @@ training_args:
   # use_cpu: False
   seed: 42
   data_seed: 42
-  bf16: False
-  fp16: False
   eval_steps: 500
   load_best_model_at_end: True
   metric_for_best_model: exact_match
   greater_is_better: True
-  optim: paged_adamw_32bit # Important for LoRA
+  optim: adamw_torch
   group_by_length: True # helps in saving memory
   #  resume_from_checkpoint: None
   gradient_checkpointing: True
-  ddp_find_unused_parameters: False # Important for LoRA, see https://discuss.huggingface.co/t/training-llama-with-lora-on-multiple-gpus-may-exist-bug/47005/3

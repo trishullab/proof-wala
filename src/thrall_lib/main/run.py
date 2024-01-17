@@ -4,7 +4,6 @@ import sys
 root_dir = f"{__file__.split('thrall_lib')[0]}"
 if root_dir not in sys.path:
     sys.path.append(root_dir)
-import json
 import logging
 import os
 os.environ["HYDRA_FULL_ERROR"] = "1"
@@ -15,7 +14,11 @@ from thrall_lib.main.run_training import train_experiment
 
 @hydra.main(config_path="config", config_name="experiment", version_base="1.2")
 def main(cfg):
+    print("To run this experiment on multiple GPUs, use the following command:")
+    print(f"Working directory: {os.getcwd()}")
+    print(f"Config: {cfg}")
     experiment = parse_config(cfg)
+    print(f"torchrun --nproc-per-node <num-proc-per-node> {__file__}")
     if experiment.expertiment_type == ExperimentType.Training:
         train_experiment(experiment)
     else:
@@ -24,7 +27,6 @@ def main(cfg):
 
 if __name__ == "__main__":
     # Start the ray cluster
-    cwd = os.getcwd()
     ray.init(
         num_cpus=10, 
         object_store_memory=50*2**30, 
