@@ -1,7 +1,8 @@
 name_or_path: meta-llama/Llama-2-7b-chat-hf
 logging_dir: .log/run_training/logs/model_logs
 model_args:
-  max_seq_length: 1024
+  no_init_eval: True # Don't do a test run of evaluation before training substantially
+  max_seq_length: 4096
   load_model: True
   use_lora: True
   token:

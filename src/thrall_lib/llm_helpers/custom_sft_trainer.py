@@ -158,13 +158,13 @@ class GenerateEvalSFTTrainer(SFTTrainer):
                 dataset_name = "eval"
                 original_eval_dataset = self.original_eval_dataset
             _eval_cnt = 0
-            def _eval_callback(b_size: int):
+            def _eval_callback(batch_size: int):
                 self.logger.info(f"***** Running {description} *****")
-                self.logger.info(f"  Batch size = {b_size}")
+                self.logger.info(f"  Batch size = {batch_size}")
                 nonlocal _eval_cnt
                 current_eval_cnt = 0
                 dataloader_params = {
-                    "batch_size": b_size,
+                    "batch_size": batch_size,
                     "num_workers": self.args.dataloader_num_workers,
                     "pin_memory": self.args.dataloader_pin_memory,
                 }
@@ -182,7 +182,7 @@ class GenerateEvalSFTTrainer(SFTTrainer):
                     _eval_cnt += len(prompts)
                     current_eval_cnt += len(inputs)
                     self.logger.info(f"Evaluated: {_eval_cnt} / {len(original_eval_dataset)}")
-                return b_size
+                return batch_size
             generation_evaluation = find_executable_batch_size(_eval_callback, starting_batch_size=self.generate_batch_size, auto_find_batch_size=self.args.auto_find_batch_size)
             self.generate_batch_size = generation_evaluation()
 

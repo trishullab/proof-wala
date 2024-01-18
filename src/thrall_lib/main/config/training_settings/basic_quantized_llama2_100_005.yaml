@@ -1,6 +1,6 @@
-train_eval_split: True
-train_percentage: 0.9
-eval_percentage:  0.1
+train_eval_split: False
+train_percentage: 1.0
+eval_percentage:  0.05
 test_percentage: 1.0
 training_args: 
   output_dir: .log/run_training/new_model

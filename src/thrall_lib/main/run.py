@@ -15,10 +15,10 @@ from thrall_lib.main.run_training import train_experiment
 @hydra.main(config_path="config", config_name="experiment", version_base="1.2")
 def main(cfg):
     print("To run this experiment on multiple GPUs, use the following command:")
+    print(f"torchrun --nproc-per-node <num-proc-per-node> {__file__}")
     print(f"Working directory: {os.getcwd()}")
     print(f"Config: {cfg}")
     experiment = parse_config(cfg)
-    print(f"torchrun --nproc-per-node <num-proc-per-node> {__file__}")
     if experiment.expertiment_type == ExperimentType.Training:
         train_experiment(experiment)
     else:

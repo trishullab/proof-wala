@@ -1,0 +1,16 @@
+training_data_dir: .log/train
+training_meta_filename: local.meta.json
+training_data_log_dir: .log/run_training/logs/dataset_logs
+training_dataset_type: CopraTrainingDataset
+training_data_formatter_type: CopraPromptTrainingDataFormatter
+training_dataset_args:
+  system_prompt_file: src/thrall_lib/data/prompts/system/copra-coq-dfs.md
+  conversation_prompt_file: src/thrall_lib/data/prompts/conversation/copra-coq-dfs.md
+  characters_per_token: 3.6
+  max_tokens: 4096
+eval_data_dir: 
+eval_meta_filename: 
+eval_data_log_dir: 
+test_data_dir: 
+test_meta_filename: 
+test_data_log_dir: 

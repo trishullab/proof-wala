@@ -94,6 +94,8 @@ def train_experiment(experiment: Experiment):
             eval_set = hf_eval_dataset
         elif hf_test_dataset is not None:
             eval_set = hf_test_dataset
+        else:
+            eval_set = None
         model.train(
             time_now,
             training_data_formatter_callback(),

@@ -72,7 +72,7 @@ class LogMetricCallback(TrainerCallback):
 
     def on_step_end(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
         # Check if we should run evaluation
-        if state.global_step == 2: # Just force evaluation at the beginning to ensure that the model is working
+        if state.global_step == 2 and not self.model._no_init_eval: # Just force evaluation at the beginning to ensure that the model is working
             control.should_log = True
             control.should_evaluate = True
         super().on_step_end(args, state, control, **kwargs)
@@ -164,6 +164,7 @@ class Model(object):
         self._should_use_comet = self._comet_experiment_name is not None
         self._is_seq2seq = self._kwargs.get("is_seq2seq", False)
         self._comet_experiment = None
+        self._no_init_eval = self._kwargs.get("no_init_eval", False)
         pass
 
     def load(self):
@@ -320,16 +321,17 @@ class Model(object):
                 return_dict_in_generate=True,
                 **generate_args)
         target = generated_output["sequences"]
+        return_full_text = kwargs.get("return_full_text", False)
+        if not self.is_sequence_2_sequence() and not return_full_text and "llama-2" in self.name.lower():
+            # Replace the target with padding tokens after the input_ids
+            target[:, :max_input_length] = self._tokenizer.pad_token_id # This helps in removing the input text from the generated text
         skip_special_tokens = kwargs.get("skip_special_tokens", True)
         decoded_str = self._tokenizer.batch_decode(target, skip_special_tokens=skip_special_tokens)
         idx = 0
         generation_results = GenerationResults()
-        return_full_text = kwargs.get("return_full_text", False)
         for text in inputs:
             generated_text = decoded_str[idx: idx + num_return_sequences]
             idx += num_return_sequences
-            if not return_full_text and "llama-2" in self.name.lower():
-                generated_text = [x[len(text):] for x in generated_text]
             generation_results.results.append(GenerationResult(input_text=text, generated_text=generated_text))
         return generation_results
    
@@ -340,6 +342,9 @@ class Model(object):
             batch_completions = [x[1] for x in prompts_and_completions]
             batch_completions_tokenized = self._tokenizer(batch_completions, return_tensors="pt", padding=True, return_length=True)
             max_new_tokens = max(batch_completions_tokenized["length"])
+            stop_tokens = [formatter_callback.get_stopping_token(), self._tokenizer.eos_token]
+            # Remove the stop tokens which empty
+            stop_tokens = [x for x in stop_tokens if x is not None and isinstance(x, str) and x != ""]
             # Now generate all the completions
             generated_completions = self.generate(batch_prompts,
                             max_new_tokens=max_new_tokens,
@@ -348,7 +353,7 @@ class Model(object):
                             top_k=5, # Nucleus sampling
                             # num_beams=5, # Beam search
                             num_return_sequences=1,
-                            stop_tokens=[formatter_callback.get_stopping_token(), self._tokenizer.eos_token],
+                            stop_tokens=stop_tokens,
                             padding=True,
                             #truncation=True,
                             return_full_text=False)

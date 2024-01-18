@@ -57,7 +57,8 @@ class LlamaChatBot(object):
                 stop_tokens=[self.model._tokenizer.eos_token],
                 padding=True,
                 #truncation=True,
-                return_full_text=False)
+                return_full_text=False,
+                skip_special_tokens=True)
         response = generated_response[0].generated_text[0]
         self._messages.append({"role": "assistant", "content": response})
 
