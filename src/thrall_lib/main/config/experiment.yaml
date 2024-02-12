@@ -1,12 +1,15 @@
 defaults:
-  - model_settings: llama2_7b_quantized_1024 # Name of model settings file
-  # - model_settings: codet5_small_128 # Name of model settings file
-  - training_data_settings: simple_benchmark_training # Name of training data settings file
-  - training_settings: basic_quantized_llama2_split_09_01 # Name of training settings file
+  # - model_settings: llama2_7b_quantized_1024 # Name of model settings file
+  # - training_data_settings: simple_benchmark_training # Name of training data settings file
+  # - training_settings: basic_quantized_llama2_split_09_01 # Name of training settings file
   # - training_settings: basic_split_09_01 # Name of training settings file
+  - model_settings: t5_small_128_random # Name of model settings file
+  - training_data_settings: INT_training.yaml # Name of training data settings file
+  - training_settings: basic # Name of training settings file
   - override hydra/job_logging: 'disabled'
 
-name: thrall-Llama-2-7b-hf-simple-1024-001-001 # Can be any name will be used in logs
+# name: thrall-Llama-2-7b-hf-simple-1024-001-001 # Can be any name will be used in logs
+name: thrall-t5-small-128-1024-rand # Can be any name will be used in logs
 experiment_type: 'Training' # Can be 'Training' or 'Inferencing'
 # name: thrall-codet5-small-simple-128-001-001
 

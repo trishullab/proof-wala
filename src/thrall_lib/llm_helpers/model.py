@@ -27,6 +27,11 @@ from peft import LoraConfig
 from comet_ml import Experiment
 
 try:
+    from .huggingface_model_map import get_empty_config, trim_model_kwargs, get_model_class, get_decoder_start_token_id
+except ImportError:
+    from huggingface_model_map import get_empty_config, trim_model_kwargs, get_model_class, get_decoder_start_token_id
+
+try:
     from .cuda_context import CudaContext
 except ImportError:
     from cuda_context import CudaContext
@@ -165,7 +170,38 @@ class Model(object):
         self._is_seq2seq = self._kwargs.get("is_seq2seq", False)
         self._comet_experiment = None
         self._no_init_eval = self._kwargs.get("no_init_eval", False)
+        self._random_init = self._kwargs.get("random_init", False)
+        if self._random_init:
+            assert "config_class_name" in self._kwargs, "Please provide the config class name for random initialization"
+        self._config_class_name = self._kwargs.get("config_class_name", None)
         pass
+
+    def _get_model_args(self):
+        return {k: v for k, v in self._kwargs.items() if k in
+                ["token", "quantization_config"]
+        }
+
+    def _model_init(self) -> typing.Union[AutoModelForSeq2SeqLM, AutoModelForCausalLM]:
+        model_args = self._get_model_args()
+        if self._random_init:
+            assert self._tokenizer is not None, "Tokenizer is not loaded"
+            # initialize the model with random weights
+            # get the config class from the config class name
+            random_config = get_empty_config(self._config_class_name)
+            random_config.decoder_start_token_id = get_decoder_start_token_id(self._config_class_name, self._tokenizer)
+            model_class = get_model_class(self._config_class_name)
+            model_args = trim_model_kwargs(model_args, self._config_class_name)
+        if self.is_sequence_2_sequence():
+            if self._random_init:
+                temp_model = model_class(random_config, **model_args)
+            else:
+                temp_model = AutoModelForSeq2SeqLM.from_pretrained(self.name, **model_args)
+        else:
+            if self._random_init:
+                temp_model = model_class(random_config, **model_args)
+            else:
+                temp_model = AutoModelForCausalLM.from_pretrained(self.name, **model_args)
+        return temp_model
 
     def load(self):
         if self._is_loaded:
@@ -192,33 +228,9 @@ class Model(object):
                 task_type="CAUSAL_LM",
             )
             self._kwargs["lora_config"] = lora_config
-        model_args = {k: v for k, v in self._kwargs.items() if k in
-                ["token", "quantization_config"]
-        }
         tokenizer_args = {k: v for k, v in self._kwargs.items() if k in
                 ["token", "pad_token", "eos_token", "bos_token", "unk_token", "mask_token", "additional_special_tokens", "max_length", "padding", "truncation", "cls_token", "sep_token", "mask_token", "padding_side"]
         }
-        if self._should_load_model:
-            if quantization_config is None:
-                if self.is_sequence_2_sequence():
-                    self._model : AutoModelForSeq2SeqLM = self.cuda_context.try_get_gpu(AutoModelForSeq2SeqLM.from_pretrained(self.name, **model_args))
-                else:
-                    self._model : AutoModelForCausalLM = self.cuda_context.try_get_gpu(AutoModelForCausalLM.from_pretrained(self.name, **model_args))
-            else:
-                if self.is_sequence_2_sequence():
-                    self._model : AutoModelForSeq2SeqLM = AutoModelForSeq2SeqLM.from_pretrained(self.name, **model_args)
-                else:
-                    self._model : AutoModelForCausalLM = AutoModelForCausalLM.from_pretrained(self.name, **model_args)
-            if hasattr(self._model, "config"):
-                if hasattr(self._model.config, "use_cache"):
-                    self._model.config.use_cache = False
-                if hasattr(self._model.config, "pretraining_tp"):
-                    self._model.config.pretraining_tp = 1
-        else:
-            self._model = None
-        # if "t5" in self.name.lower():
-        #     self._tokenizer : RobertaTokenizer = RobertaTokenizer.from_pretrained(self.name, **tokenizer_args)
-        # else:
         self._tokenizer : AutoTokenizer = AutoTokenizer.from_pretrained(self.name, **tokenizer_args)
         if "llama-2" in self.name.lower():
             if "pad_token" not in tokenizer_args:
@@ -249,8 +261,20 @@ class Model(object):
             self._tokenizer.mask_token = tokenizer_args["mask_token"]
         if "padding_side" in tokenizer_args:
             self._tokenizer.padding_side = tokenizer_args["padding_side"]
+        if self._should_load_model:
+            if quantization_config is None:
+                self._model : typing.Union[AutoModelForSeq2SeqLM, AutoModelForCausalLM] = self.cuda_context.try_get_gpu(self._model_init())
+            else:
+                self._model = self._model_init()
+            if hasattr(self._model, "config"):
+                if hasattr(self._model.config, "use_cache"):
+                    self._model.config.use_cache = False
+                if hasattr(self._model.config, "pretraining_tp"):
+                    self._model.config.pretraining_tp = 1
+        else:
+            self._model = None
         self._is_loaded = True
-        self._model_args = model_args
+        self._model_args = self._get_model_args()
         self._tokenizer_args = tokenizer_args
 
 
@@ -531,7 +555,8 @@ class Model(object):
                 tokenizer_func=lambda x: self._seq2seq_tokenizer(x, training_data_formatter_callback, max_seq_length=max_seq_length),
                 generate_callback=self._generate_completion_callback(training_data_formatter_callback),
                 generative_compute_metrics=compute_metrics,
-                logger=self.code_logger
+                logger=self.code_logger,
+                model_init=self._model_init if self._random_init else None,
             )
         else:
             fake_logit_tensor = torch.tensor([0.0])
@@ -553,7 +578,8 @@ class Model(object):
                 preprocess_logits_for_metrics=(lambda _x, _y: fake_logit_tensor), # no need to compute logits and reduce memory usage
                 generate_callback=self._generate_completion_callback(training_data_formatter_callback),
                 generative_compute_metrics=compute_metrics,
-                logger=self.code_logger
+                logger=self.code_logger,
+                model_init=self._model_init if self._random_init else None,
             )
         trainer.add_callback(self._log_metric_callback())
         if self.training_args.do_train:
