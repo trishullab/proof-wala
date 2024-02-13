@@ -105,7 +105,7 @@ class CopraPromptTrainingDataFormatter(TrainingDataFormatterCallback):
         output_texts = []
         all_prompts = training_data_format_examples["prompt"]
         all_completions = training_data_format_examples["completion"]
-        stopping_token = self.get_stopping_token()
+        stopping_token = "" # The stopping token is already included in the completion because LLama2ChatFormat adds it
         for prompt, completion in zip(all_prompts, all_completions):
             output_text = f"{prompt}{completion}{stopping_token}"
             output_texts.append(output_text)
@@ -121,12 +121,14 @@ class CopraPromptTrainingDataFormatter(TrainingDataFormatterCallback):
             all_completions = [all_completions]
         assert len(all_prompts) == len(all_completions)
         for prompt, completion in zip(all_prompts, all_completions):
+            # Trim everything after the stopping token from the completion
+            completion = completion.split(self.get_stopping_token())[0]
             prompt_and_completion = (prompt, completion + self.get_stopping_token())
             prompt_and_completions.append(prompt_and_completion)
         return prompt_and_completions
     
     def get_stopping_token(self):
-        return ""
+        return "[END]"
 
 if __name__ == "__main__":
     prompt_name = "copra-coq-dfs"
