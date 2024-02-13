@@ -1,6 +1,7 @@
 from transformers import (
     T5ForConditionalGeneration,
-    T5Config
+    T5Config,
+    T5Tokenizer,
 )
 
 def get_empty_config(config_class_name):
@@ -21,8 +22,8 @@ def trim_model_kwargs(model_kwargs, config_class_name):
     else:
         raise ValueError(f"Unknown model class name: {config_class_name}")
 
-def get_decoder_start_token_id(config_class_name, tokenizer):
+def get_decoder_start_token_id(config_class_name, tokenizer: T5Tokenizer):
     if config_class_name == "T5Config":
-        return tokenizer.convert_tokens_to_ids(['<pad>'])[0]
+        return tokenizer.pad_token_id
     else:
         raise ValueError(f"Unknown model class: {config_class_name}")
