@@ -6,7 +6,7 @@ training_data_formatter_type: CopraPromptTrainingDataFormatter
 training_dataset_args:
   system_prompt_file: src/thrall_lib/data/prompts/system/copra-coq-dfs.md
   conversation_prompt_file: src/thrall_lib/data/prompts/conversation/copra-coq-dfs.md
-  characters_per_token: 3.6
+  characters_per_token: 4.2
   max_tokens: 4096
 eval_data_dir: /mnt/sdd1/<user>/data/compcert/test/20240105-021512/
 eval_meta_filename: local.meta.json
