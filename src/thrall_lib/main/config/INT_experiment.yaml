@@ -1,0 +1,12 @@
+defaults:
+  - model_settings: codet5_small_384 # Name of model settings file
+  - training_data_settings: new_INT_training.yaml # Name of training data settings file
+  - training_settings: basic # Name of training settings file
+  - override hydra/job_logging: 'disabled'
+
+name: thrall-codet5-small-384-1024 # Can be any name will be used in logs
+experiment_type: 'Training' # Can be 'Training' or 'Inferencing'
+
+# Run experiments using the following command:
+# nohup torchrun --nproc-per-node 2 src/thrall_lib/main/run.py &
+# nohup torchrun --nproc-per-node 2 src/thrall_lib/main/run.py model_settings=codet5_small_128 training_data_settings=simple_benchmark_training training_settings=basic_split_09_01 &
