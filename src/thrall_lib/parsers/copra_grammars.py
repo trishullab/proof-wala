@@ -290,7 +290,10 @@ ErrorString:;
                     trim_part = priority_order_lo_hi[_idx]
                     if trim_part in lines_map:
                         if trim_part == CoqGPTResponseDfsGrammar.Keywords.STEPS:
-                            lines_map[trim_part] = lines_map[trim_part][-diff:]
+                            if len(lines_map[trim_part]) <= diff:
+                                lines_map[trim_part] = ""
+                            else:
+                                lines_map[trim_part] = lines_map[trim_part][diff:]
                         else:
                             lines_map[trim_part] = lines_map[trim_part][:-diff] # Trim everything except the STEPS from the end
                     text = "\n".join([lines_map[keyword] for keyword in lines_order if keyword in lines_map if len(lines_map[keyword]) > 0]) + f"\n{CoqGPTResponseDfsGrammar.Keywords.END}"

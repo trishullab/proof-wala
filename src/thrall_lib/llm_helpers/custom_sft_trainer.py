@@ -175,13 +175,17 @@ class GenerateEvalSFTTrainer(SFTTrainer):
                     if current_eval_cnt + len(inputs) < _eval_cnt:
                         current_eval_cnt += len(inputs)
                         continue
-                    prompts, completions, generated = self.generate_callback(inputs)
-                    all_inputs.extend(prompts)
-                    all_labels.extend(completions)
-                    all_preds.extend(generated)
-                    _eval_cnt += len(prompts)
-                    current_eval_cnt += len(inputs)
-                    self.logger.info(f"Evaluated: {_eval_cnt} / {len(original_eval_dataset)}")
+                    try:
+                        prompts, completions, generated = self.generate_callback(inputs)
+                        all_inputs.extend(prompts)
+                        all_labels.extend(completions)
+                        all_preds.extend(generated)
+                        _eval_cnt += len(prompts)
+                        current_eval_cnt += len(inputs)
+                        self.logger.info(f"Evaluated: {_eval_cnt} / {len(original_eval_dataset)}")
+                    except Exception as e:
+                        self.logger.error(f"Error evaluating: {e}")
+                        self.logger.error(f"Skipping: {_eval_cnt} / {len(original_eval_dataset)}")
                 return batch_size
             generation_evaluation = find_executable_batch_size(_eval_callback, starting_batch_size=self.generate_batch_size, auto_find_batch_size=self.args.auto_find_batch_size)
             self.generate_batch_size = generation_evaluation()
