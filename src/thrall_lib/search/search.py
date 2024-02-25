@@ -154,17 +154,11 @@ class SearchAlgorithm(ABC):
         
         # Add all nodes; modify attributes if in paths
         for node in nodes_in_paths:
-            if node in nodes_in_paths:
-                dot.node(node, style='filled', fillcolor='lightblue')
-            else:
-                dot.node(node)
+            dot.node(node, style='filled', fillcolor='lightblue')
         
         # Add all edges; modify attributes if in paths
         for edge_start, edge_end in edges_in_paths:
-            if (edge_start, edge_end) in edges_in_paths:
-                dot.edge(edge_start, edge_end, color='red', penwidth='2.0')
-            else:
-                dot.edge(edge_start, edge_end)
+            dot.edge(edge_start, edge_end, color='red', penwidth='2.0')
 
     @abstractmethod
     def search(
