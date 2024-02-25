@@ -50,14 +50,12 @@ if __name__ == "__main__":
     goal_node_in_tree, found, time = algorithm.search(start_node, goal_node, heuristic, generate_children, 4, True, timeout_in_secs=60)
     print("Search complete")
     print("Time elapsed:", time)
-    print("Showing visualization...")
-    os.makedirs(".log/search/test", exist_ok=True)
-    time_now = datetime.now().strftime("%Y%m%d_%H%M%S")
-    algorithm.visualize_search(start_node, save_to_file=".log/search/test/best_first_search_{}".format(time_now), show=False)
+    dot = algorithm.visualize_search(start_node, show=False)
     if found:
         path = algorithm.reconstruct_path(start_node, goal_node_in_tree)
         print("Path to goal:", [node.name for node in path])
         all_paths = algorithm.reconstruct_all_paths(start_node, goal_node_in_tree)
+        algorithm.mark_paths_in_visualization(dot, all_paths)
         if len(all_paths) > 1:
             print("Found multiple paths to goal:")
             for path in all_paths:
@@ -69,3 +67,8 @@ if __name__ == "__main__":
             print("Only one path found to goal")
     else:
         print("No path found to goal")
+    print("Showing visualization...")
+    os.makedirs(".log/search/test", exist_ok=True)
+    time_now = datetime.now().strftime("%Y%m%d_%H%M%S")
+    file_name = ".log/search/test/best_first_search_{}".format(time_now)
+    dot.render(file_name, format='png', quiet=True)

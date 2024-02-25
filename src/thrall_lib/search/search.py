@@ -140,6 +140,31 @@ class SearchAlgorithm(ABC):
             dot.render(save_to_file, format='png', quiet=True)
         if show:
             dot.view()
+        return dot
+    
+    def mark_paths_in_visualization(self, dot: Digraph, paths: typing.List[typing.List[Node]]):
+        # Determine nodes and edges in paths
+        nodes_in_paths = set()
+        edges_in_paths = set()
+        for path in paths:
+            for i, node in enumerate(path):
+                nodes_in_paths.add(node.name)
+                if i < len(path) - 1:
+                    edges_in_paths.add((node.name, path[i + 1].name))
+        
+        # Add all nodes; modify attributes if in paths
+        for node in nodes_in_paths:
+            if node in nodes_in_paths:
+                dot.node(node, style='filled', fillcolor='lightblue')
+            else:
+                dot.node(node)
+        
+        # Add all edges; modify attributes if in paths
+        for edge_start, edge_end in edges_in_paths:
+            if (edge_start, edge_end) in edges_in_paths:
+                dot.edge(edge_start, edge_end, color='red', penwidth='2.0')
+            else:
+                dot.edge(edge_start, edge_end)
 
     @abstractmethod
     def search(
