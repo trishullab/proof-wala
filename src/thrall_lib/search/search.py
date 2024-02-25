@@ -155,6 +155,7 @@ class SearchAlgorithm(ABC):
         :param start: The start node for the search.
         :param goal: The goal node for the search.
         :param heuristic: A function that takes a Node and returns a float heuristic value for that node.
+        It should return min value for the node which should be explored first.
         :param generate_children: A function that takes a Node and returns a list of child nodes, or None if build_tree is False.
         :param parallel_count: An optional integer for the number of parallel processes to use.
         :param build_tree: A boolean indicating whether to build a tree while searching, default True. 
