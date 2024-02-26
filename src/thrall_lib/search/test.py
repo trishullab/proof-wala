@@ -1,13 +1,16 @@
 import typing
 import random
 import os
+import tracemalloc
 from datetime import datetime
 try:
     from .best_first_search import BestFirstSearch
-    from .search import Node
+    from .beam_search import BeamSearch
+    from .search import Node, SearchAlgorithm
 except ImportError:
     from best_first_search import BestFirstSearch
-    from search import Node
+    from beam_search import BeamSearch
+    from search import Node, SearchAlgorithm
 
 class Heuristic:
     def __init__(self, goal_value: int):
@@ -16,50 +19,91 @@ class Heuristic:
     def __call__(self, node: Node) -> float:
         return abs(int(node.name) - self.goal_value)
 
-def generate_children(node: Node) -> typing.List[Node]:
-    """
-    Generates a random number of child nodes for a given node. Each child node's value is
-    either +1, +2, +3 from the parent node's value, chosen randomly. The number of children
-    can be 0, 1, 2, 3 or more, also chosen randomly.
-    """
-    parent_value = int(node.name)
-    num_children = random.randint(0, 15)  # Randomly choose how many children to generate (0 to 3 for this example)
-    children = []
-    unique_values = set()  # Keep track of unique child values
-    for _ in range(num_children):
-        increment = random.choice([0, 1, 2, 3])  # Choose either +0, +1, +2 or +3
-        child_value = parent_value + increment
-        if child_value not in unique_values:
-            unique_values.add(child_value)
-            children.append(Node(str(child_value)))
+class GenerateChildren:
+    def __init__(self, start_value: int, goal_value: int, goal_level: int):
+        self.goal_value = goal_value
+        self.goal_level = goal_level
+        self._start_node = Node(str(start_value))
+        self._node_map = {}
+        self._parent_map = {self._start_node: []}
+        self._level = 0
 
-    return children
+    def __call__(self, node: Node) -> typing.List[Node]:
+        """
+        Generates a random number of child nodes for a given node. Each child node's value is
+        either +1, +2, +3, +4, +5, .., +50 from the parent node's value, chosen randomly.
+        """
+        if node.name in self._node_map:
+            new_node, _ = self._node_map[node.name]
+            assert isinstance(new_node.children, list), "Children must be a list"
+            return new_node.children
+        else:
+            parent_value = int(node.name)
+            num_children = random.randint(0, 30)  # Randomly choose how many children to generate (0 to 3 for this example)
+            children = []
+            # unique_values = set()  # Keep track of unique child values
+            for _ in range(num_children):
+                increment = random.choice([i for i in range(51)])  # Choose either +0, +1, +2, +3, +4, .., +49
+                child_value = parent_value + increment
+                # if child_value not in unique_values and child_value != self.goal_value:
+                if child_value != self.goal_value:
+                    # unique_values.add(child_value)
+                    children.append(Node(str(child_value)))
+            parent_map = self._parent_map[node]
+            self._level = 0 if len(parent_map) == 0 else max([self._node_map[parent.name][1] for parent in parent_map]) + 1
+            if self._level == self.goal_level:
+                children.append(Node(str(self.goal_value)))
+            if self._level > self.goal_level:
+                children = []
+            if self._level != self.goal_level:
+                assert all([int(child.name) != self.goal_value for child in children]), "Goal value should not be in children"
+            new_node = Node(str(parent_value))
+            cloned_children = [Node(child.name) for child in children]
+            for child in cloned_children:
+                new_node.add_child(child)
+                if child not in self._parent_map:
+                    self._parent_map[child] = [new_node]
+                else:
+                    self._parent_map[child].append(new_node)
+            self._node_map[node.name] = (new_node, self._level)
+            assert isinstance(children, list), "Children must be a list"
+            return children
 
-# Example usage
-if __name__ == "__main__":
-    start_value = 0  # Starting node value
-    goal_value = 10  # Goal node value (the integer to reach)
-
+def test_search_algorithm(algo: SearchAlgorithm, start_value: int = 0, goal_value: int = 10, goal_level: int = 3, timeout_in_secs: float = 60, generate_children: typing.Callable[[Node], typing.List[Node]] = None) -> typing.Callable[[Node], typing.List[Node]]:
+    tracemalloc.start()
+    current, peak = tracemalloc.get_traced_memory()
+    # print("Current memory usage:", current / 10**6, "MB")
+    # print("Peak memory usage:", peak / 10**6, "MB")
+    start_memory = current
+    start_peak = peak
     start_node = Node(str(start_value))
     goal_node = Node(str(goal_value))
-    algorithm = BestFirstSearch()
 
     heuristic = Heuristic(goal_value)  # Generate the heuristic function based on the goal value
+    # Generate the dynamic child generation function
+    generate_children = GenerateChildren(start_value, goal_value, goal_level) if generate_children is None else generate_children 
 
-    # Run best first search with the generated heuristic and dynamic child generation
-    goal_node_in_tree, found, time = algorithm.search(start_node, goal_node, heuristic, generate_children, 4, True, timeout_in_secs=60)
+    print("Testing {}...".format(algo.__class__.__name__))
+    # Run the search algorithm with the generated heuristic and dynamic child generation
+    goal_node_in_tree, found, time = algo.search(start_node, goal_node, heuristic, generate_children, 4, True, timeout_in_secs=timeout_in_secs)
     print("Search complete")
-    print("Time elapsed:", time)
-    dot = algorithm.visualize_search(start_node, show=False)
+    print("Time elapsed:", time, "seconds")
+    # print("Memory usage:", current / 10**6, "MB")
+    # print("Peak memory usage:", peak / 10**6, "MB")
+    # print("Memory usage change:", (current - start_memory) / 10**6, "MB")
+    current, peak = tracemalloc.get_traced_memory()
+    print("Peak memory usage change:", (peak - start_peak) / 10**6, "MB")
+    tracemalloc.stop()
+    dot = algo.visualize_search(start_node, show=False)
     if found:
-        path = algorithm.reconstruct_path(start_node, goal_node_in_tree)
-        print("Path to goal:", [node.name for node in path])
-        all_paths = algorithm.reconstruct_all_paths(start_node, goal_node_in_tree)
-        algorithm.mark_paths_in_visualization(dot, all_paths)
+        path = algo.reconstruct_path(start_node, goal_node_in_tree)
+        # print("Path to goal:", [node.name for node in path])
+        all_paths = algo.reconstruct_all_paths(start_node, goal_node_in_tree)
+        algo.mark_paths_in_visualization(dot, all_paths)
         if len(all_paths) > 1:
             print("Found multiple paths to goal:")
-            for path in all_paths:
-                print([node.name for node in path])
+            # for path in all_paths:
+            #     print([node.name for node in path])
         else:
             one_path = all_paths[0]
             assert len(path) == len(one_path), "Reconstructed path length does not match"
@@ -67,8 +111,17 @@ if __name__ == "__main__":
             print("Only one path found to goal")
     else:
         print("No path found to goal")
-    print("Showing visualization...")
+    print("Saving visualization...")
     os.makedirs(".log/search/test", exist_ok=True)
     time_now = datetime.now().strftime("%Y%m%d_%H%M%S")
-    file_name = ".log/search/test/best_first_search_{}".format(time_now)
+    file_name = ".log/search/test/{}_{}".format(algo.__class__.__name__, time_now)
     dot.render(file_name, format='png', quiet=True)
+    return generate_children # Return the dynamic child generation function for testing testing other algorithms
+
+# Example usage
+if __name__ == "__main__":
+    random.seed(0xfacade)
+    # See the memory usage of the search algorithms
+    children_map = test_search_algorithm(BestFirstSearch(), 0, 1000, 12, timeout_in_secs=100)
+    random.seed(0xfacade)
+    test_search_algorithm(BeamSearch(2), 0, 1000, 12, timeout_in_secs=100, generate_children=children_map)

@@ -24,7 +24,7 @@ class BestFirstSearch(SearchAlgorithm):
             build_tree: bool = True,
             timeout_in_secs: float = None) -> typing.Tuple[Node, bool, float]:
 
-        assert generate_children is not None and build_tree, "Must provide generate_children function when building tree"
+        assert (generate_children is not None and build_tree) or not build_tree, "Must provide generate_children function"
         time_elapsed = 0
         start_time = time.time()
         timeout_in_secs = timeout_in_secs if timeout_in_secs else float('inf')
@@ -62,6 +62,10 @@ class BestFirstSearch(SearchAlgorithm):
                         current_node.add_child(explored[child])
             else:
                 children = [child for child in current_node.children]
+                for child in children:
+                    if child not in explored:
+                        explored[child] = child
+                        children_to_explore.add(child)
 
             child_costs = pool.starmap(heuristic, [[child] for child in children])
 
