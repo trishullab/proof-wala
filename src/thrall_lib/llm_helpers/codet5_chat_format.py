@@ -64,40 +64,6 @@ class CodeT5ChatFormat(object):
 if __name__ == "__main__":
     messages = [
         {
-            "role": "system",
-            "content": "You are a helpful, pattern-following assistant that translates corporate jargon into plain English.",
-        },
-        {
-            "role": "system",
-            "name": "example_user",
-            "content": "New synergies will help drive top-line growth.",
-        },
-        {
-            "role": "system",
-            "name": "example_assistant",
-            "content": "Things working well together will increase revenue.",
-        },
-        {
-            "role": "system",
-            "name": "example_user",
-            "content": "Let's circle back when we have more bandwidth to touch base on opportunities for increased leverage.",
-        },
-        {
-            "role": "system",
-            "name": "example_assistant",
-            "content": "Let's talk later when we're less busy about how to do better.",
-        },
-        {
-            "role": "system",
-            "name": "example_user",
-            "content": "This late pivot means we don't have time to boil the ocean for the client deliverable.",
-        },
-        {
-            "role": "system",
-            "name": "example_assistant", 
-            "content": "Our idea seems to be scooped, don't know how to change direction now."
-        },
-        {
             "role": "user",
             "content": "We changed the direction of the project, but we don't have time to do it.",
         },
@@ -118,40 +84,6 @@ if __name__ == "__main__":
     print('-'*100)
     messages = [
         {
-            "role": "system",
-            "content": "You are a helpful, pattern-following assistant that translates corporate jargon into plain English.",
-        },
-        {
-            "role": "system",
-            "name": "example_user",
-            "content": "New synergies will help drive top-line growth.",
-        },
-        {
-            "role": "system",
-            "name": "example_assistant",
-            "content": "Things working well together will increase revenue.",
-        },
-        {
-            "role": "system",
-            "name": "example_user",
-            "content": "Let's circle back when we have more bandwidth to touch base on opportunities for increased leverage.",
-        },
-        {
-            "role": "system",
-            "name": "example_assistant",
-            "content": "Let's talk later when we're less busy about how to do better.",
-        },
-        {
-            "role": "system",
-            "name": "example_user",
-            "content": "This late pivot means we don't have time to boil the ocean for the client deliverable.",
-        },
-        {
-            "role": "system",
-            "name": "example_assistant", 
-            "content": "Our idea seems to be scooped, don't know how to change direction now."
-        },
-        {
             "role": "user",
             "content": "We changed the direction of the project, but we don't have time to do it.",
         }
@@ -162,40 +94,6 @@ if __name__ == "__main__":
     print('='*50)
     print(role_names)
     messages = [
-        {
-            "role": "system",
-            "content": "You are a helpful, pattern-following assistant that translates corporate jargon into plain English.",
-        },
-        {
-            "role": "system",
-            "name": "example_user",
-            "content": "New synergies will help drive top-line growth.",
-        },
-        {
-            "role": "system",
-            "name": "example_assistant",
-            "content": "Things working well together will increase revenue.",
-        },
-        {
-            "role": "system",
-            "name": "example_user",
-            "content": "Let's circle back when we have more bandwidth to touch base on opportunities for increased leverage.",
-        },
-        {
-            "role": "system",
-            "name": "example_assistant",
-            "content": "Let's talk later when we're less busy about how to do better.",
-        },
-        {
-            "role": "system",
-            "name": "example_user",
-            "content": "This late pivot means we don't have time to boil the ocean for the client deliverable.",
-        },
-        {
-            "role": "system",
-            "name": "example_assistant", 
-            "content": "Our idea seems to be scooped, don't know how to change direction now."
-        },
         {
             "role": "user",
             "content": "We changed the direction of the project, but we don't have time to do it.",
