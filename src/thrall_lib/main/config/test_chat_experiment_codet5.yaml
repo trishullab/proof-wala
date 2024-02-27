@@ -1,0 +1,21 @@
+defaults:
+  - model_settings: codet5_small_128.yaml # Name of model settings file
+  - training_data_settings: simple_benchmark_training_chat_codet5.yaml # Name of training data settings file
+  - training_settings: basic_split_09_01 # Name of training settings file
+  - override hydra/job_logging: 'disabled'
+
+name: thrall-codet5-hf-chat-4096-009-001 # Can be any name will be used in logs
+experiment_type: 'Training' # Can be 'Training' or 'Inferencing'
+
+training_settings:
+  training_args:
+    eval_steps: 10
+    num_train_epochs: 20
+
+# Run experiments using the following command:
+# nohup torchrun --nproc-per-node 2 src/thrall_lib/main/run.py &
+# nohup torchrun --nproc-per-node 2 --master-port 31052  src/thrall_lib/main/run.py &
+# nohup torchrun --nproc-per-node 2 --master-port 31052  src/thrall_lib/main/run.py --config-name test_chat_experiment.yaml &
+# The default master port is 29500, but you can change it to any other port number when running multiple experiments on the same machine
+# nohup torchrun --nproc-per-node 2 src/thrall_lib/main/run.py model_settings=codet5_small_128 training_data_settings=simple_benchmark_training training_settings=basic_split_09_01 &
+# nohup torchrun --nproc-per-node 2 src/thrall_lib/main/run.py model_settings=codet5_small_128 training_data_settings=simple_benchmark_training_chat_codet5 training_settings=basic_split_09_01 &

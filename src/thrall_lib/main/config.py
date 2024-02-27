@@ -15,6 +15,7 @@ from transformers import TrainingArguments
 from thrall_lib.llm_helpers.theorem_proving_training_dataset import TheoremProvingTrainingDataset
 from thrall_lib.itp.training_data_formatter import BasicTrainingDataFormatterCallback
 from thrall_lib.itp.copra_training_data_formatter import CopraPromptTrainingDataFormatter, CopraTrainingDataset
+from thrall_lib.itp.codet5_training_data_formatter import CodeT5PromptTrainingDataFormatter, CodeT5TrainingDataset
 
 class ExperimentType(Enum):
     Training = "Training"
@@ -27,6 +28,7 @@ class ExperimentType(Enum):
 class TrainingDatasetType(Enum):
     TheoremProvingTrainingDataset = "TheoremProvingTrainingDataset"
     CopraTrainingDataset = "CopraTrainingDataset"
+    CodeT5TrainingDataset = "CodeT5TrainingDataset" 
 
     def __str__(self):
         return self.value
@@ -36,12 +38,15 @@ class TrainingDatasetType(Enum):
             return TheoremProvingTrainingDataset
         elif self == TrainingDatasetType.CopraTrainingDataset:
             return CopraTrainingDataset
+        elif self == TrainingDatasetType.CodeT5TrainingDataset:
+            return CodeT5TrainingDataset
         else:
             raise Exception(f"Invalid training dataset type: {self}")
     
 class TrainingDataFormatterType(Enum):
     BasicTrainingDataFormatterCallback = "BasicTrainingDataFormatterCallback"
     CopraPromptTrainingDataFormatter = "CopraPromptTrainingDataFormatter"
+    CodeT5PromptTrainingDataFormatter = "CodeT5PromptTrainingDataFormatter"
 
     def __str__(self):
         return self.value
@@ -51,6 +56,8 @@ class TrainingDataFormatterType(Enum):
             return BasicTrainingDataFormatterCallback
         elif self == TrainingDataFormatterType.CopraPromptTrainingDataFormatter:
             return CopraPromptTrainingDataFormatter
+        elif self == TrainingDataFormatterType.CodeT5PromptTrainingDataFormatter:
+            return CodeT5PromptTrainingDataFormatter
         else:
             raise Exception(f"Invalid training data formatter type: {self}")
 
