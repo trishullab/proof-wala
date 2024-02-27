@@ -7,7 +7,6 @@ if root_dir not in sys.path:
 import typing
 import os
 from thrall_lib.llm_helpers.model import TrainingDataFormatterCallback
-from thrall_lib.llm_helpers.codet5_chat_format import CodeT5ChatFormat
 from thrall_lib.llm_helpers.theorem_proving_training_dataset import TheoremProvingTrainingDataset
 from itp_interface.tools.training_data import TrainingData
 from thrall_lib.parsers.copra_grammars import CoqGPTResponseDfsGrammar, CoqGPTRequestGrammar, CoqGptRequest, CoqGptResponse
@@ -31,20 +30,16 @@ class CodeT5TrainingDataset(TheoremProvingTrainingDataset):
         self.max_chars_in_prompt = int(self.max_tokens_in_prompt * self.characters_per_token)
         if self.max_tokens_in_prompt < 0:
             raise ValueError(f"Max tokens in prompt is negative: {self.max_tokens_in_prompt}, increase max tokens or decrease characters per token")
-        self.codet5_chat_format = CodeT5ChatFormat()
+        self.prompt_delimiter = "\n"
 
     def __getitem__(self, idx):
         response, request = self._get_response_request(idx)
         prompt = self.response_grammar.format_as_per_grammar(response, max_token_cnt=self.max_tokens_in_prompt, characters_per_token=self.characters_per_token)
         completion = self.request_grammar.generate_message_from_gpt_request(request)
-        prompt_msg = self.prompt_grammar.get_main_message_from_string(prompt, role="user")
-        completion_msg = self.prompt_grammar.get_main_message_from_string(completion, role="assistant")  
-        messages = [prompt_msg]
-        partial_prompt, _ = self.codet5_chat_format(messages)
-        completion_msg, _ = self.codet5_chat_format([completion_msg])
+        prompt += self.prompt_delimiter
         return {
-            "prompt": partial_prompt,
-            "completion": completion_msg
+            "prompt": prompt,
+            "completion": completion
         }
     
     def _get_message_length(self, message):
@@ -95,7 +90,7 @@ class CodeT5PromptTrainingDataFormatter(TrainingDataFormatterCallback):
         output_texts = []
         all_prompts = training_data_format_examples["prompt"]
         all_completions = training_data_format_examples["completion"]
-        stopping_token = "" # The stopping token is already included in the completion because CodeT5ChatFormat adds it
+        stopping_token = ""
         for prompt, completion in zip(all_prompts, all_completions):
             output_text = f"{prompt}{completion}{stopping_token}"
             output_texts.append(output_text)
@@ -122,6 +117,8 @@ class CodeT5PromptTrainingDataFormatter(TrainingDataFormatterCallback):
 
 if __name__ == "__main__":
     prompt_name = "copra-coq-dfs"
+    system_prompt_file = f"src/thrall_lib/data/prompts/system/{prompt_name}.md"
+    conversation_prompt_file = f"src/thrall_lib/data/prompts/conversation/{prompt_name}.md"
     data_folder = f".log/train"
     meta_filename = "local.meta.json"
     training_data = TrainingData(data_folder, meta_filename)
