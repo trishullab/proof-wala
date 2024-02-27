@@ -41,13 +41,12 @@ class GenerateChildren:
             parent_value = int(node.name)
             num_children = random.randint(0, 30)  # Randomly choose how many children to generate (0 to 3 for this example)
             children = []
-            # unique_values = set()  # Keep track of unique child values
+            unique_values = set()  # Keep track of unique child values
             for _ in range(num_children):
                 increment = random.choice([i for i in range(51)])  # Choose either +0, +1, +2, +3, +4, .., +49
                 child_value = parent_value + increment
-                # if child_value not in unique_values and child_value != self.goal_value:
-                if child_value != self.goal_value:
-                    # unique_values.add(child_value)
+                if child_value not in unique_values and child_value != self.goal_value:
+                    unique_values.add(child_value)
                     children.append(Node(str(child_value)))
             parent_map = self._parent_map[node]
             self._level = 0 if len(parent_map) == 0 else max([self._node_map[parent.name][1] for parent in parent_map]) + 1

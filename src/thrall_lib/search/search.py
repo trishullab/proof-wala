@@ -4,6 +4,28 @@ import matplotlib.pyplot as plt
 from graphviz import Digraph
 from abc import ABC, abstractmethod
 
+class Edge:
+    def __init__(self, label: str, score: float = 0, other_data: typing.Any = None):
+        assert isinstance(label, str), "Edge label must be a string"
+        assert isinstance(score, (int, float)), "Edge score must be a number"
+        self.label = label
+        self.score = float(score)
+        self.other_data = other_data
+    
+    def __eq__(self, other):
+        if not isinstance(other, Edge):
+            return False
+        return self.label == other.label
+    
+    def __hash__(self):
+        return hash(self.label)
+    
+    def __str__(self) -> str:
+        return f"Edge({self.label}, {self.score})"
+    
+    def __repr__(self) -> str:
+        return self.__str__()
+
 class Node:
     def __init__(self, name: str, score: float = 0, other_data: typing.Any = None):
         assert isinstance(name, str), "Node name must be a string"
@@ -11,14 +33,21 @@ class Node:
         self.name = name
         self.score = float(score)
         self.other_data = other_data
+        # It is very important to make sure that the members below are lists
+        # and not sets, because hash will fail when this objects gets pickled
+        # and sent to another process while using multiprocessing
         self.parents : typing.List['Node'] = []  # Keep track of parents for tree representation
         self.children : typing.List['Node'] = []  # Keep track of children for tree representation
+        self.edges : typing.List[Edge] = []  # Keep track of edges for graph representation
 
-    def add_child(self, child: 'Node'):
-        # Make sure the child is not already in the children list
-        if child not in self.children:
-            self.children.append(child)
-            child.parents.append(self)
+    def add_child(self, child: 'Node', edge: Edge = None):
+        """
+        Note: Do not add the same child node to the children list more than once.
+        We cannot check for duplicates here because it would be too slow.
+        """
+        self.children.append(child)
+        child.parents.append(self)
+        self.edges.append(edge)
     
     def __eq__(self, other):
         if not isinstance(other, Node):
@@ -125,11 +154,14 @@ class SearchAlgorithm(ABC):
             current_node = node_queue.pop(0)
             dot.node(current_node.name, current_node.name)
             
-            for child in current_node.children:
+            for child_idx, child in enumerate(current_node.children):
                 # Add edge from parent to child
                 if (current_node, child) not in edges:
                     edges.add((current_node, child))
-                    dot.edge(current_node.name, child.name)
+                    if current_node.edges[child_idx] is not None:
+                        dot.edge(current_node.name, child.name, label=current_node.edges[child_idx].label)
+                    else:
+                        dot.edge(current_node.name, child.name)
                 if child not in visited:
                     # Add child to the queue to process its children later
                     node_queue.append(child)
