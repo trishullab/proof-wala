@@ -41,26 +41,6 @@ class CodeT5TrainingDataset(TheoremProvingTrainingDataset):
             "prompt": prompt,
             "completion": completion
         }
-    
-    def _get_message_length(self, message):
-        # for base types like str, int, float, etc. the length is the number of characters in the string representation
-        # for lists, the length is the sum of the lengths of the elements
-        # for dicts, the length is the sum of the lengths of the keys and values
-        # for tuples, the length is the sum of the lengths of the elements
-        if isinstance(message, str):
-            return len(message)
-        elif isinstance(message, int):
-            return len(str(message))
-        elif isinstance(message, float):
-            return len(str(message))
-        elif isinstance(message, list):
-            return sum([self._get_message_length(element) for element in message])
-        elif isinstance(message, dict):
-            return sum([self._get_message_length(key) + self._get_message_length(value) for key, value in message.items()])
-        elif isinstance(message, tuple):
-            return sum([self._get_message_length(element) for element in message])
-        else:
-            raise Exception(f"Unknown type {type(message)}")
 
     def _get_response_request(self, idx):
         last_tdf = self.training_data[idx]
