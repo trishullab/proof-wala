@@ -99,6 +99,7 @@ class LogMetricCallback(TrainerCallback):
 class GenerationResult(object):
     input_text: str
     generated_text: typing.List[str] = field(default_factory=list)
+    neg_log_likelihood: typing.List[float] = field(default_factory=list)
 
 @dataclass_json
 @dataclass
@@ -353,10 +354,27 @@ class Model(object):
         decoded_str = self._tokenizer.batch_decode(target, skip_special_tokens=skip_special_tokens)
         idx = 0
         generation_results = GenerationResults()
+        compute_probabilities = kwargs.get("compute_probabilities", False)
+        neg_log_likelihoods = []
+        if compute_probabilities:
+            # no gradient computation
+            with torch.no_grad():
+                for i in range(len(inputs)):
+                    inp_i = input_ids[i, :].unsqueeze(0)
+                    attention_i = attention_mask[i, :].unsqueeze(0)
+                    for j in range(num_return_sequences):
+                        target_j = target[i*num_return_sequences+j].unsqueeze(0)
+                        out_j = self._model(input_ids=inp_i, attention_mask=attention_i, labels=target_j)
+                        neg_log_likelihoods.append(float(out_j.loss.detach().cpu().numpy()))
         for text in inputs:
             generated_text = decoded_str[idx: idx + num_return_sequences]
+            if compute_probabilities:
+                probabilties = neg_log_likelihoods[idx: idx + num_return_sequences]
+            else:
+                probabilties = [0.0 for _ in range(num_return_sequences)]
             idx += num_return_sequences
-            generation_results.results.append(GenerationResult(input_text=text, generated_text=generated_text))
+            result = GenerationResult(input_text=text, generated_text=generated_text, neg_log_likelihood=probabilties)
+            generation_results.results.append(result)
         return generation_results
    
     def _generate_completion_callback(self, formatter_callback: TrainingDataFormatterCallback):
@@ -623,14 +641,16 @@ class Model(object):
 if __name__ == '__main__':
     # Model from Hugging Face hub
     import os
+    import numpy as np
     import json
     assert os.path.exists(".secrets/huggingface_token.json"), "Please create a .secrets file with your HF token"
     # model_name = "meta-llama/Llama-2-7b-hf"
     # model_name = "meta-llama/Llama-2-7b-chat-hf"
     model_name = "Salesforce/codet5-small"
+    is_seq2seq = "llama-2" not in model_name.lower()
     with open(".secrets/huggingface_token.json", "r") as f:
         token = json.load(f)["token"]
-    model = Model(model_name, token=token, use_lora=False)
+    model = Model(model_name, token=token, use_lora=False, is_seq2seq=is_seq2seq)
     main_prompt = "Do simple math problems (Answer only the number and use '[END]' to finish the response):\nQuestion: 2 + 2\nAnswer: 4\n[END]"
     with model:
         for response in model.generate(
@@ -649,10 +669,12 @@ if __name__ == '__main__':
                 skip_special_tokens=True,
                 padding=True,
                 #truncation=True,
+                compute_probabilities=True,
                 return_full_text=False):
             
             print("-" * 50)
             print(f"Prompt: \n{response.input_text}")
             for idx, result in enumerate(response.generated_text):
-                print(f"Result [{idx + 1}]: {result}")
+                probability = np.exp(-response.neg_log_likelihood[idx])
+                print(f"Result [{idx + 1}] ({probability*100}% chance): {result}")
             print("-" * 50)
