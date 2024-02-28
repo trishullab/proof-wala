@@ -4,6 +4,17 @@ import matplotlib.pyplot as plt
 from graphviz import Digraph
 from abc import ABC, abstractmethod
 
+def escape_string(string: str):
+    # escaped_string = string.replace('\\', '\\\\').\
+    #     replace('"', '\\"').\
+    #     replace('\n', '\\n').\
+    #     replace('\r', '\\r').\
+    #     replace('\t', '\\t').\
+    #     replace('\b', '\\b').\
+    #     replace('\f', '\\f')
+    escaped_string = string.replace('\n', '\\n')
+    return escaped_string
+
 class Edge:
     def __init__(self, label: str, score: float = 0, other_data: typing.Any = None):
         assert isinstance(label, str), "Edge label must be a string"
@@ -149,19 +160,36 @@ class SearchAlgorithm(ABC):
         node_queue = [root]
         visited = set()
         edges = set()
-        
+        text_width = 75
+        node_num = 0
+        unique_node_names = {}
         while node_queue:
             current_node = node_queue.pop(0)
-            dot.node(current_node.name, current_node.name)
+            full_node_name = current_node.name
+            node_name = (current_node.name[:text_width] + "...") if len(current_node.name) > text_width else current_node.name
+            node_name = escape_string(node_name)
+            if full_node_name not in unique_node_names:
+                unique_node_names[full_node_name] = node_num
+                node_num += 1
+            full_node_num = unique_node_names[full_node_name]
+            dot.node(str(full_node_num), label=node_name)
             
             for child_idx, child in enumerate(current_node.children):
                 # Add edge from parent to child
                 if (current_node, child) not in edges:
                     edges.add((current_node, child))
+                    child_name = child.name
+                    if child_name not in unique_node_names:
+                        unique_node_names[child_name] = node_num
+                        node_num += 1
+                    child_num = unique_node_names[child_name]
                     if current_node.edges[child_idx] is not None:
-                        dot.edge(current_node.name, child.name, label=current_node.edges[child_idx].label)
+                        edge_label = current_node.edges[child_idx].label
+                        edge_label = edge_label[:text_width] + "..." if len(edge_label) > text_width else edge_label
+                        edge_label = escape_string(edge_label)
+                        dot.edge(str(full_node_num), str(child_num), label=edge_label)
                     else:
-                        dot.edge(current_node.name, child.name)
+                        dot.edge(str(full_node_num), str(child_num))
                 if child not in visited:
                     # Add child to the queue to process its children later
                     node_queue.append(child)
