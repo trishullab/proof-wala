@@ -8,7 +8,6 @@ import typing
 import logging
 from abc import ABC, abstractmethod
 from itp_interface.rl.simple_proof_env import ProofEnv, ProofState, ProofAction
-from itp_interface.tools.training_data_format import Goal, TrainingDataFormat
 from itp_interface.tools.dynamic_coq_proof_exec import DynamicProofExecutor as DynamicCoqExecutor
 from itp_interface.rl.proof_tree import ProofSearchResult
 from thrall_lib.search.search import SearchAlgorithm, Node, Edge
@@ -43,7 +42,7 @@ class ProofActionGenerator(ABC):
         pass
     
     @abstractmethod
-    def generate_actions(self, state: ProofState) -> typing.List[typing.Tuple[float, ProofAction]]:
+    def generate_actions(self, state: ProofState, k: int = None) -> typing.List[typing.Tuple[float, ProofAction]]:
         pass
 
 class ProofSearchBranchGenerator(ABC):
@@ -58,22 +57,28 @@ class ProofSearchBranchGenerator(ABC):
         self.envs = envs
         pass
 
-    def __call__(self, node: Node) -> typing.List[Node]:
+    def __call__(self, node: Node) -> typing.Tuple[typing.List[Node], typing.List[Edge]]:
         # Call the proof action generator to generate actions for each environment
         if node.other_data is None:
             return [] # This is kind of dead end
         state: ProofState = node.other_data
-        actions_scores = self.proof_action_generator.generate_actions(state)
         # Run the actions in each environment
-        for i, (_, action) in enumerate(actions_scores):
-            self.envs[i].step(action)
+        matching_envs = []
+        for env in self.envs:
+            if state.training_data_format == env.state.training_data_format:
+                matching_envs.append(env)
+        assert len(matching_envs) > 0, "No matching environments found"
+        actions_scores = self.proof_action_generator.generate_actions(state, k=len(matching_envs))
         nodes = []
-        for i, env in enumerate(self.envs):
-            state = env.state
+        edges = []
+        for i, env in enumerate(matching_envs):
+            env.step(actions_scores[i][1])
+            state: ProofState = env.state
             score, action = actions_scores[i]
             state_name = convert_state_to_string(state)
+            edges.append(Edge('\n'.join(action.kwargs['tactics']), score, action))
             nodes.append(Node(state_name, score, state))
-        return nodes
+        return nodes, edges
     
 class ProofSearhHeuristic(ABC):
     def __init__(self):

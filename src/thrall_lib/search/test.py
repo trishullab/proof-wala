@@ -6,11 +6,11 @@ from datetime import datetime
 try:
     from .best_first_search import BestFirstSearch
     from .beam_search import BeamSearch
-    from .search import Node, SearchAlgorithm
+    from .search import Node, Edge, SearchAlgorithm
 except ImportError:
     from best_first_search import BestFirstSearch
     from beam_search import BeamSearch
-    from search import Node, SearchAlgorithm
+    from search import Node, Edge, SearchAlgorithm
 
 class Heuristic:
     def __init__(self, goal_value: int):
@@ -28,7 +28,7 @@ class GenerateChildren:
         self._parent_map = {self._start_node: []}
         self._level = 0
 
-    def __call__(self, node: Node) -> typing.List[Node]:
+    def __call__(self, node: Node) -> typing.Tuple[typing.List[Node], typing.List[Edge]]:
         """
         Generates a random number of child nodes for a given node. Each child node's value is
         either +1, +2, +3, +4, +5, .., +50 from the parent node's value, chosen randomly.
@@ -36,11 +36,12 @@ class GenerateChildren:
         if node.name in self._node_map:
             new_node, _ = self._node_map[node.name]
             assert isinstance(new_node.children, list), "Children must be a list"
-            return new_node.children
+            return new_node.children, new_node.edges
         else:
             parent_value = int(node.name)
             num_children = random.randint(0, 30)  # Randomly choose how many children to generate (0 to 3 for this example)
             children = []
+            edges = []
             unique_values = set()  # Keep track of unique child values
             for _ in range(num_children):
                 increment = random.choice([i for i in range(51)])  # Choose either +0, +1, +2, +3, +4, .., +49
@@ -48,10 +49,12 @@ class GenerateChildren:
                 if child_value not in unique_values and child_value != self.goal_value:
                     unique_values.add(child_value)
                     children.append(Node(str(child_value)))
+                    edges.append(Edge(str(increment), 0, None))
             parent_map = self._parent_map[node]
             self._level = 0 if len(parent_map) == 0 else max([self._node_map[parent.name][1] for parent in parent_map]) + 1
             if self._level == self.goal_level:
                 children.append(Node(str(self.goal_value)))
+                edges.append(Edge(str(self.goal_value - parent_value), 0, None))
             if self._level > self.goal_level:
                 children = []
             if self._level != self.goal_level:
@@ -66,7 +69,7 @@ class GenerateChildren:
                     self._parent_map[child].append(new_node)
             self._node_map[node.name] = (new_node, self._level)
             assert isinstance(children, list), "Children must be a list"
-            return children
+            return children, edges
 
 def test_search_algorithm(algo: SearchAlgorithm, start_value: int = 0, goal_value: int = 10, goal_level: int = 3, timeout_in_secs: float = 60, generate_children: typing.Callable[[Node], typing.List[Node]] = None) -> typing.Callable[[Node], typing.List[Node]]:
     tracemalloc.start()
@@ -93,12 +96,10 @@ def test_search_algorithm(algo: SearchAlgorithm, start_value: int = 0, goal_valu
     current, peak = tracemalloc.get_traced_memory()
     print("Peak memory usage change:", (peak - start_peak) / 10**6, "MB")
     tracemalloc.stop()
-    dot = algo.visualize_search(start_node, show=False)
     if found:
         path = algo.reconstruct_path(start_node, goal_node_in_tree)
         # print("Path to goal:", [node.name for node in path])
         all_paths = algo.reconstruct_all_paths(start_node, goal_node_in_tree)
-        algo.mark_paths_in_visualization(dot, all_paths)
         if len(all_paths) > 1:
             print("Found multiple paths to goal:")
             # for path in all_paths:
@@ -109,7 +110,9 @@ def test_search_algorithm(algo: SearchAlgorithm, start_value: int = 0, goal_valu
             assert all([node.name == path_node.name for node, path_node in zip(path, one_path)]), "Reconstructed path does not match"
             print("Only one path found to goal")
     else:
+        all_paths = []
         print("No path found to goal")
+    dot = algo.visualize_search(start_node, show=False, mark_paths=all_paths)
     print("Saving visualization...")
     os.makedirs(".log/search/test", exist_ok=True)
     time_now = datetime.now().strftime("%Y%m%d_%H%M%S")

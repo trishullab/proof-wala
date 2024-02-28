@@ -22,17 +22,20 @@ class RandomCoqProofActionGenerator(ProofActionGenerator):
         super().__init__(width)
         pass
     
-    def generate_actions(self, state: ProofState) -> typing.List[typing.Tuple[float, ProofAction]]:
+    def generate_actions(self, state: ProofState, k: int = None) -> typing.List[typing.Tuple[float, ProofAction]]:
         assert state.language == ProofAction.Language.COQ, "Only Coq is supported"
         if state.training_data_format.goal_description == DynamicCoqExecutor.NotInProofModeDescription:
             return []
         else:
-            if len(state.training_data_format.proof_steps) == 0:
+            if len(state.proof_tree) == 0:
                 tactics = {
                     "intros.": 0.3,
                     "intro.": 0.5,
-                    "simpl.": 0.15,
-                    "trivial.": 0.05
+                    "simpl.": 0.20
+                }
+            elif state.training_data_format.goal_description == DynamicCoqExecutor.ProofFinishedDescription:
+                tactics = {
+                    "Qed.": 1.0
                 }
             else:
                 tactics = {
@@ -47,7 +50,8 @@ class RandomCoqProofActionGenerator(ProofActionGenerator):
             # Generate random actions
             actions = []
             # Sample actions based on the probabilities
-            for _ in range(self.width):
+            k = k if k else self.width
+            for _ in range(k):
                 action = np.random.choice(list(tactics.keys()), p=list(tactics.values()))
                 actions.append((tactics[action], ProofAction(ProofAction.ActionType.RUN_TACTIC, state.language, tactics=[action])))
             return actions
@@ -87,16 +91,17 @@ def test_search_algorithm(
             proof_env,
             timeout_in_secs=timeout_in_secs)
         print(proof_res)
-        dot = algo.visualize_search(start_node, show=False)
+        proof_paths = []
         if proof_res.proof_found:
             proof_path = algo.reconstruct_path(start_node, tree_node)
-            algo.mark_paths_in_visualization(dot, [proof_path])
+            proof_paths = [proof_path]
             # Run the proof steps and check if the proof is finished
             with proof_env:
                 for td in proof_res.proof_steps:
                     proof_env.step(ProofAction(ProofAction.ActionType.RUN_TACTIC, proof_env.language, tactics=td.proof_steps))
                 assert proof_env.done
                 proof_found = True
+        dot = algo.visualize_search(start_node, show=False, mark_paths=proof_paths)
         dot.render(os.path.join(tree_dump_folder, f"proof_search_{max_attempts - attempt_count + 1}"), format='png', quiet=True)
         attempt_count -= 1
 
