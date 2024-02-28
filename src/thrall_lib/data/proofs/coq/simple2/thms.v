@@ -59,3 +59,10 @@ Proof.
     (* auto. *)
     firstorder. (*auto. will also work*)
 Qed.
+
+Theorem nat_add_comm : forall n : nat, n + 1 = 1 + n.
+Proof.
+    induction n.
+    - simpl. reflexivity.
+    - simpl. rewrite IHn. reflexivity.
+Qed.
