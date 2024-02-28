@@ -14,9 +14,7 @@ from thrall_lib.parsers.grammars.prompt_template_grammar import PromptGrammar
 
 class CodeT5TrainingDataset(TheoremProvingTrainingDataset):
     def __init__(self, 
-            training_data: TrainingData, 
-            system_prompt_file: str, 
-            conversation_prompt_file: str,
+            training_data: TrainingData,
             characters_per_token: float = 3.6,
             max_tokens: int = 2048):
         assert characters_per_token >= 1, f"Characters per token must be at least 1, but is {characters_per_token}"
@@ -97,14 +95,12 @@ class CodeT5PromptTrainingDataFormatter(TrainingDataFormatterCallback):
 
 if __name__ == "__main__":
     prompt_name = "copra-coq-dfs"
-    system_prompt_file = f"src/thrall_lib/data/prompts/system/{prompt_name}.md"
-    conversation_prompt_file = f"src/thrall_lib/data/prompts/conversation/{prompt_name}.md"
     data_folder = f".log/train"
     meta_filename = "local.meta.json"
     training_data = TrainingData(data_folder, meta_filename)
     # Not removing system_prompt_file and conversation_prompt_file though not needed
     # as removing makes the function signature incompatable with the call-type in run_training.py
-    with CodeT5TrainingDataset(training_data, system_prompt_file, conversation_prompt_file, max_tokens=4096) as dataset:
+    with CodeT5TrainingDataset(training_data, max_tokens=4096) as dataset:
         hf_dataset = dataset.get_hf_dataset()
         formatter = CodeT5PromptTrainingDataFormatter()
         formatted_dataset = formatter(hf_dataset)
