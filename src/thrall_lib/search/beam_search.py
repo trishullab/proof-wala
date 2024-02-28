@@ -51,14 +51,17 @@ class BeamSearch(SearchAlgorithm):
                     time_elapsed = time.time() - start_time
                     return (current_node, True, time_elapsed)
 
-                children = current_node.children if not build_tree else generate_children(current_node)
+                if build_tree:
+                    children, edges = generate_children(current_node)
+                else:
+                    children = current_node.children
                 children_to_explore = set()
-                for child in children:
+                for idx, child in enumerate(children):
                     if child not in explored and child not in level_explored:
                         level_explored.add(child)
                         children_to_explore.add(child)
                     if build_tree:
-                        tree_map[current_node].append(child)
+                        tree_map[current_node].append((child, edges[idx]))
 
                 child_costs = pool.starmap(heuristic, [[child] for child in children])
                 for child, cost in zip(children, child_costs):
@@ -74,13 +77,13 @@ class BeamSearch(SearchAlgorithm):
             if build_tree:
                 # Go over the tree_map and add the children to the current node
                 for parent, children in tree_map.items():
-                    for child in children:
+                    for child, edge in children:
                         if child in beam_nodes:
                             if child not in explored:
-                                parent.add_child(child)
+                                parent.add_child(child, edge)
                                 explored[child] = child
                             else:
-                                parent.add_child(explored[child])
+                                parent.add_child(explored[child], edge)
 
 
         pool.close()

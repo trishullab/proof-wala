@@ -50,16 +50,16 @@ class BestFirstSearch(SearchAlgorithm):
 
             children_to_explore = set()
             if build_tree:
-                children = generate_children(current_node)
-                for child in children:
+                children, edges = generate_children(current_node)
+                for idx, child in enumerate(children):
                     if child not in explored:
-                        current_node.add_child(child)  # Add child to current node's children list
+                        current_node.add_child(child, edges[idx])  # Add child to current node's children list
                         explored[child] = child  # Add child to explored set
                         children_to_explore.add(child)
                     else:
                         # If the child is already explored, we need to update the parent to the current node
                         # This is necessary for keeping track of the tree structure
-                        current_node.add_child(explored[child])
+                        current_node.add_child(explored[child], edges[idx])
             else:
                 children = [child for child in current_node.children]
                 for child in children:

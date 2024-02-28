@@ -4,6 +4,17 @@ import matplotlib.pyplot as plt
 from graphviz import Digraph
 from abc import ABC, abstractmethod
 
+def escape_string(string: str):
+    # escaped_string = string.replace('\\', '\\\\').\
+    #     replace('"', '\\"').\
+    #     replace('\n', '\\n').\
+    #     replace('\r', '\\r').\
+    #     replace('\t', '\\t').\
+    #     replace('\b', '\\b').\
+    #     replace('\f', '\\f')
+    escaped_string = string.replace('\n', '\\n')
+    return escaped_string
+
 class Edge:
     def __init__(self, label: str, score: float = 0, other_data: typing.Any = None):
         assert isinstance(label, str), "Edge label must be a string"
@@ -139,7 +150,11 @@ class SearchAlgorithm(ABC):
 
         return all_paths
 
-    def visualize_search(self, root: Node, save_to_file: str = None, show: bool = True):
+    def visualize_search(self, 
+        root: Node, 
+        save_to_file: str = None, 
+        show: bool = True,
+        mark_paths: typing.List[typing.List[Node]] = []) -> Digraph:
         """
         Visualizes the tree structure starting from the given root node using Graphviz.
         
@@ -149,19 +164,49 @@ class SearchAlgorithm(ABC):
         node_queue = [root]
         visited = set()
         edges = set()
-        
+        text_width = 75
+        node_num = 0
+        unique_node_names = {}
+        nodes_in_paths = set()
+        edges_in_paths = set()
+        for path in mark_paths:
+            for i, node in enumerate(path):
+                nodes_in_paths.add(node.name)
+                if i < len(path) - 1:
+                    edges_in_paths.add((node.name, path[i + 1].name))
         while node_queue:
             current_node = node_queue.pop(0)
-            dot.node(current_node.name, current_node.name)
+            full_node_name = current_node.name
+            node_name = (current_node.name[:text_width] + "...") if len(current_node.name) > text_width else current_node.name
+            node_name = escape_string(node_name)
+            if full_node_name not in unique_node_names:
+                unique_node_names[full_node_name] = node_num
+                node_num += 1
+            full_node_num = unique_node_names[full_node_name]
+            if full_node_name in nodes_in_paths:
+                dot.node(str(full_node_num), label=node_name, style='filled', fillcolor='lightblue')
+            else:
+                dot.node(str(full_node_num), label=node_name)
             
             for child_idx, child in enumerate(current_node.children):
                 # Add edge from parent to child
                 if (current_node, child) not in edges:
                     edges.add((current_node, child))
+                    child_name = child.name
+                    if child_name not in unique_node_names:
+                        unique_node_names[child_name] = node_num
+                        node_num += 1
+                    child_num = unique_node_names[child_name]
                     if current_node.edges[child_idx] is not None:
-                        dot.edge(current_node.name, child.name, label=current_node.edges[child_idx].label)
+                        edge_label = current_node.edges[child_idx].label
+                        edge_label = edge_label[:text_width] + "..." if len(edge_label) > text_width else edge_label
+                        edge_label = escape_string(edge_label)
                     else:
-                        dot.edge(current_node.name, child.name)
+                        edge_label = None
+                    if (current_node.name, child.name) in edges_in_paths:
+                        dot.edge(str(full_node_num), str(child_num), label=edge_label, color='red', penwidth='2.0')
+                    else:
+                        dot.edge(str(full_node_num), str(child_num), label=edge_label)
                 if child not in visited:
                     # Add child to the queue to process its children later
                     node_queue.append(child)
@@ -173,31 +218,13 @@ class SearchAlgorithm(ABC):
         if show:
             dot.view()
         return dot
-    
-    def mark_paths_in_visualization(self, dot: Digraph, paths: typing.List[typing.List[Node]]):
-        # Determine nodes and edges in paths
-        nodes_in_paths = set()
-        edges_in_paths = set()
-        for path in paths:
-            for i, node in enumerate(path):
-                nodes_in_paths.add(node.name)
-                if i < len(path) - 1:
-                    edges_in_paths.add((node.name, path[i + 1].name))
-        
-        # Add all nodes; modify attributes if in paths
-        for node in nodes_in_paths:
-            dot.node(node, style='filled', fillcolor='lightblue')
-        
-        # Add all edges; modify attributes if in paths
-        for edge_start, edge_end in edges_in_paths:
-            dot.edge(edge_start, edge_end, color='red', penwidth='2.0')
 
     @abstractmethod
     def search(
             start: Node, 
             goal: Node,
             heuristic: typing.Callable[[Node], float], 
-            generate_children: typing.Callable[[Node], typing.List[Node]] = None,
+            generate_children: typing.Callable[[Node], typing.Tuple[typing.List[Node], typing.List[Edge]]] = None,
             parallel_count: int = None,
             build_tree: bool = True,
             timeout_in_secs: float = None) -> typing.Tuple[Node, bool, float]:
