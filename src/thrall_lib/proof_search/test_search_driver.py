@@ -9,62 +9,66 @@ import logging
 import numpy as np
 import os
 from datetime import datetime
-from thrall_lib.proof_search.search_driver import ProofActionGenerator, ProofSearhHeuristic, ProofSearchDriver
+from thrall_lib.proof_search.search_driver import ProofActionGenerator, ProofSearhHeuristic, ProofSearchDriver, ProofStateInfo
 from itp_interface.rl.simple_proof_env import ProofState, ProofAction, ProofEnv
 from itp_interface.tools.proof_exec_callback import ProofExecutorCallback
 from itp_interface.tools.dynamic_coq_proof_exec import DynamicProofExecutor as DynamicCoqExecutor
 from thrall_lib.search.search import Node, SearchAlgorithm
 from thrall_lib.search.best_first_search import BestFirstSearch
 from thrall_lib.search.beam_search import BeamSearch
+from thrall_lib.tools.proof_env_replicator import replicate_proof_env
 
 class RandomCoqProofActionGenerator(ProofActionGenerator):
     def __init__(self, width: int = 4):
         super().__init__(width)
         pass
     
-    def generate_actions(self, state: ProofState, k: int = None) -> typing.List[typing.Tuple[float, ProofAction]]:
+    def generate_actions(self, state_info: ProofStateInfo, k: int = None) -> typing.List[typing.Tuple[float, ProofAction]]:
+        state : ProofState = state_info.proof_state
+        done: bool = state_info.done
         assert state.language == ProofAction.Language.COQ, "Only Coq is supported"
-        if state.training_data_format.goal_description == DynamicCoqExecutor.NotInProofModeDescription:
+        if done:
             return []
+        elif len(state.proof_tree) == 0:
+            tactics = {
+                "intros.": 0.3,
+                "intro.": 0.5,
+                "simpl.": 0.20
+            }
+        elif len(state.training_data_format.start_goals) == 0:
+            tactics = {
+                "Qed.": 1.0
+            }
         else:
-            if len(state.proof_tree) == 0:
-                tactics = {
-                    "intros.": 0.3,
-                    "intro.": 0.5,
-                    "simpl.": 0.20
-                }
-            elif state.training_data_format.goal_description == DynamicCoqExecutor.ProofFinishedDescription:
-                tactics = {
-                    "Qed.": 1.0
-                }
-            else:
-                tactics = {
-                    "Qed.": 0.2,
-                    "intro.": 0.15,
-                    "intros.": 0.10,
-                    "trivial.": 0.15,
-                    "reflexivity.": 0.10,
-                    "auto.": 0.15,
-                    "firstorder.": 0.15,
-                }
-            # Generate random actions
-            actions = []
-            # Sample actions based on the probabilities
-            k = k if k else self.width
-            for _ in range(k):
-                action = np.random.choice(list(tactics.keys()), p=list(tactics.values()))
-                actions.append((tactics[action], ProofAction(ProofAction.ActionType.RUN_TACTIC, state.language, tactics=[action])))
-            return actions
+            tactics = {
+                "Qed.": 0.2,
+                "intro.": 0.15,
+                "intros.": 0.10,
+                "trivial.": 0.15,
+                "reflexivity.": 0.10,
+                "auto.": 0.15,
+                "firstorder.": 0.15,
+            }
+        # Generate random actions
+        actions = []
+        # Sample actions based on the probabilities
+        k = k if k else self.width
+        for _ in range(k):
+            action = np.random.choice(list(tactics.keys()), p=list(tactics.values()))
+            actions.append((tactics[action], ProofAction(ProofAction.ActionType.RUN_TACTIC, state.language, tactics=[action])))
+        return actions
 
 class ProofFoundHeuristic(ProofSearhHeuristic):
     def __init__(self):
         pass
 
     def __call__(self, node: Node) -> float:
-        if node.name == DynamicCoqExecutor.NotInProofModeDescription:
+        state_info : ProofStateInfo = node.other_data
+        state : ProofState = state_info.proof_state
+        if state_info.done or len(state.training_data_format.start_goals) == 0:
             return float("-inf")
         else:
-            return len(node.name)
+            return node.score
 
 def test_search_algorithm(
         exp_name: str,
@@ -89,19 +93,24 @@ def test_search_algorithm(
             action_generator,
             proof_search_heuristic,
             width=search_width)
+        replicated_env = replicate_proof_env(proof_env)
         start_node, tree_node, proof_res = search_driver.search_proof(
             proof_env,
             timeout_in_secs=timeout_in_secs)
         final_proof_res = proof_res
         proof_paths = []
         if proof_res.proof_found:
-            proof_path = algo.reconstruct_path(start_node, tree_node)
-            proof_paths = [proof_path]
-            # Run the proof steps and check if the proof is finished
-            with proof_env:
-                for td in proof_res.proof_steps:
-                    proof_env.step(ProofAction(ProofAction.ActionType.RUN_TACTIC, proof_env.language, tactics=td.proof_steps))
-                assert proof_env.done
+            proof_paths = algo.reconstruct_all_paths(start_node, tree_node)
+            print(f"{len(proof_paths)} proof(s) found in {max_attempts - attempt_count + 1} attempt(s)")
+            if len(proof_paths) == 0:
+                print("Proof path is empty, something went wrong!")
+                print(proof_res)
+            else:
+                # Run the proof steps and check if the proof is finished
+                with replicated_env:
+                    for td in proof_res.proof_steps:
+                        replicated_env.step(ProofAction(ProofAction.ActionType.RUN_TACTIC, proof_env.language, tactics=td.proof_steps))
+                    assert replicated_env.done
                 proof_found = True
         dot = algo.visualize_search(start_node, show=False, mark_paths=proof_paths)
         dot.render(os.path.join(tree_dump_folder, f"proof_search_{max_attempts - attempt_count + 1}"), format='png', quiet=True)
@@ -127,9 +136,11 @@ if __name__ == '__main__':
         "nat_succ_add"
     ]
     width = 10
-    for search_aglo in [BestFirstSearch(), BeamSearch(2)]:
+    for search_aglo in [BestFirstSearch(), BeamSearch(3)]:
         algo_name = search_aglo.__class__.__name__
+        print(f"Running tests for {algo_name}")
         for theorem_name in theorem_names:
+            print(f"Trying to prove {theorem_name}")
             language = ProofAction.Language.COQ
             always_retrieve_thms = False
             logger = logging.getLogger(__name__)
@@ -143,3 +154,5 @@ if __name__ == '__main__':
                 search_width=width,
                 attempt_count=5,
                 timeout_in_secs=60)
+            print('-' * 80)
+        print('=' * 80)

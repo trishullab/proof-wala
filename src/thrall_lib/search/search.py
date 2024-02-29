@@ -1,17 +1,8 @@
 import typing
-import networkx as nx
-import matplotlib.pyplot as plt
 from graphviz import Digraph
 from abc import ABC, abstractmethod
 
 def escape_string(string: str):
-    # escaped_string = string.replace('\\', '\\\\').\
-    #     replace('"', '\\"').\
-    #     replace('\n', '\\n').\
-    #     replace('\r', '\\r').\
-    #     replace('\t', '\\t').\
-    #     replace('\b', '\\b').\
-    #     replace('\f', '\\f')
     escaped_string = string.replace('\n', '\\n')
     return escaped_string
 
@@ -22,7 +13,11 @@ class Edge:
         self.label = label
         self.score = float(score)
         self.other_data = other_data
+        self.equivalent_edges : typing.List['Edge'] = []
     
+    def add_equivalent_edge(self, edge: 'Edge'):
+        self.equivalent_edges.append(edge)
+
     def __eq__(self, other):
         if not isinstance(other, Edge):
             return False
@@ -197,16 +192,22 @@ class SearchAlgorithm(ABC):
                         unique_node_names[child_name] = node_num
                         node_num += 1
                     child_num = unique_node_names[child_name]
-                    if current_node.edges[child_idx] is not None:
-                        edge_label = current_node.edges[child_idx].label
-                        edge_label = edge_label[:text_width] + "..." if len(edge_label) > text_width else edge_label
-                        edge_label = escape_string(edge_label)
+                    edg = current_node.edges[child_idx]
+                    edge_labels = []
+                    if edg is not None:
+                        eqv_edges = edg.equivalent_edges + [edg]
+                        for eq_edge in eqv_edges:
+                            edge_label = eq_edge.label
+                            edge_label = edge_label[:text_width] + "..." if len(edge_label) > text_width else edge_label
+                            edge_label = escape_string(edge_label)
+                            edge_labels.append(edge_label)
                     else:
-                        edge_label = None
-                    if (current_node.name, child.name) in edges_in_paths:
-                        dot.edge(str(full_node_num), str(child_num), label=edge_label, color='red', penwidth='2.0')
-                    else:
-                        dot.edge(str(full_node_num), str(child_num), label=edge_label)
+                        edge_labels = [None]
+                    for edge_label in edge_labels:
+                        if (current_node.name, child.name) in edges_in_paths:
+                            dot.edge(str(full_node_num), str(child_num), label=edge_label, color='red', penwidth='2.0')
+                        else:
+                            dot.edge(str(full_node_num), str(child_num), label=edge_label)
                 if child not in visited:
                     # Add child to the queue to process its children later
                     node_queue.append(child)

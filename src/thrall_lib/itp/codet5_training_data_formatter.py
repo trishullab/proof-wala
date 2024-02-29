@@ -5,7 +5,6 @@ root_dir = f"{__file__.split('thrall_lib')[0]}"
 if root_dir not in sys.path:
     sys.path.append(root_dir)
 import typing
-import os
 from thrall_lib.llm_helpers.model import TrainingDataFormatterCallback
 from thrall_lib.llm_helpers.theorem_proving_training_dataset import TheoremProvingTrainingDataset
 from itp_interface.tools.training_data import TrainingData
@@ -13,6 +12,8 @@ from thrall_lib.parsers.copra_grammars import CoqGPTResponseDfsGrammar, CoqGPTRe
 from thrall_lib.parsers.grammars.prompt_template_grammar import PromptGrammar
 
 class CodeT5TrainingDataset(TheoremProvingTrainingDataset):
+    response_grammar: CoqGPTResponseDfsGrammar = CoqGPTResponseDfsGrammar()
+    request_grammar: CoqGPTRequestGrammar = CoqGPTRequestGrammar()
     def __init__(self, 
             training_data: TrainingData,
             characters_per_token: float = 3.6,
@@ -62,8 +63,25 @@ class CodeT5TrainingDataset(TheoremProvingTrainingDataset):
         )
         return response, request
     
+    def prompt_formatter(
+            response: CoqGptResponse, 
+            max_tokens_in_prompt: int = None, 
+            characters_per_token: float = 4):
+        prompt = CodeT5TrainingDataset.response_grammar.format_as_per_grammar(
+            response, 
+            max_token_cnt=max_tokens_in_prompt, 
+            characters_per_token=characters_per_token)
+        return prompt
+
+    def response_parser(request_str: str) -> CoqGptRequest:
+        if request_str.endswith(CodeT5PromptTrainingDataFormatter.stopping_token):
+            request_str = request_str[:-len(CodeT5PromptTrainingDataFormatter.stopping_token)]
+        request, _ = CodeT5TrainingDataset.request_grammar.attempt_parsing(request_str)
+        return request
+    
 
 class CodeT5PromptTrainingDataFormatter(TrainingDataFormatterCallback):
+    stopping_token = "[END]"
     def __call__(self, training_data_format_examples: typing.List[typing.Dict[str, str]]) -> typing.List[str]:
         output_texts = []
         all_prompts = training_data_format_examples["prompt"]
@@ -91,7 +109,7 @@ class CodeT5PromptTrainingDataFormatter(TrainingDataFormatterCallback):
         return prompt_and_completions
     
     def get_stopping_token(self):
-        return "[END]"
+        return CodeT5PromptTrainingDataFormatter.stopping_token
 
 if __name__ == "__main__":
     prompt_name = "copra-coq-dfs"

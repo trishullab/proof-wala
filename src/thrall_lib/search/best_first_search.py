@@ -34,13 +34,13 @@ class BestFirstSearch(SearchAlgorithm):
 
         # Initialize multiprocessing pool
         pool = Pool(processes=parallel_count if parallel_count else max(os.cpu_count() - 1, 1))
-
         while frontier:
             _, current_node = heapq.heappop(frontier) # Pop the node with the lowest score
 
             if current_node == goal:
                 pool.close()
                 pool.join()
+                assert len(current_node.parents) > 0, f"Goal node must have at least one parent"
                 return (current_node, True, time_elapsed)
 
             if time_elapsed > timeout_in_secs:
@@ -57,24 +57,28 @@ class BestFirstSearch(SearchAlgorithm):
                         explored[child] = child  # Add child to explored set
                         children_to_explore.add(child)
                     else:
-                        # If the child is already explored, we need to update the parent to the current node
-                        # This is necessary for keeping track of the tree structure
-                        current_node.add_child(explored[child], edges[idx])
+                        child_idx = None
+                        try:
+                            child_idx = current_node.children.index(child)
+                        except ValueError:
+                            pass
+                        if child_idx is None:
+                            current_node.add_child(explored[child], edges[idx])
+                        elif edges[idx] != current_node.edges[child_idx]:
+                            if edges[idx] not in current_node.edges[child_idx].equivalent_edges:
+                                current_node.edges[child_idx].add_equivalent_edge(edges[idx])
             else:
                 children = [child for child in current_node.children]
                 for child in children:
                     if child not in explored:
                         explored[child] = child
                         children_to_explore.add(child)
+            unique_children = list(children_to_explore)
+            child_costs = pool.starmap(heuristic, [[child] for child in unique_children])
 
-            child_costs = pool.starmap(heuristic, [[child] for child in children])
-
-            children_added_to_frontier = set()
-            for child, cost in zip(children, child_costs):
-                if child in children_to_explore and child not in children_added_to_frontier:
-                    child.score = cost
-                    heapq.heappush(frontier, (heuristic(child), child))
-                    children_added_to_frontier.add(child)
+            for child, cost in zip(unique_children, child_costs):
+                child.score = cost
+                heapq.heappush(frontier, (cost, child))
             
             time_elapsed = time.time() - start_time
 
