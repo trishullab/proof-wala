@@ -8,6 +8,7 @@ root_dir = f"{__file__.split('thrall_lib')[0]}"
 if root_dir not in sys.path:
     sys.path.append(root_dir)
 import typing
+import logging
 from itp_interface.rl.simple_proof_env import ProofState, ProofAction, ProofEnvInfo, ProgressState, ProofTree
 from thrall_lib.proof_search.search_driver import ProofActionGenerator, ProofStateInfo
 from thrall_lib.llm_helpers.model import Model
@@ -27,6 +28,7 @@ class LlmProofActionGenerator(ProofActionGenerator):
         prompt_formatter: typing.Callable[[ProofStateInfo], str],
         response_parser: typing.Callable[[str], typing.List[str]],
         width: int = 4,
+        logger: logging.Logger = None,
         **generation_args):
         assert model is not None, "Model cannot be None"
         super().__init__(width)
@@ -34,6 +36,7 @@ class LlmProofActionGenerator(ProofActionGenerator):
         self.prompt_formatter = prompt_formatter
         self.response_parser = response_parser
         self._generation_args = generation_args if generation_args else {}
+        self.logger = logger if logger else logging.getLogger(__name__)
         self._generation_args["num_return_sequences"] = self.width
         pass
         
@@ -48,6 +51,8 @@ class LlmProofActionGenerator(ProofActionGenerator):
         else:
             # generate actions using the model
             prompt = self.prompt_formatter(state_info)
+            problem = state.theorem_statement_with_name
+            self.logger.info(f"Prompt for [{problem}]:\n{prompt}")
             generation_results = self.model.generate(prompt, **self._generation_args)
             assert len(generation_results.results) == 1, "Only one prompt is used"
             result = generation_results[0]
@@ -88,7 +93,8 @@ if __name__ == "__main__":
     from thrall_lib.search.beam_search import BeamSearch
     from thrall_lib.search.best_first_search import BestFirstSearch
     from itp_interface.rl.simple_proof_env import ProofExecutorCallback, ProofEnv
-    import logging
+    from itp_interface.tools.log_utils import setup_logger
+    from datetime import datetime
     model_path = ".log/run_training/new_model/thrall-codet5-small-compcert-2048/best-model-20240228-072825"
     is_seq2seq = True
     max_seq_length = 2048
@@ -105,8 +111,14 @@ if __name__ == "__main__":
     padding=True
     return_full_text=False
     compute_probabilities=True
+    time_stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    log_folder = f".log/test_search_driver/{time_stamp}"
+    os.makedirs(log_folder, exist_ok=True)
+    log_file = os.path.join(log_folder, "test_search_driver.log")
+    logger = setup_logger("test_search_driver", log_file)
     with model:
-        generator = LlmProofActionGenerator(model, prompt_formatter, response_parser, width,
+        generator = LlmProofActionGenerator(
+            model, prompt_formatter, response_parser, width, logger,
             max_new_tokens=max_new_tokens, temperature=temperature, do_sample=do_sample, top_k=top_k,
             stop_tokens=stop_tokens, padding=padding, return_full_text=return_full_text, compute_probabilities=compute_probabilities)
         proof_exec_callback = ProofExecutorCallback(
@@ -133,7 +145,6 @@ if __name__ == "__main__":
                 print(f"Trying to prove {theorem_name}")
                 language = ProofAction.Language.COQ
                 always_retrieve_thms = False
-                logger = logging.getLogger(__name__)
                 env = ProofEnv("test", proof_exec_callback, theorem_name, max_proof_depth=10, always_retrieve_thms=always_retrieve_thms, logger=logger)
                 test_search_algorithm(
                     exp_name=os.path.join(algo_name, theorem_name),
@@ -142,7 +153,7 @@ if __name__ == "__main__":
                     proof_search_heuristic=ProofFoundHeuristic(),
                     action_generator=generator,
                     search_width=width,
-                    attempt_count=5,
+                    attempt_count=20,
                     timeout_in_secs=12000)
                 print('-' * 80)
             print('=' * 80)
