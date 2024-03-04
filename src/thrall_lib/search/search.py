@@ -38,6 +38,8 @@ class Node:
         assert isinstance(score, (int, float)), "Node score must be a number"
         self.name = name
         self.score = float(score)
+        self.distance_from_root = float('inf')
+        self.cummulative_score = float('inf')
         self.other_data = other_data
         # It is very important to make sure that the members below are lists
         # and not sets, because hash will fail when this objects gets pickled
@@ -224,7 +226,7 @@ class SearchAlgorithm(ABC):
     def search(
             start: Node, 
             goal: Node,
-            heuristic: typing.Callable[[Node], float], 
+            heuristic: typing.Callable[[Node, Edge, Node], float], 
             generate_children: typing.Callable[[Node], typing.Tuple[typing.List[Node], typing.List[Edge]]] = None,
             parallel_count: int = None,
             build_tree: bool = True,

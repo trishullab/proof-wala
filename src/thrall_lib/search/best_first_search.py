@@ -5,9 +5,9 @@ import time
 
 from multiprocessing import Pool
 try:
-    from .search import Node, SearchAlgorithm
+    from .search import Node, Edge, SearchAlgorithm
 except ImportError:
-    from search import Node, SearchAlgorithm
+    from search import Node, Edge, SearchAlgorithm
 
 
 class BestFirstSearch(SearchAlgorithm):
@@ -18,8 +18,8 @@ class BestFirstSearch(SearchAlgorithm):
             self,
             start: Node, 
             goal: Node,
-            heuristic: typing.Callable[[Node], float], 
-            generate_children: typing.Callable[[Node], typing.List[Node]] = None,
+            heuristic: typing.Callable[[Node, Edge, Node], float], 
+            generate_children: typing.Callable[[Node], typing.Tuple[typing.List[Node], typing.List[Edge]]] = None,
             parallel_count: int = None,
             build_tree: bool = True,
             timeout_in_secs: float = None) -> typing.Tuple[Node, bool, float]:
@@ -28,7 +28,9 @@ class BestFirstSearch(SearchAlgorithm):
         time_elapsed = 0
         start_time = time.time()
         timeout_in_secs = timeout_in_secs if timeout_in_secs else float('inf')
-        frontier : typing.List[typing.Tuple[float, Node]] = [(heuristic(start), start)]
+        start.cummulative_score = 0
+        start.distance_from_root = 0
+        frontier : typing.List[typing.Tuple[float, Node]] = [(heuristic(None, None, start), start)]
         explored = {start: start}  # Now keeping track of explored nodes directly
         heapq.heapify(frontier) # this is a min heap
 
@@ -48,14 +50,16 @@ class BestFirstSearch(SearchAlgorithm):
                 pool.join()
                 return (start, False, time_elapsed)
 
-            children_to_explore = set()
+            child_edge_set : typing.Set[typing.Tuple[Node, Edge]] = set()
             if build_tree:
                 children, edges = generate_children(current_node)
-                for idx, child in enumerate(children):
+                for child, edge in zip(children, edges):
                     if child not in explored:
-                        current_node.add_child(child, edges[idx])  # Add child to current node's children list
+                        child.distance_from_root = min(child.distance_from_root, current_node.distance_from_root + 1)
+                        child.cummulative_score = min(child.cummulative_score, current_node.cummulative_score + edge.score)
+                        current_node.add_child(child, edge)  # Add child to current node's children list
                         explored[child] = child  # Add child to explored set
-                        children_to_explore.add(child)
+                        child_edge_set.add((child, edge))
                     else:
                         child_idx = None
                         try:
@@ -63,20 +67,32 @@ class BestFirstSearch(SearchAlgorithm):
                         except ValueError:
                             pass
                         if child_idx is None:
-                            current_node.add_child(explored[child], edges[idx])
-                        elif edges[idx] != current_node.edges[child_idx]:
-                            if edges[idx] not in current_node.edges[child_idx].equivalent_edges:
-                                current_node.edges[child_idx].add_equivalent_edge(edges[idx])
+                            explored_child = explored[child]
+                            explored_child.distance_from_root = min(explored_child.distance_from_root, current_node.distance_from_root + 1)
+                            explored_child.cummulative_score = min(explored_child.cummulative_score, current_node.cummulative_score + edge.score)
+                            current_node.add_child(explored_child, edge)
+                            child_edge_set.add((explored_child, edge))
+                        elif edge != current_node.edges[child_idx]:
+                            if edge not in current_node.edges[child_idx].equivalent_edges:
+                                current_node.edges[child_idx].add_equivalent_edge(edge)
+                                explored_child = current_node.children[child_idx]
+                                if explored_child.cummulative_score > current_node.cummulative_score + edge.score:
+                                    if (explored_child, current_node.edges[child_idx]) in child_edge_set:
+                                        child_edge_set.remove((explored_child, current_node.edges[child_idx]))
+                                    child_edge_set.add((explored_child, edge))
+                                explored_child.distance_from_root = min(explored_child.distance_from_root, current_node.distance_from_root + 1)
+                                explored_child.cummulative_score = min(explored_child.cummulative_score, current_node.cummulative_score + edge.score)
+                                
             else:
-                children = [child for child in current_node.children]
-                for child in children:
+                children = [(child, edge) for child, edge in zip(current_node.children, current_node.edges)]
+                for child, edge in children:
                     if child not in explored:
                         explored[child] = child
-                        children_to_explore.add(child)
-            unique_children = list(children_to_explore)
-            child_costs = pool.starmap(heuristic, [[child] for child in unique_children])
+                        child_edge_set.add((child, edge))
+            unique_children_edges = list(child_edge_set)
+            child_costs = pool.starmap(heuristic, [[current_node, edge, node] for node, edge in unique_children_edges])
 
-            for child, cost in zip(unique_children, child_costs):
+            for (child, _), cost in zip(unique_children_edges, child_costs):
                 child.score = cost
                 heapq.heappush(frontier, (cost, child))
             

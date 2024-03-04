@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "4"
+os.environ["CUDA_VISIBLE_DEVICES"] = "5"
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 import sys
 root_dir = f"{__file__.split('thrall_lib')[0]}"
@@ -9,8 +9,9 @@ if root_dir not in sys.path:
     sys.path.append(root_dir)
 import typing
 import logging
+import numpy as np
 from itp_interface.rl.simple_proof_env import ProofState, ProofAction, ProofEnvInfo, ProgressState, ProofTree
-from thrall_lib.proof_search.search_driver import ProofActionGenerator, ProofStateInfo
+from thrall_lib.proof_search.search_driver import ProofActionGenerator, ProofStateInfo, ProofSearhHeuristic, Node, Edge
 from thrall_lib.llm_helpers.model import Model
 from thrall_lib.itp.codet5_training_data_formatter import CodeT5TrainingDataset, CoqGptResponse, CoqGptRequest
 
@@ -58,6 +59,18 @@ class LlmProofActionGenerator(ProofActionGenerator):
             result = generation_results[0]
             raw_outputs = result.generated_text
             neg_log_probabilties = result.neg_log_likelihood
+            raw_output_set = set()
+            raw_output_lst= []
+            neg_log_probabilties_lst = []
+            for output, neg_log_prob in zip(raw_outputs, neg_log_probabilties):
+                if output not in raw_output_set:
+                    raw_output_lst.append(output)
+                    neg_log_probabilties_lst.append(neg_log_prob)
+                    raw_output_set.add(output)
+            raw_outputs = raw_output_lst
+            neg_log_probabilties = neg_log_probabilties_lst
+            arg_max_output = raw_outputs[np.argmin(neg_log_probabilties)]
+            self.logger.info(f"Best generated action: {arg_max_output}")
             tactics_list = [self.response_parser(output) for output in raw_outputs]
             actions = [(neg_log_prob, ProofAction(ProofAction.ActionType.RUN_TACTIC, state.language, tactics=tactics)) for neg_log_prob, tactics in zip(neg_log_probabilties, tactics_list)]
             return actions
@@ -88,8 +101,21 @@ class CodeT5ResponseParser:
         gpt_request : CoqGptRequest = CodeT5TrainingDataset.response_parser(response)
         return gpt_request.args
 
+class NegLoglikelihoodDirectedHeuristic(ProofSearhHeuristic):
+    def __init__(self):
+        pass
+
+    def __call__(self, parent_node: Node, edge: Edge, node: Node) -> float:
+        state_info : ProofStateInfo = node.other_data
+        state : ProofState = state_info.proof_state
+        if state_info.done or len(state.training_data_format.start_goals) == 0:
+            return float("-inf")
+        else:
+            return parent_node.cummulative_score + edge.score
+
+
 if __name__ == "__main__":
-    from thrall_lib.proof_search.test_search_driver import test_search_algorithm, ProofFoundHeuristic
+    from thrall_lib.proof_search.test_search_driver import test_search_algorithm
     from thrall_lib.search.beam_search import BeamSearch
     from thrall_lib.search.best_first_search import BestFirstSearch
     from itp_interface.rl.simple_proof_env import ProofExecutorCallback, ProofEnv
@@ -102,9 +128,9 @@ if __name__ == "__main__":
     model = Model(model_path, is_seq2seq=is_seq2seq)
     prompt_formatter = CodeT5PromptFormatter(max_token_in_prompt=max_seq_length, character_per_token=character_per_token)
     response_parser = CodeT5ResponseParser()
-    width = 10
-    max_new_tokens=150
-    temperature=0.75 # Nucleus sampling
+    width = 128
+    max_new_tokens=200
+    temperature=0.9 # Nucleus sampling
     do_sample=True # Nucleus sampling
     top_k=width # Nucleus sampling
     stop_tokens=["[END]"]
@@ -126,34 +152,35 @@ if __name__ == "__main__":
             file_path="src/thrall_lib/data/proofs/coq/simple2/thms.v"
         )
         theorem_names = [
-            "nat_add_comm",
-            "double_neg",
-            "trival_implication",
-            "modus_ponens",
-            "modus_tollens",
-            "disjunctive_syllogism",
-            "contrapositive",
-            "nat_zero_add",
-            "nat_add_zero",
-            "nat_add_succ",
-            "nat_succ_add"
+            "finite_unary_functions",
+            # "nat_add_comm",
+            # "double_neg",
+            # "trival_implication",
+            # "modus_ponens",
+            # "modus_tollens",
+            # "disjunctive_syllogism",
+            # "contrapositive",
+            # "nat_zero_add",
+            # "nat_add_zero",
+            # "nat_add_succ",
+            # "nat_succ_add"
         ]
-        for search_aglo in [BestFirstSearch(), BeamSearch(3)]:
+        for search_aglo in [BeamSearch(3)]:
             algo_name = search_aglo.__class__.__name__
             print(f"Running tests for {algo_name}")
             for theorem_name in theorem_names:
                 print(f"Trying to prove {theorem_name}")
                 language = ProofAction.Language.COQ
                 always_retrieve_thms = False
-                env = ProofEnv("test", proof_exec_callback, theorem_name, max_proof_depth=10, always_retrieve_thms=always_retrieve_thms, logger=logger)
+                env = ProofEnv("test", proof_exec_callback, theorem_name, max_proof_depth=100, always_retrieve_thms=always_retrieve_thms, logger=logger)
                 test_search_algorithm(
                     exp_name=os.path.join(algo_name, theorem_name),
                     algo=search_aglo,
                     proof_env=env,
-                    proof_search_heuristic=ProofFoundHeuristic(),
+                    proof_search_heuristic=NegLoglikelihoodDirectedHeuristic(),
                     action_generator=generator,
                     search_width=width,
-                    attempt_count=20,
-                    timeout_in_secs=12000)
+                    attempt_count=30,
+                    timeout_in_secs=1200)
                 print('-' * 80)
             print('=' * 80)

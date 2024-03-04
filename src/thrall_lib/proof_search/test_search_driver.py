@@ -13,7 +13,7 @@ from thrall_lib.proof_search.search_driver import ProofActionGenerator, ProofSea
 from itp_interface.rl.simple_proof_env import ProofState, ProofAction, ProofEnv
 from itp_interface.tools.proof_exec_callback import ProofExecutorCallback
 from itp_interface.tools.dynamic_coq_proof_exec import DynamicProofExecutor as DynamicCoqExecutor
-from thrall_lib.search.search import Node, SearchAlgorithm
+from thrall_lib.search.search import Node, SearchAlgorithm, Edge
 from thrall_lib.search.best_first_search import BestFirstSearch
 from thrall_lib.search.beam_search import BeamSearch
 from thrall_lib.tools.proof_env_replicator import replicate_proof_env
@@ -62,7 +62,7 @@ class ProofFoundHeuristic(ProofSearhHeuristic):
     def __init__(self):
         pass
 
-    def __call__(self, node: Node) -> float:
+    def __call__(self, parent_node: Node, edge: Edge, node: Node) -> float:
         state_info : ProofStateInfo = node.other_data
         state : ProofState = state_info.proof_state
         if state_info.done or len(state.training_data_format.start_goals) == 0:
@@ -88,6 +88,7 @@ def test_search_algorithm(
     max_attempts = attempt_count
     final_proof_res = None
     while attempt_count > 0 and not proof_found:
+        print(f"Attempt {max_attempts - attempt_count + 1} of {max_attempts}")
         search_driver = ProofSearchDriver(
             algo,
             action_generator,

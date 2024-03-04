@@ -66,3 +66,17 @@ Proof.
     - simpl. reflexivity.
     - simpl. rewrite IHn. reflexivity.
 Qed.
+
+Theorem finite_unary_functions : forall f : bool -> bool, 
+(forall x : bool, (f x) = true) \/ 
+(forall x : bool, (f x) = false) \/ 
+(forall x : bool, (f x) = x) \/ 
+(forall x : bool, (f x) = (negb x)).
+Proof.
+    intros f.
+    destruct (f true) eqn:H_true; destruct (f false) eqn:H_false.
+    left; intros; destruct x; try rewrite H_true; try rewrite H_false; reflexivity.
+    right; right; left; intros; destruct x; try rewrite H_true; try rewrite H_false; reflexivity.
+    right; right; right; intros; destruct x; try rewrite H_true; try rewrite H_false; reflexivity.
+    right; left; intros; destruct x; try rewrite H_true; try rewrite H_false; reflexivity.
+Qed.
