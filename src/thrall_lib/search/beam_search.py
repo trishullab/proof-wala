@@ -17,8 +17,8 @@ class BeamSearch(SearchAlgorithm):
             self,
             start: Node, 
             goal: Node,
-            heuristic: typing.Callable[[Node], float], 
-            generate_children: typing.Callable[[Node], typing.List[Node]] = None,
+            heuristic: typing.Callable[[Node, Edge, Node], float], 
+            generate_children: typing.Callable[[Node], typing.Tuple[typing.List[Node], typing.List[Edge]]] = None,
             parallel_count: int = None,
             build_tree: bool = True,
             timeout_in_secs: float = None) -> typing.Tuple[Node, bool, float]:
@@ -29,13 +29,15 @@ class BeamSearch(SearchAlgorithm):
         timeout_in_secs = timeout_in_secs if timeout_in_secs else float('inf')
 
         # Instead of a min heap, use a list to maintain the current level's nodes
-        current_level = [(heuristic(start), start)]
+        current_level = [(heuristic(None, None, start), start)]
         next_level = []
         explored = set([start])  # Keep track of explored nodes to avoid cycles
 
         # Initialize multiprocessing pool
         pool = Pool(processes=parallel_count if parallel_count else max(os.cpu_count() - 1, 1))
-        tree_nodes = {}  # Map of all nodes in the tree
+        start.cummulative_score = 0
+        start.distance_from_root = 0
+        tree_nodes : typing.Dict[Node, Node] = {}  # Map of all nodes in the tree
         tree_nodes[start] = start
         while current_level:
             time_elapsed = time.time() - start_time
@@ -56,16 +58,17 @@ class BeamSearch(SearchAlgorithm):
                     children, edges = generate_children(current_node)
                 else:
                     children = current_node.children
-                children_to_explore = set()
-                for idx, child in enumerate(children):
+                    edges = current_node.edges
+                children_to_explore : typing.Set[typing.Tuple[Node, Edge]] = set()
+                for child, edge in zip(children, edges):
                     if child not in explored:
-                        children_to_explore.add(child)
+                        children_to_explore.add((child, edge))
                     if build_tree:
-                        new_tree_nodes.append((current_node, child, edges[idx]))
+                        new_tree_nodes.append((current_node, child, edge))
 
-                unique_children = list(children_to_explore)
-                child_costs = pool.starmap(heuristic, [[child] for child in unique_children])
-                for child, cost in zip(unique_children, child_costs):
+                unique_children_edge = list(children_to_explore)
+                child_costs = pool.starmap(heuristic, [[current_node, edge, child] for child, edge in unique_children_edge])
+                for (child, _), cost in zip(unique_children_edge, child_costs):
                     next_level.append((cost, child))
             
             current_level = next_level
@@ -77,8 +80,12 @@ class BeamSearch(SearchAlgorithm):
             if build_tree:
                 # Go over the tree_map and add the children to the current node
                 for parent, child, edge in new_tree_nodes:
+                    parent_distance = parent.distance_from_root
+                    parent_cummulative = parent.cummulative_score
                     if child in beam_nodes:
                         if child not in tree_nodes:
+                            child.distance_from_root = parent_distance + 1
+                            child.cummulative_score = parent_cummulative + edge.score
                             parent.add_child(child, edge)
                             tree_nodes[child] = child
                             explored.add(child)
@@ -89,10 +96,18 @@ class BeamSearch(SearchAlgorithm):
                             except ValueError:
                                 pass
                             if child_idx is None:
-                                parent.add_child(tree_nodes[child], edge)
+                                existing_child = tree_nodes[child]
+                                existing_child.distance_from_root = min(existing_child.distance_from_root, parent_distance + 1)
+                                existing_child.score = min(existing_child.score, child.score)
+                                existing_child.cummulative_score = min(existing_child.cummulative_score, parent_cummulative + edge.score)
+                                parent.add_child(existing_child, edge)
                             elif edge != parent.edges[child_idx]:
                                 if edge not in parent.edges[child_idx].equivalent_edges:
                                     parent.edges[child_idx].add_equivalent_edge(edge)
+                                    existing_child = parent.children[child_idx]
+                                    existing_child.distance_from_root = min(existing_child.distance_from_root, parent_distance + 1)
+                                    existing_child.score = min(existing_child.score, child.score)
+                                    existing_child.cummulative_score = min(existing_child.cummulative_score, parent_cummulative + edge.score)
     
         pool.close()
         pool.join()
