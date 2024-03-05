@@ -1,0 +1,37 @@
+[build-system]
+requires = [
+    "hatchling",
+    "accelerate==0.23.0",
+    "bitsandbytes==0.41.1",
+    "gradio==3.48.0",
+    "protobuf==3.20.3",
+    "scipy==1.11.2",
+    "sentencepiece==0.1.99",
+    "spaces==0.16.1",
+    "torch==2.1.1",
+    "transformers==4.34.0",
+    "peft==0.7.1",
+    "trl==0.7.7",
+    "parglare==0.16.1",
+    "pydantic==1.10.13",
+    "graphviz==0.17"
+]
+build-backend = "hatchling.build"
+[project]
+name = "thrall_lib"
+version = "0.0.2"
+authors = [
+  { name="Amitayush Thakur", email="amitayush@utexas.edu" },
+]
+description = "Python library for training LLMs with Interactive Theorem Proving data."
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU General Public License v2 (GPLv2)",
+    "Operating System :: POSIX :: Linux",
+]
+
+[project.urls]
+Homepage = "https://github.com/trishullab/itp-interface"
+Issues = "https://github.com/trishullab/itp-interface/issues"
