@@ -198,6 +198,17 @@ class ProofSearchDriver:
                 if _env.done:
                     found_env = _env
                     break
+            if found_env is None:
+                # Possible that the proof was found but the environment got reset
+                # trace the path to the root node and find the environment
+                last_state: ProofState = tree_node.other_data.proof_state
+                found_env = envs[0]
+                found_env.reset()
+                proof_tree: ProofTree = last_state.proof_tree
+                actions_till_state: typing.List[ProofAction] = proof_tree.actions
+                for action in actions_till_state:
+                    found_env.step(action)
+                assert found_env.done, f"Environment should be done, but it is not"
             found_env.dump_proof()
             # Reconstruction of the path to the root node
             # proof_path = self.search_algorithm.reconstruct_path(start_goal, tree_node)

@@ -80,3 +80,20 @@ Proof.
     right; right; right; intros; destruct x; try rewrite H_true; try rewrite H_false; reflexivity.
     right; left; intros; destruct x; try rewrite H_true; try rewrite H_false; reflexivity.
 Qed.
+
+(* Proof by GPT-4 *)
+(*
+Proof.
+  intros f.
+  destruct (f true) eqn:Heq1, (f false) eqn:Heq2.
+  - left. intros x. destruct x; assumption.
+  - right; right; right. intros x. destruct x.
+    + assumption.
+    + simpl in Heq2. assumption.
+  - right; left. intros x. destruct x.
+    + assumption.
+    + simpl in Heq2. assumption.
+  - right; right; left. intros x. destruct x.
+    + simpl. assumption.
+    + assumption.
+Qed. *)

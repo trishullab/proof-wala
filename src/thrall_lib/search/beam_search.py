@@ -69,7 +69,8 @@ class BeamSearch(SearchAlgorithm):
                 unique_children_edge = list(children_to_explore)
                 child_costs = pool.starmap(heuristic, [[current_node, edge, child] for child, edge in unique_children_edge])
                 for (child, _), cost in zip(unique_children_edge, child_costs):
-                    next_level.append((cost, child))
+                    if child not in tree_nodes:
+                        next_level.append((cost, child))
             
             current_level = next_level
             next_level = []

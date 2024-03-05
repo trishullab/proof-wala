@@ -156,20 +156,20 @@ if __name__ == "__main__":
             file_path="src/thrall_lib/data/proofs/coq/simple2/thms.v"
         )
         theorem_names = [
-            "finite_unary_functions",
-            # "nat_add_comm",
-            # "double_neg",
-            # "trival_implication",
-            # "modus_ponens",
-            # "modus_tollens",
-            # "disjunctive_syllogism",
-            # "contrapositive",
-            # "nat_zero_add",
-            # "nat_add_zero",
-            # "nat_add_succ",
-            # "nat_succ_add"
+            # "finite_unary_functions",
+            "nat_add_comm",
+            "double_neg",
+            "trival_implication",
+            "modus_ponens",
+            "modus_tollens",
+            "disjunctive_syllogism",
+            "contrapositive",
+            "nat_zero_add",
+            "nat_add_zero",
+            "nat_add_succ",
+            "nat_succ_add"
         ]
-        for search_aglo in [BestFirstSearch()]:
+        for search_aglo in [BeamSearch(3)]:
             algo_name = search_aglo.__class__.__name__
             print(f"Running tests for {algo_name}")
             for theorem_name in theorem_names:
