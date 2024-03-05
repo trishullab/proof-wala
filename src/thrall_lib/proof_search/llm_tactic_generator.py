@@ -132,7 +132,7 @@ if __name__ == "__main__":
     model = Model(model_path, is_seq2seq=is_seq2seq)
     prompt_formatter = CodeT5PromptFormatter(max_token_in_prompt=max_seq_length, character_per_token=character_per_token)
     response_parser = CodeT5ResponseParser()
-    width = 10
+    width = 64
     max_new_tokens=175
     temperature=0.75 # Nucleus sampling
     do_sample=True # Nucleus sampling
@@ -156,18 +156,18 @@ if __name__ == "__main__":
             file_path="src/thrall_lib/data/proofs/coq/simple2/thms.v"
         )
         theorem_names = [
-            # "finite_unary_functions",
-            "nat_add_comm",
-            "double_neg",
-            "trival_implication",
-            "modus_ponens",
-            "modus_tollens",
-            "disjunctive_syllogism",
-            "contrapositive",
-            "nat_zero_add",
-            "nat_add_zero",
-            "nat_add_succ",
-            "nat_succ_add"
+            "finite_unary_functions",
+            # "nat_add_comm",
+            # "double_neg",
+            # "trival_implication",
+            # "modus_ponens",
+            # "modus_tollens",
+            # "disjunctive_syllogism",
+            # "contrapositive",
+            # "nat_zero_add",
+            # "nat_add_zero",
+            # "nat_add_succ",
+            # "nat_succ_add"
         ]
         for search_aglo in [BeamSearch(3)]:
             algo_name = search_aglo.__class__.__name__
