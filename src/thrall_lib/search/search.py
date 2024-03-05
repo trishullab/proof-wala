@@ -175,6 +175,7 @@ class SearchAlgorithm(ABC):
             current_node = node_queue.pop(0)
             full_node_name = current_node.name
             node_name = (current_node.name[:text_width] + "...") if len(current_node.name) > text_width else current_node.name
+            node_name += f"\n${current_node.cummulative_score:.2f}$"
             node_name = escape_string(node_name)
             if full_node_name not in unique_node_names:
                 unique_node_names[full_node_name] = node_num
@@ -201,6 +202,7 @@ class SearchAlgorithm(ABC):
                         for eq_edge in eqv_edges:
                             edge_label = eq_edge.label
                             edge_label = edge_label[:text_width] + "..." if len(edge_label) > text_width else edge_label
+                            edge_label += f"\n${eq_edge.score:.2f}$"
                             edge_label = escape_string(edge_label)
                             edge_labels.append(edge_label)
                     else:

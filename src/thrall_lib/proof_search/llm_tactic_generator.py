@@ -48,7 +48,7 @@ class LlmProofActionGenerator(ProofActionGenerator):
             return [ProofAction(ProofAction.ActionType.EXIT, state.language) for _ in range(k)]
         elif len(state.training_data_format.start_goals) == 0: # No more goals to prove
                 qed = get_qed_for_language(state.language)
-                return [(1.0, ProofAction(ProofAction.ActionType.RUN_TACTIC, state.language, tactics=[qed])) for _ in range(k)]
+                return [(0.0, ProofAction(ProofAction.ActionType.RUN_TACTIC, state.language, tactics=[qed])) for _ in range(k)]
         else:
             # generate actions using the model
             prompt = self.prompt_formatter(state_info)
@@ -109,10 +109,14 @@ class NegLoglikelihoodDirectedHeuristic(ProofSearhHeuristic):
         state_info : ProofStateInfo = node.other_data
         state : ProofState = state_info.proof_state
         if state_info.done or len(state.training_data_format.start_goals) == 0:
-            return float("-inf")
+            return 0.0
         else:
-            return parent_node.cummulative_score + edge.score
-
+            if parent_node is not None and edge is not None:
+                return min(parent_node.cummulative_score + edge.score, node.cummulative_score)
+            elif parent_node is None and edge is not None:
+                return edge.score
+            else:
+                return node.cummulative_score
 
 if __name__ == "__main__":
     from thrall_lib.proof_search.test_search_driver import test_search_algorithm
@@ -128,9 +132,9 @@ if __name__ == "__main__":
     model = Model(model_path, is_seq2seq=is_seq2seq)
     prompt_formatter = CodeT5PromptFormatter(max_token_in_prompt=max_seq_length, character_per_token=character_per_token)
     response_parser = CodeT5ResponseParser()
-    width = 128
-    max_new_tokens=200
-    temperature=0.9 # Nucleus sampling
+    width = 10
+    max_new_tokens=175
+    temperature=0.75 # Nucleus sampling
     do_sample=True # Nucleus sampling
     top_k=width # Nucleus sampling
     stop_tokens=["[END]"]
@@ -165,7 +169,7 @@ if __name__ == "__main__":
             # "nat_add_succ",
             # "nat_succ_add"
         ]
-        for search_aglo in [BeamSearch(3)]:
+        for search_aglo in [BestFirstSearch()]:
             algo_name = search_aglo.__class__.__name__
             print(f"Running tests for {algo_name}")
             for theorem_name in theorem_names:
