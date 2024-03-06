@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+import os
+os.environ["COMET_MODE"] = "DISABLED"
+os.environ["CUDA_VISIBLE_DEVICES"] = "5"
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 import sys
 root_dir = f"{__file__.split('thrall_lib')[0]}"
@@ -7,19 +11,20 @@ if root_dir not in sys.path:
 import hydra
 import copy
 import logging
-import os
 import random
 import time
 import math
 import typing
 import multiprocessing
-from thrall_lib.main.eval_config import EnvSettings, EvalBenchmark, EvalDataset, EvalProofResults, EvalSettings, Experiments, PolicyName, EvalRunCheckpointInfo, PromptSettings, parse_config
+multiprocessing.set_start_method('spawn', force=True)
+from datetime import datetime
+from thrall_lib.llm_helpers.model import Model
+from thrall_lib.proof_search.search_driver import ProofSearchDriver
+from thrall_lib.proof_search.llm_tactic_generator import CodeT5PromptFormatter, CodeT5ResponseParser, LlmProofActionGenerator
+from thrall_lib.main.eval_config import EnvSettings, EvalBenchmark, EvalDataset, EvalProofResults, EvalSettings, Experiments, EvalRunCheckpointInfo, parse_config
 from itp_interface.tools.log_utils import setup_logger
-from itp_interface.agent.simple_proof_agent import ProofAgent
-from itp_interface.rl.abstraction import Policy
 from itp_interface.rl.proof_tree import ProofSearchResult
-from itp_interface.rl.simple_proof_env import ProofEnv
-from itp_interface.rl.proof_action import ProofAction
+from itp_interface.rl.simple_proof_env import ProofEnv, ProofAction
 from itp_interface.tools.proof_exec_callback import ProofExecutorCallback
 from itp_interface.tools.dynamic_coq_proof_exec import DynamicProofExecutor as DynamicCoqProofExecutor
 from itp_interface.tools.dynamic_lean_proof_exec import DynamicProofExecutor as DynamicLeanProofExecutor
@@ -60,7 +65,14 @@ def get_all_lemmas(coq_proof_exec_callback: ProofExecutorCallback, logger: loggi
     logger.info(f"Discovered {len(lemmas_to_prove)} lemmas")
     return lemmas_to_prove
 
-def eval_dataset(env_settings: EnvSettings, eval_benchmark: EvalBenchmark, prompt_settings: PromptSettings, dataset: EvalDataset, eval_settings: EvalSettings, eval_checkpoint_info: EvalRunCheckpointInfo, eval_proof_results: EvalProofResults, logger: logging.Logger = None):
+class _Get_All_Lemmas:
+    def __call__(self, ret_dict, path, get_all_lemmas_proof_exec_callback, logger: logging.Logger):
+        try:
+            ret_dict["lemmas"] = get_all_lemmas(get_all_lemmas_proof_exec_callback, logger)
+        except:
+            logger.exception(f"Exception occurred while getting all lemmas in file: {path}")
+
+def eval_dataset(env_settings: EnvSettings, eval_benchmark: EvalBenchmark, dataset: EvalDataset, eval_settings: EvalSettings, eval_checkpoint_info: EvalRunCheckpointInfo, eval_proof_results: EvalProofResults, logger: logging.Logger = None):
     logger = logger if logger else logging.getLogger(__name__)
     skip_files_in_checkpoint = False if "SKIP_FILES_IN_CHECKPOINT" not in os.environ else bool(os.environ["SKIP_FILES_IN_CHECKPOINT"])
 
@@ -74,6 +86,10 @@ def eval_dataset(env_settings: EnvSettings, eval_benchmark: EvalBenchmark, promp
     else:
         track_time = False
     time_budget_tracker = {}
+    model_path = eval_settings.model_name
+    is_seq2seq = eval_settings.is_seq2seq
+    model = Model(model_path, is_seq2seq=is_seq2seq, use_lora=False)
+    model.__enter__()
     for attempt_idx in range(eval_settings.proof_retries):
         if proof_attempts_done:
             break
@@ -123,16 +139,17 @@ def eval_dataset(env_settings: EnvSettings, eval_benchmark: EvalBenchmark, promp
                 suppress_error_log=True,
                 always_use_retrieval=False,
                 logger=logger)
-            def _get_all_lemmas(ret_dict, logger: logging.Logger):
-                try:
-                    ret_dict["lemmas"] = get_all_lemmas(get_all_lemmas_proof_exec_callback, logger)
-                except:
-                    logger.exception(f"Exception occurred while getting all lemmas in file: {path}")
+            # class _Get_All_Lemmas:
+            #     def __call__(self, ret_dict, logger: logging.Logger):
+            #         try:
+            #             ret_dict["lemmas"] = get_all_lemmas(get_all_lemmas_proof_exec_callback, logger)
+            #         except:
+            #             logger.exception(f"Exception occurred while getting all lemmas in file: {path}")
             manager = multiprocessing.Manager()
             return_dict = manager.dict()
             file_time_out = eval_settings.timeout_in_secs * eval_settings.max_proof_depth * 50
             logger.info(f"Getting all lemmas in file: {path} with timeout: {file_time_out} seconds")
-            p = multiprocessing.Process(target=_get_all_lemmas, args=(return_dict, logger))
+            p = multiprocessing.Process(target=_Get_All_Lemmas(), args=(return_dict, path, get_all_lemmas_proof_exec_callback, logger))
             p.start()
             p.join(file_time_out)
             if p.is_alive():
@@ -183,35 +200,20 @@ def eval_dataset(env_settings: EnvSettings, eval_benchmark: EvalBenchmark, promp
                         logger.info(f"Time budget exhausted for lemma: {lemma_name} in file {path} so skipping it.")
                         continue
                     logger.info(f"Attempting to prove lemma: {lemma_name}")
-                    search_guidance_policy : Policy = None
 
-                    model_path = ".log/run_training/new_model/thrall-codet5-small-compcert-2048/best-model-20240228-072825"
-                    is_seq2seq = True
-                    max_seq_length = 2048
-                    character_per_token = 3.6
-                    model = Model(model_path, is_seq2seq=is_seq2seq)
+                    max_seq_length = eval_settings.max_seq_length
+                    character_per_token = eval_settings.character_per_token
                     prompt_formatter = CodeT5PromptFormatter(max_token_in_prompt=max_seq_length, character_per_token=character_per_token)
                     response_parser = CodeT5ResponseParser()
-                    width = 10
-                    max_new_tokens=150
-                    temperature=0.75 # Nucleus sampling
-                    do_sample=True # Nucleus sampling
-                    top_k=width # Nucleus sampling
-                    stop_tokens=["[END]"]
-                    padding=True
-                    return_full_text=False
-                    compute_probabilities=True
-                    time_stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-                    log_folder = f".log/test_search_driver/{time_stamp}"
-                    os.makedirs(log_folder, exist_ok=True)
-                    log_file = os.path.join(log_folder, "test_search_driver.log")
-                    logger = setup_logger("test_search_driver", log_file)
-                    with model:
-                        generator = LlmProofActionGenerator(
-                            model, prompt_formatter, response_parser, width, logger,
-                            max_new_tokens=max_new_tokens, temperature=temperature, do_sample=do_sample, top_k=top_k,
-                            stop_tokens=stop_tokens, padding=padding, return_full_text=return_full_text, compute_probabilities=compute_probabilities)
-
+                    width = eval_settings.width
+                    max_new_tokens=eval_settings.max_tokens_per_action
+                    temperature=eval_settings.temperature # Nucleus sampling
+                    do_sample=eval_settings.do_sample # Nucleus sampling
+                    top_k=eval_settings.top_k # Nucleus sampling
+                    stop_tokens=eval_settings.stop_tokens
+                    padding=eval_settings.padding
+                    return_full_text=eval_settings.return_full_text
+                    compute_probabilities=eval_settings.compute_probabilities
                     proof_res_chkpt = eval_proof_results.theorem_map.get(path, {}).get(lemma_name, None)
                     max_retry_attempts = file.max_retry_attempts_limits.get(lemma_name, eval_settings.proof_retries)
                     if proof_res_chkpt is None or (not proof_res_chkpt.proof_found and proof_res_chkpt.additional_info["attempt_idx"] < max_retry_attempts - 1):
@@ -220,19 +222,47 @@ def eval_dataset(env_settings: EnvSettings, eval_benchmark: EvalBenchmark, promp
                         return_dict = manager.dict()
                         def _run_prover(ret_dict):
                             try:
-                                with ProofEnv(f"basic_proof_env_{lemma_name}", proof_exec_callback, lemma_name, retrieval_strategy=env_settings.retrieval_strategy, max_proof_depth=eval_settings.max_proof_depth, always_retrieve_thms=eval_settings.always_use_useful_theorem_retrieval, logger=logger) as env:
-                                    with search_guidance_policy:
-                                        agent = ProofAgent(f"proof_agent_{lemma_name}", search_guidance_policy, eval_settings.should_checkpoint, proof_dump_file_name, logger=logger)
-                                        agent.run_episodes_till_stop(
-                                            env,
-                                            episodes=eval_settings.max_number_of_episodes,
-                                            render=eval_settings.render,
-                                            stop_policy=check_query_limit_reached(eval_settings.max_steps_per_episode),
-                                            policy_info_message=query_limit_info_message(eval_settings.max_steps_per_episode))
-                                    proof_res = env.proof_search_res
-                                    ret_dict["proof_res"] = proof_res
-                                    ret_dict["attempted_success"] = True
-                                    ret_dict["service_down"] = False
+                                env = ProofEnv(f"basic_proof_env_{lemma_name}", 
+                                    proof_exec_callback, 
+                                    lemma_name, 
+                                    retrieval_strategy=env_settings.retrieval_strategy, 
+                                    max_proof_depth=eval_settings.max_proof_depth, 
+                                    always_retrieve_thms=eval_settings.always_use_useful_theorem_retrieval, 
+                                    logger=logger)
+                                algo = eval_settings.get_search_algo()
+                                generator = LlmProofActionGenerator(
+                                    model, prompt_formatter, response_parser, width, logger,
+                                    max_new_tokens=max_new_tokens, temperature=temperature, do_sample=do_sample, top_k=top_k,
+                                    stop_tokens=stop_tokens, padding=padding, 
+                                    return_full_text=return_full_text, 
+                                    compute_probabilities=compute_probabilities)
+                                proof_search_heuristic = eval_settings.get_proof_search_heuristic()
+                                search_driver = ProofSearchDriver(
+                                    algo,
+                                    generator,
+                                    proof_search_heuristic,
+                                    width=eval_settings.width)
+                                start_node, tree_node, proof_res = search_driver.search_proof(
+                                    env,
+                                    timeout_in_secs=eval_benchmark.timeout_per_theorem_in_secs)
+                                proof_paths = []
+                                if proof_res.proof_found:
+                                    proof_paths = algo.reconstruct_all_paths(start_node, tree_node)
+                                dot = algo.visualize_search(start_node, show=False, mark_paths=proof_paths)
+                                tree_dump_folder = os.path.join(eval_settings.proof_dump_dir, "proof_trees", lemma_name)
+                                os.makedirs(tree_dump_folder, exist_ok=True)
+                                time_stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+                                tree_dump_path = os.path.join(tree_dump_folder, f"{lemma_name}_{time_stamp}")
+                                dot.render(tree_dump_path, format='svg', quiet=True)
+                                ret_dict["proof_res"] = proof_res
+                                ret_dict["attempted_success"] = True
+                                ret_dict["service_down"] = False
+                                with env:
+                                    for td in proof_res.proof_steps:
+                                        env.step(ProofAction(ProofAction.ActionType.RUN_TACTIC, env.language, tactics=td.proof_steps))
+                                    assert env.done
+                                    additional_info = proof_res_chkpt.additional_info if proof_res_chkpt is not None else {'attempt_idx': 0}
+                                    env.dump_proof(additional_info=additional_info)
                             except:
                                 logger.exception(f"Exception occurred while proving lemma: {lemma_name} in file {path}")
                                 ret_dict["attempted_success"] = False
@@ -247,20 +277,20 @@ def eval_dataset(env_settings: EnvSettings, eval_benchmark: EvalBenchmark, promp
                             if track_time and time_budget_tracker[path][lemma_name] < timeout:
                                 timeout = time_budget_tracker[path][lemma_name]
                             logger.info(f"Running the prover agent for lemma: {lemma_name} with timeout: {timeout} seconds")
-                            p = multiprocessing.Process(target=_run_prover, args=(return_dict,))
+                            #p = multiprocessing.Process(target=_run_prover, args=(return_dict,))
                             tic_start = time.time()
-                            p.start()
-                            p.join(timeout)
-                            if p.is_alive():
-                                p.kill()
-                                p.join()
-                            p.close()
+                            _run_prover(return_dict)
+                            # p.start()
+                            # p.join(timeout)
+                            # if p.is_alive():
+                            #     p.kill()
+                            #     p.join()
+                            # p.close()
                             toc_end = time.time()
                             if track_time:
                                 time_budget_tracker[path][lemma_name] -= (toc_end - tic_start)
                             if track_time and time_budget_tracker[path][lemma_name] <= 0:
                                 logger.info(f"Time budget exhausted for lemma: {lemma_name} in file {path}")
-                                proof_res_queries = proof_res_chkpt.additional_info["queries"] if proof_res_chkpt is not None and "queries" in proof_res_chkpt.additional_info else 0
                                 proof_attempt_idx = (proof_res_chkpt.additional_info["attempt_idx"] + 1) if proof_res_chkpt is not None and "attempt_idx" in proof_res_chkpt.additional_info else attempt_idx
                                 proof_res_chkpt = copy.deepcopy(no_proof_res)
                                 proof_res_chkpt.is_timeout = True
@@ -271,42 +301,33 @@ def eval_dataset(env_settings: EnvSettings, eval_benchmark: EvalBenchmark, promp
                                 should_retry = False
                             elif "attempted_success" not in return_dict:
                                 logger.info(f"Prover Agent for lemma: {lemma_name} in file {path} got killed as it timed out.")
-                                proof_res_queries = proof_res_chkpt.additional_info["queries"] if proof_res_chkpt is not None and "queries" in proof_res_chkpt.additional_info else 0
                                 proof_attempt_idx = (proof_res_chkpt.additional_info["attempt_idx"] + 1) if proof_res_chkpt is not None and "attempt_idx" in proof_res_chkpt.additional_info else attempt_idx
                                 proof_res_chkpt = copy.deepcopy(no_proof_res)
                                 proof_res_chkpt.is_timeout = True
                                 proof_res_chkpt.proof_time_in_secs = toc_end - tic_start
                                 proof_res_chkpt.additional_info["attempt_idx"] = proof_attempt_idx
-                                proof_res_chkpt.additional_info["total_queries"] = proof_res_queries
                                 eval_proof_results.add_theorem_to_maps(path, lemma_name, proof_res_chkpt)
                                 eval_checkpoint_info.add_theorem_to_maps(path, lemma_name, False)
                                 should_retry = False
                             elif not return_dict["attempted_success"]:
                                 if not return_dict["service_down"] or \
-                                    (eval_settings.gpt_model_name is not None and \
-                                    len(eval_settings.gpt_model_name) != 0 and \
-                                    eval_settings.gpt_model_name.startswith("gpt")) or \
+                                    (eval_settings.model_name is not None and \
+                                    len(eval_settings.model_name) != 0) or \
                                     max_retry <= 1:
                                     logger.info(f"Failed to prove lemma: {lemma_name} in file {path}")
-                                    proof_res_queries = proof_res_chkpt.additional_info["queries"] if proof_res_chkpt is not None and "queries" in proof_res_chkpt.additional_info else 0
                                     proof_attempt_idx = (proof_res_chkpt.additional_info["attempt_idx"] + 1) if proof_res_chkpt is not None and "attempt_idx" in proof_res_chkpt.additional_info else attempt_idx
                                     proof_res_chkpt = copy.deepcopy(no_proof_res)
                                     proof_res_chkpt.is_timeout = True
                                     proof_res_chkpt.proof_time_in_secs = toc_end - tic_start
                                     proof_res_chkpt.additional_info["attempt_idx"] = proof_attempt_idx
-                                    proof_res_chkpt.additional_info["total_queries"] = proof_res_queries
                                     eval_proof_results.add_theorem_to_maps(path, lemma_name, proof_res_chkpt)
                                     eval_checkpoint_info.add_theorem_to_maps(path, lemma_name, False)
                                     should_retry = False
                             else:
                                 logger.info(f"Prover for lemma: {lemma_name} in file {path} completed.")
-                                proof_res_queries = proof_res_chkpt.additional_info["queries"] if proof_res_chkpt is not None and "queries" in proof_res_chkpt.additional_info else 0
                                 proof_attempt_idx = (proof_res_chkpt.additional_info["attempt_idx"] + 1) if proof_res_chkpt is not None and "attempt_idx" in proof_res_chkpt.additional_info else attempt_idx
                                 proof_res_chkpt : ProofSearchResult = return_dict["proof_res"]
                                 proof_res_chkpt.additional_info["attempt_idx"] = proof_attempt_idx
-                                proof_res_chkpt.additional_info["total_queries"] = proof_res_queries + proof_res_chkpt.additional_info["queries"]
-                                if not proof_res_chkpt.proof_found and "queries" in proof_res_chkpt.additional_info:
-                                    proof_res_chkpt.is_inference_exhausted = proof_res_chkpt.additional_info["queries"] >= eval_settings.max_steps_per_episode
                                 eval_proof_results.add_theorem_to_maps(path, lemma_name, proof_res_chkpt)
                                 eval_checkpoint_info.add_theorem_to_maps(path, lemma_name, True)
                                 should_retry = False
@@ -326,7 +347,6 @@ def eval_dataset(env_settings: EnvSettings, eval_benchmark: EvalBenchmark, promp
                     proof_res_chkpt.additional_info["attempt_idx"] = attempt_idx
                     proof_res_chkpt.additional_info["total_queries"] = 0
                     proof_res_chkpt.proof_time_in_secs = 0
-                    proof_res_chkpt.additional_info["queries"] = 0
                     eval_proof_results.add_theorem_to_maps(path, lemma_name, proof_res_chkpt)
                     eval_checkpoint_info.add_theorem_to_maps(path, lemma_name, False)
         proof_attempts_done = not any_proof_attempted
@@ -361,8 +381,7 @@ def eval_benchmark(experiment: Experiments, log_dir: str, logger: logging.Logger
     eval_settings = experiment.eval_settings
     benchmark = experiment.benchmark
     checkpoint_dir = experiment.eval_settings.checkpoint_dir
-    prompt_settings = experiment.prompt_settings
-    eval_settings.checkpoint_dir = os.path.join(checkpoint_dir, benchmark.name, eval_settings.name, prompt_settings.name)
+    eval_settings.checkpoint_dir = os.path.join(checkpoint_dir, benchmark.name, eval_settings.name)
     os.makedirs(eval_settings.checkpoint_dir, exist_ok=True)
     # Load the checkpoint file if it exists
     checkpoint_file = os.path.join(eval_settings.checkpoint_dir, "checkpoint_info.json")
@@ -392,19 +411,21 @@ def eval_benchmark(experiment: Experiments, log_dir: str, logger: logging.Logger
         try:
             logger = logger or logging.getLogger(__name__)
             for dataset in benchmark.datasets:
-                eval_dataset(env_settings, benchmark, prompt_settings, dataset, eval_settings, checkpoint_info, eval_proof_results, logger=logger)
+                eval_dataset(env_settings, benchmark, dataset, eval_settings, checkpoint_info, eval_proof_results, logger=logger)
             measure_success(benchmark, eval_settings, eval_proof_results, logger=logger)
             trial_cnt = 0
         except:
             trial_cnt -= 1
             logger.exception(f"Exception occurred. Retrying {trial_cnt} more times.")
-            time.sleep(10)
+            if trial_cnt <= 0:
+                raise
+            else:
+                time.sleep(10)
     logger.info(f"Finished running experiment: \n{experiment.to_json(indent=4)}")
 
-@hydra.main(config_path="config", config_name="experiments", version_base="1.2")
+@hydra.main(config_path="config", config_name="eval_test_experiment", version_base="1.2")
 def main(cfg):
     experiment = parse_config(cfg)
-    os.chdir(root_dir)
     log_dir = ".log/evals/benchmark/{}/{}".format(experiment.benchmark.name, time.strftime("%Y%m%d-%H%M%S"))
     os.makedirs(log_dir, exist_ok=True)
     log_path = os.path.join(log_dir, "eval.log")

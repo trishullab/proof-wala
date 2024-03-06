@@ -1,0 +1,24 @@
+name: simple_test
+num_files: 1
+language: COQ
+few_shot_data_path_for_retrieval:
+few_shot_metadata_filename_for_retrieval:
+dfs_data_path_for_retrieval:
+dfs_metadata_filename_for_retrieval:
+timeout_per_theorem_in_secs: 12000
+datasets:
+  - project: src/thrall_lib/data/proofs/coq/simple2
+    files:
+      - path: thms.v
+        theorems:
+          - nat_add_comm
+          - double_neg
+          - trival_implication
+          - modus_ponens
+          - modus_tollens
+          - disjunctive_syllogism
+          - contrapositive
+          - nat_zero_add
+          - nat_add_zero
+          - nat_add_succ
+          - nat_succ_add

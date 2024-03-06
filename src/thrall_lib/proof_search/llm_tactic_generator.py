@@ -101,7 +101,7 @@ class CodeT5ResponseParser:
         gpt_request : CoqGptRequest = CodeT5TrainingDataset.response_parser(response)
         return gpt_request.args
 
-class NegLoglikelihoodDirectedHeuristic(ProofSearhHeuristic):
+class NegLoglikelihoodMinimizingHeuristic(ProofSearhHeuristic):
     def __init__(self):
         pass
 
@@ -156,18 +156,18 @@ if __name__ == "__main__":
             file_path="src/thrall_lib/data/proofs/coq/simple2/thms.v"
         )
         theorem_names = [
-            "finite_unary_functions",
-            # "nat_add_comm",
-            # "double_neg",
-            # "trival_implication",
-            # "modus_ponens",
-            # "modus_tollens",
-            # "disjunctive_syllogism",
-            # "contrapositive",
-            # "nat_zero_add",
-            # "nat_add_zero",
-            # "nat_add_succ",
-            # "nat_succ_add"
+            # "finite_unary_functions",
+            "nat_add_comm",
+            "double_neg",
+            "trival_implication",
+            "modus_ponens",
+            "modus_tollens",
+            "disjunctive_syllogism",
+            "contrapositive",
+            "nat_zero_add",
+            "nat_add_zero",
+            "nat_add_succ",
+            "nat_succ_add"
         ]
         for search_aglo in [BeamSearch(3)]:
             algo_name = search_aglo.__class__.__name__
@@ -181,7 +181,7 @@ if __name__ == "__main__":
                     exp_name=os.path.join(algo_name, theorem_name),
                     algo=search_aglo,
                     proof_env=env,
-                    proof_search_heuristic=NegLoglikelihoodDirectedHeuristic(),
+                    proof_search_heuristic=NegLoglikelihoodMinimizingHeuristic(),
                     action_generator=generator,
                     search_width=width,
                     attempt_count=30,

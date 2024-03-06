@@ -8,12 +8,16 @@ if root_dir not in sys.path:
 import typing
 import os
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from dataclasses_json import dataclass_json
 from enum import Enum
 from itp_interface.rl.proof_tree import ProofSearchResult
 from itp_interface.rl.proof_action import ProofAction
 from itp_interface.rl.simple_proof_env import ProofEnvReRankStrategy
+from thrall_lib.search.search import SearchAlgorithm
+from thrall_lib.search.beam_search import BeamSearch
+from thrall_lib.search.best_first_search import BestFirstSearch
+from thrall_lib.proof_search.llm_tactic_generator import NegLoglikelihoodMinimizingHeuristic
 
 class SettingType(Enum):
     Agent = "Agent"
@@ -34,15 +38,20 @@ class EvalSettings(object):
     name: str
     use_hammer: bool
     model_name: str
-    setting_type: SettingType = SettingType.Agent
+    is_seq2seq: bool
     max_proof_depth: int = 50
+    max_seq_length: int = 2048
     timeout_in_secs: int = 60
     proof_retries: int = 1
-    max_tokens_per_action: int = 25
-    max_theorems_in_prompt: int = 3
-    max_number_of_episodes: int = 1
-    max_steps_per_episode: int = 50
-    render: bool = False
+    character_per_token: float = 3.6
+    width: int = 64
+    max_tokens_per_action: int = 175
+    do_sample: bool = True
+    top_k: int = 20
+    stop_tokens: typing.List[str] = field(default_factory=lambda: ["[END]"])
+    padding: bool = True
+    return_full_text: bool = False
+    compute_probabilities: bool = True
     checkpoint_dir: str = ".log/checkpoints"
     should_checkpoint: bool = False
     temperature: float = 0.0
@@ -54,6 +63,23 @@ class EvalSettings(object):
     use_example_retrieval: bool = False
     always_use_useful_theorem_retrieval: bool = False
     num_goal_per_prompt: typing.Optional[int] = None
+    search_strategy: str = "BeamSearch"
+    search_params: typing.Dict[str, typing.Any] = field(default_factory=lambda: {"width": 64, "max_new_tokens": 175, "temperature": 0.75, "do_sample": True, "top_k": 64, "padding": True, "return_full_text": False, "compute_probabilities": True})
+    proof_search_heuristic: str = "NegLoglikelihoodMinimizingHeuristic"
+
+    def get_search_algo(self):
+        if self.search_strategy == "BeamSearch":
+            return BeamSearch(**self.search_params)
+        elif self.search_strategy == "BestFirstSearch":
+            return BestFirstSearch(**self.search_params)
+        else:
+            raise ValueError(f"Unknown search strategy {self.search_strategy}")
+
+    def get_proof_search_heuristic(self):
+        if self.proof_search_heuristic == "NegLoglikelihoodMinimizingHeuristic":
+            return NegLoglikelihoodMinimizingHeuristic()
+        else:
+            raise ValueError(f"Unknown proof search heuristic {self.proof_search_heuristic}")
 
 @dataclass_json
 @dataclass
@@ -130,28 +156,36 @@ def parse_config(cfg):
     eval_settings_cfg = cfg["eval_settings"]
     eval_settings = EvalSettings(
         name=eval_settings_cfg["name"],
-        use_hammer=ProofAction.HammerMode(eval_settings_cfg["use_hammer"]),
-        setting_type=SettingType(eval_settings_cfg["setting_type"]),
+        use_hammer=eval_settings_cfg["use_hammer"],
+        model_name=eval_settings_cfg["model_name"],
+        is_seq2seq=eval_settings_cfg["is_seq2seq"],
         max_proof_depth=eval_settings_cfg["max_proof_depth"],
+        max_seq_length=eval_settings_cfg["max_seq_length"],
         timeout_in_secs=eval_settings_cfg["timeout_in_secs"],
         proof_retries=eval_settings_cfg["proof_retries"],
+        character_per_token=eval_settings_cfg["character_per_token"],
+        width=eval_settings_cfg["width"],
         max_tokens_per_action=eval_settings_cfg["max_tokens_per_action"],
-        max_theorems_in_prompt=eval_settings_cfg["max_theorems_in_prompt"],
-        gpt_model_name=eval_settings_cfg["gpt_model_name"],
-        max_number_of_episodes=eval_settings_cfg["max_number_of_episodes"],
-        max_steps_per_episode=eval_settings_cfg["max_steps_per_episode"],
-        render=eval_settings_cfg["render"],
+        temperature=eval_settings_cfg["temperature"],
+        do_sample=eval_settings_cfg["do_sample"],
+        top_k=eval_settings_cfg["top_k"],
+        stop_tokens=eval_settings_cfg["stop_tokens"],
+        padding=eval_settings_cfg["padding"],
+        return_full_text=eval_settings_cfg["return_full_text"],
+        compute_probabilities=eval_settings_cfg["compute_probabilities"],
         checkpoint_dir=eval_settings_cfg["checkpoint_dir"],
         should_checkpoint=eval_settings_cfg["should_checkpoint"],
-        temperature=eval_settings_cfg["temperature"],
-        max_history_messages=eval_settings_cfg["max_history_messages"],
         proof_dump_dir=eval_settings_cfg["proof_dump_dir"],
         use_human_readable_proof_context=eval_settings_cfg["use_human_readable_proof_context"],
         sample=eval_settings_cfg["sample"],
         sample_seed=eval_settings_cfg["sample_seed"],
         use_example_retrieval=eval_settings_cfg["use_example_retrieval"],
         always_use_useful_theorem_retrieval=eval_settings_cfg["always_use_useful_theorem_retrieval"],
-        num_goal_per_prompt=eval_settings_cfg["num_goal_per_prompt"])
+        num_goal_per_prompt=eval_settings_cfg["num_goal_per_prompt"],
+        search_strategy=eval_settings_cfg["search_strategy"],
+        search_params=eval_settings_cfg["search_params"],
+        proof_search_heuristic=eval_settings_cfg["proof_search_heuristic"]
+    )
     benchmark_cfg = cfg["benchmark"]
     datasets_cfg = benchmark_cfg["datasets"]
     eval_datasets = []
