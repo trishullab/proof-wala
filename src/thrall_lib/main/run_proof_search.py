@@ -139,12 +139,6 @@ def eval_dataset(env_settings: EnvSettings, eval_benchmark: EvalBenchmark, datas
                 suppress_error_log=True,
                 always_use_retrieval=False,
                 logger=logger)
-            # class _Get_All_Lemmas:
-            #     def __call__(self, ret_dict, logger: logging.Logger):
-            #         try:
-            #             ret_dict["lemmas"] = get_all_lemmas(get_all_lemmas_proof_exec_callback, logger)
-            #         except:
-            #             logger.exception(f"Exception occurred while getting all lemmas in file: {path}")
             manager = multiprocessing.Manager()
             return_dict = manager.dict()
             file_time_out = eval_settings.timeout_in_secs * eval_settings.max_proof_depth * 50
@@ -257,12 +251,10 @@ def eval_dataset(env_settings: EnvSettings, eval_benchmark: EvalBenchmark, datas
                                 ret_dict["proof_res"] = proof_res
                                 ret_dict["attempted_success"] = True
                                 ret_dict["service_down"] = False
-                                with env:
-                                    for td in proof_res.proof_steps:
-                                        env.step(ProofAction(ProofAction.ActionType.RUN_TACTIC, env.language, tactics=td.proof_steps))
-                                    assert env.done
-                                    additional_info = proof_res_chkpt.additional_info if proof_res_chkpt is not None else {'attempt_idx': 0}
-                                    env.dump_proof(additional_info=additional_info)
+                                additional_info = proof_res_chkpt.additional_info if proof_res_chkpt is not None else {'attempt_idx': 0}
+                                proof_res.additional_info = additional_info
+                                logger.info(f"Dumping proof search result:\n{proof_res}")
+                                logger.info(f"Prover for lemma: {lemma_name} in file {path} completed.")
                             except:
                                 logger.exception(f"Exception occurred while proving lemma: {lemma_name} in file {path}")
                                 ret_dict["attempted_success"] = False
@@ -423,7 +415,7 @@ def eval_benchmark(experiment: Experiments, log_dir: str, logger: logging.Logger
                 time.sleep(10)
     logger.info(f"Finished running experiment: \n{experiment.to_json(indent=4)}")
 
-@hydra.main(config_path="config", config_name="eval_test_experiment", version_base="1.2")
+@hydra.main(config_path="config", config_name="eval_compcert_118_experiment", version_base="1.2")
 def main(cfg):
     experiment = parse_config(cfg)
     log_dir = ".log/evals/benchmark/{}/{}".format(experiment.benchmark.name, time.strftime("%Y%m%d-%H%M%S"))

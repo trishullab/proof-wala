@@ -170,7 +170,7 @@ class ProofSearchDriver:
         self.logger = logger if logger is not None else logging.getLogger(__name__)
         self.width = width
         self.proof_search_heuristic = proof_search_heuristic
-        self.env_count = min(self.width, 7)
+        self.env_count = min(self.width, 8)
 
     def search_proof(self, env: ProofEnv, timeout_in_secs: int = 60) -> typing.Tuple[Node, Node, ProofSearchResult]:
         pool = ProofEnvPool(env, self.env_count)

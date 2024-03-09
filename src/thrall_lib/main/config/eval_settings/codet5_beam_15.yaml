@@ -7,7 +7,7 @@ max_seq_length: 2048
 timeout_in_secs: 60
 proof_retries: 10
 character_per_token: 3.6
-width: 12
+width: 8
 max_tokens_per_action: 200
 temperature: 0.75
 do_sample: True
