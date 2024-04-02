@@ -16,6 +16,7 @@ from thrall_lib.llm_helpers.theorem_proving_training_dataset import TheoremProvi
 from thrall_lib.itp.training_data_formatter import BasicTrainingDataFormatterCallback
 from thrall_lib.itp.copra_training_data_formatter import CopraPromptTrainingDataFormatter, CopraTrainingDataset
 from thrall_lib.itp.codet5_training_data_formatter import CodeT5PromptTrainingDataFormatter, CodeT5TrainingDataset
+from thrall_lib.itp.proof_model_training_data_formatter import ProofModelTrainingDataset, ProofModelPromptTrainingDataFormatter
 
 class ExperimentType(Enum):
     Training = "Training"
@@ -28,7 +29,8 @@ class ExperimentType(Enum):
 class TrainingDatasetType(Enum):
     TheoremProvingTrainingDataset = "TheoremProvingTrainingDataset"
     CopraTrainingDataset = "CopraTrainingDataset"
-    CodeT5TrainingDataset = "CodeT5TrainingDataset" 
+    CodeT5TrainingDataset = "CodeT5TrainingDataset"
+    ProofModelTrainingDataset = "ProofModelTrainingDataset" 
 
     def __str__(self):
         return self.value
@@ -40,6 +42,8 @@ class TrainingDatasetType(Enum):
             return CopraTrainingDataset
         elif self == TrainingDatasetType.CodeT5TrainingDataset:
             return CodeT5TrainingDataset
+        elif self == TrainingDatasetType.ProofModelTrainingDataset:
+            return ProofModelTrainingDataset
         else:
             raise Exception(f"Invalid training dataset type: {self}")
     
@@ -47,6 +51,7 @@ class TrainingDataFormatterType(Enum):
     BasicTrainingDataFormatterCallback = "BasicTrainingDataFormatterCallback"
     CopraPromptTrainingDataFormatter = "CopraPromptTrainingDataFormatter"
     CodeT5PromptTrainingDataFormatter = "CodeT5PromptTrainingDataFormatter"
+    ProofModelPromptTrainingDataFormatter = "ProofModelPromptTrainingDataFormatter"
 
     def __str__(self):
         return self.value
@@ -58,6 +63,8 @@ class TrainingDataFormatterType(Enum):
             return CopraPromptTrainingDataFormatter
         elif self == TrainingDataFormatterType.CodeT5PromptTrainingDataFormatter:
             return CodeT5PromptTrainingDataFormatter
+        elif self == TrainingDataFormatterType.ProofModelPromptTrainingDataFormatter:
+            return ProofModelPromptTrainingDataFormatter
         else:
             raise Exception(f"Invalid training data formatter type: {self}")
 

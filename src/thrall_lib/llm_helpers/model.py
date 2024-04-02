@@ -614,6 +614,7 @@ class Model(object):
                 if no_checkpoint:
                     trainer.train()
         if self.training_args.do_eval and eval_dataset is not None:
+            self.code_logger.info("Running evaluation after training")
             trainer.evaluate()
         # Change the model name and save it
         # load the best model

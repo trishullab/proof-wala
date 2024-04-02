@@ -88,12 +88,8 @@ def train_experiment(experiment: Experiment):
         **experiment.model_settings.model_args)
     training_data_formatter_callback = experiment.training_data_settings.training_data_formatter_type.get_class()
     with model:
-        if hf_eval_dataset is not None and hf_test_dataset is not None:
-            eval_set = {"valid": hf_eval_dataset, "test": hf_test_dataset}
-        elif hf_eval_dataset is not None:
+        if hf_eval_dataset is not None:
             eval_set = hf_eval_dataset
-        elif hf_test_dataset is not None:
-            eval_set = hf_test_dataset
         else:
             eval_set = None
         model.train(
@@ -101,3 +97,11 @@ def train_experiment(experiment: Experiment):
             training_data_formatter_callback(),
             hf_training_dataset, 
             eval_set)
+        if hf_test_dataset is not None:
+            model.training_args.do_train = False
+            model.training_args.do_eval = True
+            model.train(
+                time_now,
+                training_data_formatter_callback(),
+                hf_training_dataset, 
+                hf_test_dataset)
