@@ -12,12 +12,11 @@ from thrall_lib.parsers.proof_model_grammars import ProofModelGrammar, ProofMode
 from thrall_lib.parsers.grammars.prompt_template_grammar import PromptGrammar
 
 class ProofModelTrainingDataset(TheoremProvingTrainingDataset):
-    response_grammar: ProofModelGrammar = ProofModelGrammar()
-    request_grammar: ProofModelPredGrammar = ProofModelPredGrammar()
     def __init__(self, 
             training_data: TrainingData,
             characters_per_token: float = 3.6,
-            max_tokens: int = 2048):
+            max_tokens: int = 2048,
+            state_delta: bool = False):
         assert characters_per_token >= 1, f"Characters per token must be at least 1, but is {characters_per_token}"
         super().__init__(training_data)
         self.prompt_grammar = PromptGrammar()
@@ -25,24 +24,22 @@ class ProofModelTrainingDataset(TheoremProvingTrainingDataset):
         self.max_tokens = max_tokens
         self.max_tokens_in_prompt = self.max_tokens
         self.max_chars_in_prompt = int(self.max_tokens_in_prompt * self.characters_per_token)
+        self.state_delta = state_delta
+        self.response_grammar = ProofModelGrammar(state_delta=False) # Response grammar does not need state delta
+        self.request_grammar = ProofModelPredGrammar(state_delta=self.state_delta)
         if self.max_tokens_in_prompt < 0:
             raise ValueError(f"Max tokens in prompt is negative: {self.max_tokens_in_prompt}, increase max tokens or decrease characters per token")
         self.prompt_delimiter = "\n"
 
     def __getitem__(self, idx):
         proof_state = self.training_data[idx]
-        prompt = ProofModelTrainingDataset.response_grammar.format_as_per_grammar(proof_state, max_token_cnt=self.max_tokens_in_prompt, characters_per_token=self.characters_per_token)
-        completion = ProofModelTrainingDataset.request_grammar.format_as_per_grammar(proof_state, max_token_cnt=self.max_tokens_in_prompt, characters_per_token=self.characters_per_token)
+        prompt = self.response_grammar.format_as_per_grammar(proof_state, max_token_cnt=self.max_tokens_in_prompt, characters_per_token=self.characters_per_token)
+        completion = self.request_grammar.format_as_per_grammar(proof_state, max_token_cnt=self.max_tokens_in_prompt, characters_per_token=self.characters_per_token)
         prompt += self.prompt_delimiter
         return {
             "prompt": prompt,
             "completion": completion
         }
-
-    def _get_proof_state_next_proof_state(self, idx):
-        tdf = self.training_data[idx]
-        next_tdf = self.training_data[idx + 1] if idx < len(self.training_data) - 1 else None
-        return tdf, next_tdf
     
     # def prompt_formatter(
     #         response: CoqGptResponse, 
