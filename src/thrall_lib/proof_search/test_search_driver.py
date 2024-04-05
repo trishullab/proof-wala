@@ -11,12 +11,12 @@ import os
 from datetime import datetime
 from thrall_lib.proof_search.search_driver import ProofActionGenerator, ProofSearhHeuristic, ProofSearchDriver, ProofStateInfo
 from itp_interface.rl.simple_proof_env import ProofState, ProofAction, ProofEnv
+from itp_interface.rl.simpl_proof_env_pool import replicate_proof_env
 from itp_interface.tools.proof_exec_callback import ProofExecutorCallback
-from itp_interface.tools.dynamic_coq_proof_exec import DynamicProofExecutor as DynamicCoqExecutor
 from thrall_lib.search.search import Node, SearchAlgorithm, Edge
 from thrall_lib.search.best_first_search import BestFirstSearch
 from thrall_lib.search.beam_search import BeamSearch
-from thrall_lib.tools.proof_env_replicator import replicate_proof_env
+os.environ["CUDA_VISIBLE_DEVICES"] = "5"
 
 class RandomCoqProofActionGenerator(ProofActionGenerator):
     def __init__(self, width: int = 4):
@@ -119,6 +119,8 @@ def test_search_algorithm(
     print(final_proof_res)
 
 if __name__ == '__main__':
+    import ray
+    ray.init(num_cpus=10, num_gpus=1, ignore_reinit_error=True)
     proof_exec_callback = ProofExecutorCallback(
         project_folder=".",
         file_path="src/thrall_lib/data/proofs/coq/simple2/thms.v"
