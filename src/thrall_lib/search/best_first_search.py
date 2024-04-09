@@ -39,7 +39,7 @@ class BestFirstSearch(SearchAlgorithm):
         tree_nodes = set([start])  # Keep track of all nodes in the tree
         while frontier:
             _, current_node = heapq.heappop(frontier) # Pop the node with the lowest score
-            print(f"Current distance from root: {current_node.distance_from_root}, cummulative score: {current_node.cummulative_score}")
+            # print(f"Current distance from root: {current_node.distance_from_root}, cummulative score: {current_node.cummulative_score}")
             if current_node == goal:
                 pool.close()
                 pool.join()

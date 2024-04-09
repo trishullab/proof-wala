@@ -9,10 +9,12 @@ import logging
 import numpy as np
 import os
 from datetime import datetime
-from thrall_lib.proof_search.search_driver import ProofActionGenerator, ProofSearhHeuristic, ProofSearchDriver, ProofStateInfo
+from thrall_lib.proof_search.search_driver import ProofActionGenerator, ProofSearhHeuristic, ProofSearchDriver, ProofStateInfo, ProofPathTracer
 from itp_interface.rl.simple_proof_env import ProofState, ProofAction, ProofEnv
 from itp_interface.rl.simpl_proof_env_pool import replicate_proof_env
 from itp_interface.tools.proof_exec_callback import ProofExecutorCallback
+from itp_interface.tools.training_data_format import TrainingDataMetadataFormat
+from itp_interface.tools.training_data import TrainingData
 from thrall_lib.search.search import Node, SearchAlgorithm, Edge
 from thrall_lib.search.best_first_search import BestFirstSearch
 from thrall_lib.search.beam_search import BeamSearch
@@ -78,7 +80,9 @@ def test_search_algorithm(
         action_generator: ProofActionGenerator,
         search_width: int = 4, 
         attempt_count: int = 1,
-        timeout_in_secs: float = 60) -> typing.Callable[[Node], typing.List[Node]]:
+        timeout_in_secs: float = 60,
+        trace_settings: ProofPathTracer = None,
+        extract_original_proof: bool = False) -> typing.Callable[[Node], typing.List[Node]]:
     #tracemalloc.start()
     proof_found = False
     tree_dump_folder = f".log/proof_search/{exp_name}"
@@ -93,11 +97,13 @@ def test_search_algorithm(
             algo,
             action_generator,
             proof_search_heuristic,
-            width=search_width)
+            width=search_width,
+            tracer=trace_settings)
         replicated_env = replicate_proof_env(proof_env)
         start_node, tree_node, proof_res = search_driver.search_proof(
             proof_env,
-            timeout_in_secs=timeout_in_secs)
+            timeout_in_secs=timeout_in_secs,
+            extract_original_proofs=extract_original_proof)
         final_proof_res = proof_res
         proof_paths = []
         if proof_res.proof_found:
@@ -139,6 +145,18 @@ if __name__ == '__main__':
         "nat_succ_add"
     ]
     width = 10
+    tracer = ProofPathTracer(
+        collect_traces=True,
+        folder=".log/traces",
+        training_meta_filename="traces_meta.json",
+        training_metadata=TrainingDataMetadataFormat(
+            data_filename_prefix="traces_data",
+            lemma_ref_filename_prefix="traces_lemma_ref"
+        ),
+        max_parallelism=4
+    )
+    os.makedirs(tracer.folder, exist_ok=True)
+    tracer.reset_training_data()
     for search_aglo in [BestFirstSearch(), BeamSearch(3)]:
         algo_name = search_aglo.__class__.__name__
         print(f"Running tests for {algo_name}")
@@ -156,6 +174,9 @@ if __name__ == '__main__':
                 action_generator=RandomCoqProofActionGenerator(width),
                 search_width=width,
                 attempt_count=5,
-                timeout_in_secs=60)
+                timeout_in_secs=60,
+                trace_settings=tracer,
+                extract_original_proof=True)
             print('-' * 80)
         print('=' * 80)
+    tracer.save()
