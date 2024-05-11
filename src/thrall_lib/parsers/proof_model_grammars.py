@@ -39,6 +39,7 @@ def get_delta_state(start_goals: typing.List[Goal], end_goals: typing.List[Goal]
             delta_goals.append(goal)
         else:
             goal_idx = start_goals.index(CustomGoalHash(goal))
+            assert goal_idx >= 0 and goal_idx < len(start_goals), f"Goal index {goal_idx} is out of bounds"
             delta_goals.append(Goal(goal=f"DITTO {goal_idx}", hypotheses=[]))
     return delta_goals
 
@@ -205,11 +206,11 @@ String:;
                 states.extend(node)
             return states
         elif rule_type == "Prog":
-            if len(nodes) > 1:
+            if len(nodes) >= 1 and nodes[0] == ProofModelGrammar.Keywords.DESCRIPTION.value:
                 context.goal_description = nodes[1].strip() if nodes[1] is not None else None
                 context.start_goals = nodes[2]
             else:
-                context.start_goals = nodes[0]
+                context.start_goals = nodes
             return context
         else:
             raise Exception("Not implemented")
@@ -357,11 +358,11 @@ String:;
                 states.extend(node)
             return states
         elif rule_type == "Prog":
-            if len(nodes) > 1:
+            if len(nodes) >= 1 and nodes[0] == ProofModelGrammar.Keywords.DESCRIPTION.value:
                 context.goal_description = nodes[1].strip() if nodes[1] is not None else None
                 context.end_goals = nodes[2]
             else:
-                context.end_goals = nodes[0]
+                context.end_goals = nodes
             return context
         else:
             raise Exception("Not implemented")
@@ -442,3 +443,391 @@ DITTO 1
     print(ProofModelGrammar().format_as_per_grammar(start_proof_state_res))
     print()
     print(ProofModelPredGrammar().format_as_per_grammar(next_proof_state_res))
+    actual_proof_state = """
+[STATES]
+[STATE] 0
+is_not_temp s -> is_not_temp d -> is_not_temp d
+[HYPOTHESES]
+[HYPOTHESIS] D : is_path nil
+[HYPOTHESIS] C : temp_last nil
+[HYPOTHESIS] B : move_no_temp (mu1 ++ (s, d) :: mu2)
+[HYPOTHESIS] A : (is_mill mu1 /\
+ (is_mill mu2 /\ ~ In d (dests mu2)) /\
+ dests_disjoint mu1 mu2 /\ ~ In d (dests mu1)) /\
+is_mill nil /\
+dests_disjoint mu1 nil /\ dests_disjoint mu2 nil /\ ~ In d (dests nil)
+[HYPOTHESIS] WF : state_wf (State (mu1 ++ (s, d) :: mu2) nil tau)
+[HYPOTHESIS] tau : moves
+[HYPOTHESIS] mu2 : list (reg * reg)
+[HYPOTHESIS] s,d : reg
+[HYPOTHESIS] mu1 : list (reg * reg)
+[HYPOTHESIS] val : Type
+[HYPOTHESIS] temp : reg -> reg
+[HYPOTHESIS] reg_eq : forall r1 r2 : reg, {r1 = r2} + {r1 <> r2}
+[HYPOTHESIS] reg : Type
+[STATE] 1
+In (s, d) (mu1 ++ (s, d) :: mu2)
+[HYPOTHESES]
+[HYPOTHESIS] D : is_path nil
+[HYPOTHESIS] C : temp_last nil
+[HYPOTHESIS] B : move_no_temp (mu1 ++ (s, d) :: mu2)
+[HYPOTHESIS] A : (is_mill mu1 /\
+ (is_mill mu2 /\ ~ In d (dests mu2)) /\
+ dests_disjoint mu1 mu2 /\ ~ In d (dests mu1)) /\
+is_mill nil /\
+dests_disjoint mu1 nil /\ dests_disjoint mu2 nil /\ ~ In d (dests nil)
+[HYPOTHESIS] WF : state_wf (State (mu1 ++ (s, d) :: mu2) nil tau)
+[HYPOTHESIS] tau : moves
+[HYPOTHESIS] mu2 : list (reg * reg)
+[HYPOTHESIS] s,d : reg
+[HYPOTHESIS] mu1 : list (reg * reg)
+[HYPOTHESIS] val : Type
+[HYPOTHESIS] temp : reg -> reg
+[HYPOTHESIS] reg_eq : forall r1 r2 : reg, {r1 = r2} + {r1 <> r2}
+[HYPOTHESIS] reg : Type
+[STATE] 2
+move_no_temp nil
+[HYPOTHESES]
+[HYPOTHESIS] D : is_path nil
+[HYPOTHESIS] C : temp_last nil
+[HYPOTHESIS] B : move_no_temp (mu1 ++ (s, d) :: mu2)
+[HYPOTHESIS] A : (is_mill mu1 /\
+ (is_mill mu2 /\ ~ In d (dests mu2)) /\
+ dests_disjoint mu1 mu2 /\ ~ In d (dests mu1)) /\
+is_mill nil /\
+dests_disjoint mu1 nil /\ dests_disjoint mu2 nil /\ ~ In d (dests nil)
+[HYPOTHESIS] WF : state_wf (State (mu1 ++ (s, d) :: mu2) nil tau)
+[HYPOTHESIS] tau : moves
+[HYPOTHESIS] mu2 : list (reg * reg)
+[HYPOTHESIS] s,d : reg
+[HYPOTHESIS] mu1 : list (reg * reg)
+[HYPOTHESIS] val : Type
+[HYPOTHESIS] temp : reg -> reg
+[HYPOTHESIS] reg_eq : forall r1 r2 : reg, {r1 = r2} + {r1 <> r2}
+[HYPOTHESIS] reg : Type
+[STATE] 3
+is_path ((s, d) :: nil)
+[HYPOTHESES]
+[HYPOTHESIS] D : is_path nil
+[HYPOTHESIS] C : temp_last nil
+[HYPOTHESIS] B : move_no_temp (mu1 ++ (s, d) :: mu2)
+[HYPOTHESIS] A : (is_mill mu1 /\
+ (is_mill mu2 /\ ~ In d (dests mu2)) /\
+ dests_disjoint mu1 mu2 /\ ~ In d (dests mu1)) /\
+is_mill nil /\
+dests_disjoint mu1 nil /\ dests_disjoint mu2 nil /\ ~ In d (dests nil)
+[HYPOTHESIS] WF : state_wf (State (mu1 ++ (s, d) :: mu2) nil tau)
+[HYPOTHESIS] tau : moves
+[HYPOTHESIS] mu2 : list (reg * reg)
+[HYPOTHESIS] s,d : reg
+[HYPOTHESIS] mu1 : list (reg * reg)
+[HYPOTHESIS] val : Type
+[HYPOTHESIS] temp : reg -> reg
+[HYPOTHESIS] reg_eq : forall r1 r2 : reg, {r1 = r2} + {r1 <> r2}
+[HYPOTHESIS] reg : Type
+[STATE] 4
+(is_mill mu1 /\ is_mill mu2 /\ dests_disjoint mu1 mu2) /\
+((is_mill sigma /\ ~ In d (dests sigma)) /\
+ r <> d /\ ~ In r (dests sigma)) /\
+((dests_disjoint mu1 sigma /\ ~ In d (dests mu1)) /\ ~ In r (dests mu1)) /\
+(dests_disjoint mu2 sigma /\ ~ In d (dests mu2)) /\ ~ In r (dests mu2)
+[HYPOTHESES]
+[HYPOTHESIS] D : is_path ((s, d) :: sigma)
+[HYPOTHESIS] C : temp_last ((s, d) :: sigma)
+[HYPOTHESIS] B : move_no_temp (mu1 ++ (d, r) :: mu2)
+[HYPOTHESIS] A : (is_mill mu1 /\
+ (is_mill mu2 /\ ~ In r (dests mu2)) /\
+ dests_disjoint mu1 mu2 /\ ~ In r (dests mu1)) /\
+(is_mill sigma /\ ~ In d (dests sigma)) /\
+(dests_disjoint mu1 sigma /\ ~ In d (dests mu1)) /\
+(dests_disjoint mu2 sigma /\ ~ In r (dests sigma)) /\
+d <> r /\ ~ In d (dests mu2)
+[HYPOTHESIS] WF : state_wf (State (mu1 ++ (d, r) :: mu2) ((s, d) :: sigma) tau)
+[HYPOTHESIS] tau : moves
+[HYPOTHESIS] sigma : list (reg * reg)
+[HYPOTHESIS] s : reg
+[HYPOTHESIS] mu2 : list (reg * reg)
+[HYPOTHESIS] d,r : reg
+[HYPOTHESIS] mu1 : list (reg * reg)
+[HYPOTHESIS] val : Type
+[HYPOTHESIS] temp : reg -> reg
+[HYPOTHESIS] reg_eq : forall r1 r2 : reg, {r1 = r2} + {r1 <> r2}
+[HYPOTHESIS] reg : Type
+[STATE] 5
+move_no_temp (mu1 ++ mu2)
+[HYPOTHESES]
+[HYPOTHESIS] D : is_path ((s, d) :: sigma)
+[HYPOTHESIS] C : temp_last ((s, d) :: sigma)
+[HYPOTHESIS] B : move_no_temp (mu1 ++ (d, r) :: mu2)
+[HYPOTHESIS] A : (is_mill mu1 /\
+ (is_mill mu2 /\ ~ In r (dests mu2)) /\
+ dests_disjoint mu1 mu2 /\ ~ In r (dests mu1)) /\
+(is_mill sigma /\ ~ In d (dests sigma)) /\
+(dests_disjoint mu1 sigma /\ ~ In d (dests mu1)) /\
+(dests_disjoint mu2 sigma /\ ~ In r (dests sigma)) /\
+d <> r /\ ~ In d (dests mu2)
+[HYPOTHESIS] WF : state_wf (State (mu1 ++ (d, r) :: mu2) ((s, d) :: sigma) tau)
+[HYPOTHESIS] tau : moves
+[HYPOTHESIS] sigma : list (reg * reg)
+[HYPOTHESIS] s : reg
+[HYPOTHESIS] mu2 : list (reg * reg)
+[HYPOTHESIS] d,r : reg
+[HYPOTHESIS] mu1 : list (reg * reg)
+[HYPOTHESIS] val : Type
+[HYPOTHESIS] temp : reg -> reg
+[HYPOTHESIS] reg_eq : forall r1 r2 : reg, {r1 = r2} + {r1 <> r2}
+[HYPOTHESIS] reg : Type
+[STATE] 6
+temp_last ((d, r) :: (s, d) :: sigma)
+[HYPOTHESES]
+[HYPOTHESIS] D : is_path ((s, d) :: sigma)
+[HYPOTHESIS] C : temp_last ((s, d) :: sigma)
+[HYPOTHESIS] B : move_no_temp (mu1 ++ (d, r) :: mu2)
+[HYPOTHESIS] A : (is_mill mu1 /\
+ (is_mill mu2 /\ ~ In r (dests mu2)) /\
+ dests_disjoint mu1 mu2 /\ ~ In r (dests mu1)) /\
+(is_mill sigma /\ ~ In d (dests sigma)) /\
+(dests_disjoint mu1 sigma /\ ~ In d (dests mu1)) /\
+(dests_disjoint mu2 sigma /\ ~ In r (dests sigma)) /\
+d <> r /\ ~ In d (dests mu2)
+[HYPOTHESIS] WF : state_wf (State (mu1 ++ (d, r) :: mu2) ((s, d) :: sigma) tau)
+[HYPOTHESIS] tau : moves
+[HYPOTHESIS] sigma : list (reg * reg)
+[HYPOTHESIS] s : reg
+[HYPOTHESIS] mu2 : list (reg * reg)
+[HYPOTHESIS] d,r : reg
+[HYPOTHESIS] mu1 : list (reg * reg)
+[HYPOTHESIS] val : Type
+[HYPOTHESIS] temp : reg -> reg
+[HYPOTHESIS] reg_eq : forall r1 r2 : reg, {r1 = r2} + {r1 <> r2}
+[HYPOTHESIS] reg : Type
+[STATE] 7
+is_path ((d, r) :: (s, d) :: sigma)
+[HYPOTHESES]
+[HYPOTHESIS] D : is_path ((s, d) :: sigma)
+[HYPOTHESIS] C : temp_last ((s, d) :: sigma)
+[HYPOTHESIS] B : move_no_temp (mu1 ++ (d, r) :: mu2)
+[HYPOTHESIS] A : (is_mill mu1 /\
+ (is_mill mu2 /\ ~ In r (dests mu2)) /\
+ dests_disjoint mu1 mu2 /\ ~ In r (dests mu1)) /\
+(is_mill sigma /\ ~ In d (dests sigma)) /\
+(dests_disjoint mu1 sigma /\ ~ In d (dests mu1)) /\
+(dests_disjoint mu2 sigma /\ ~ In r (dests sigma)) /\
+d <> r /\ ~ In d (dests mu2)
+[HYPOTHESIS] WF : state_wf (State (mu1 ++ (d, r) :: mu2) ((s, d) :: sigma) tau)
+[HYPOTHESIS] tau : moves
+[HYPOTHESIS] sigma : list (reg * reg)
+[HYPOTHESIS] s : reg
+[HYPOTHESIS] mu2 : list (reg * reg)
+[HYPOTHESIS] d,r : reg
+[HYPOTHESIS] mu1 : list (reg * reg)
+[HYPOTHESIS] val : Type
+[HYPOTHESIS] temp : reg -> reg
+[HYPOTHESIS] reg_eq : forall r1 r2 : reg, {r1 = r2} + {r1 <> r2}
+[HYPOTHESIS] reg : Type
+[STATE] 8
+is_mill mu /\
+(is_mill sigma /\
+ (is_mill nil /\ ~ In d (dests nil)) /\
+ dests_disjoint sigma nil /\ ~ In d (dests sigma)) /\
+dests_disjoint mu sigma /\ dests_disjoint mu nil /\ ~ In d (dests mu)
+[HYPOTHESES]
+[HYPOTHESIS] D : is_path (sigma ++ (s, d) :: nil)
+[HYPOTHESIS] C : temp_last (sigma ++ (s, d) :: nil)
+[HYPOTHESIS] B : move_no_temp mu
+[HYPOTHESIS] A : is_mill mu /\
+(is_mill sigma /\
+ (is_mill nil /\ ~ In d (dests nil)) /\
+ dests_disjoint sigma nil /\ ~ In d (dests sigma)) /\
+dests_disjoint mu sigma /\ dests_disjoint mu nil /\ ~ In d (dests mu)
+[HYPOTHESIS] WF : state_wf (State mu (sigma ++ (s, d) :: nil) tau)
+[HYPOTHESIS] tau : moves
+
+[PROOFSTEP]
+auto.
+[END]
+"""
+    state_res = ProofModelGrammar().parse(actual_proof_state)
+    next_state = """
+[STATES]
+[STATE] 0
+In (s, d) (mu1 ++ (s, d) :: mu2)
+[HYPOTHESES]
+[HYPOTHESIS] D : is_path nil
+[HYPOTHESIS] C : temp_last nil
+[HYPOTHESIS] B : move_no_temp (mu1 ++ (s, d) :: mu2)
+[HYPOTHESIS] A : (is_mill mu1 /\
+ (is_mill mu2 /\ ~ In d (dests mu2)) /\
+ dests_disjoint mu1 mu2 /\ ~ In d (dests mu1)) /\
+is_mill nil /\
+dests_disjoint mu1 nil /\ dests_disjoint mu2 nil /\ ~ In d (dests nil)
+[HYPOTHESIS] WF : state_wf (State (mu1 ++ (s, d) :: mu2) nil tau)
+[HYPOTHESIS] tau : moves
+[HYPOTHESIS] mu2 : list (reg * reg)
+[HYPOTHESIS] s,d : reg
+[HYPOTHESIS] mu1 : list (reg * reg)
+[HYPOTHESIS] val : Type
+[HYPOTHESIS] temp : reg -> reg
+[HYPOTHESIS] reg_eq : forall r1 r2 : reg, {r1 = r2} + {r1 <> r2}
+[HYPOTHESIS] reg : Type
+[STATE] 1
+move_no_temp nil
+[HYPOTHESES]
+[HYPOTHESIS] D : is_path nil
+[HYPOTHESIS] C : temp_last nil
+[HYPOTHESIS] B : move_no_temp (mu1 ++ (s, d) :: mu2)
+[HYPOTHESIS] A : (is_mill mu1 /\
+ (is_mill mu2 /\ ~ In d (dests mu2)) /\
+ dests_disjoint mu1 mu2 /\ ~ In d (dests mu1)) /\
+is_mill nil /\
+dests_disjoint mu1 nil /\ dests_disjoint mu2 nil /\ ~ In d (dests nil)
+[HYPOTHESIS] WF : state_wf (State (mu1 ++ (s, d) :: mu2) nil tau)
+[HYPOTHESIS] tau : moves
+[HYPOTHESIS] mu2 : list (reg * reg)
+[HYPOTHESIS] s,d : reg
+[HYPOTHESIS] mu1 : list (reg * reg)
+[HYPOTHESIS] val : Type
+[HYPOTHESIS] temp : reg -> reg
+[HYPOTHESIS] reg_eq : forall r1 r2 : reg, {r1 = r2} + {r1 <> r2}
+[HYPOTHESIS] reg : Type
+[STATE] 2
+is_path ((s, d) :: nil)
+[HYPOTHESES]
+[HYPOTHESIS] D : is_path nil
+[HYPOTHESIS] C : temp_last nil
+[HYPOTHESIS] B : move_no_temp (mu1 ++ (s, d) :: mu2)
+[HYPOTHESIS] A : (is_mill mu1 /\
+ (is_mill mu2 /\ ~ In d (dests mu2)) /\
+ dests_disjoint mu1 mu2 /\ ~ In d (dests mu1)) /\
+is_mill nil /\
+dests_disjoint mu1 nil /\ dests_disjoint mu2 nil /\ ~ In d (dests nil)
+[HYPOTHESIS] WF : state_wf (State (mu1 ++ (s, d) :: mu2) nil tau)
+[HYPOTHESIS] tau : moves
+[HYPOTHESIS] mu2 : list (reg * reg)
+[HYPOTHESIS] s,d : reg
+[HYPOTHESIS] mu1 : list (reg * reg)
+[HYPOTHESIS] val : Type
+[HYPOTHESIS] temp : reg -> reg
+[HYPOTHESIS] reg_eq : forall r1 r2 : reg, {r1 = r2} + {r1 <> r2}
+[HYPOTHESIS] reg : Type
+[STATE] 3
+(is_mill mu1 /\ is_mill mu2 /\ dests_disjoint mu1 mu2) /\
+((is_mill sigma /\ ~ In d (dests sigma)) /\
+ r <> d /\ ~ In r (dests sigma)) /\
+((dests_disjoint mu1 sigma /\ ~ In d (dests mu1)) /\ ~ In r (dests mu1)) /\
+(dests_disjoint mu2 sigma /\ ~ In d (dests mu2)) /\ ~ In r (dests mu2)
+[HYPOTHESES]
+[HYPOTHESIS] D : is_path ((s, d) :: sigma)
+[HYPOTHESIS] C : temp_last ((s, d) :: sigma)
+[HYPOTHESIS] B : move_no_temp (mu1 ++ (d, r) :: mu2)
+[HYPOTHESIS] A : (is_mill mu1 /\
+ (is_mill mu2 /\ ~ In r (dests mu2)) /\
+ dests_disjoint mu1 mu2 /\ ~ In r (dests mu1)) /\
+(is_mill sigma /\ ~ In d (dests sigma)) /\
+(dests_disjoint mu1 sigma /\ ~ In d (dests mu1)) /\
+(dests_disjoint mu2 sigma /\ ~ In r (dests sigma)) /\
+d <> r /\ ~ In d (dests mu2)
+[HYPOTHESIS] WF : state_wf (State (mu1 ++ (d, r) :: mu2) ((s, d) :: sigma) tau)
+[HYPOTHESIS] tau : moves
+[HYPOTHESIS] sigma : list (reg * reg)
+[HYPOTHESIS] s : reg
+[HYPOTHESIS] mu2 : list (reg * reg)
+[HYPOTHESIS] d,r : reg
+[HYPOTHESIS] mu1 : list (reg * reg)
+[HYPOTHESIS] val : Type
+[HYPOTHESIS] temp : reg -> reg
+[HYPOTHESIS] reg_eq : forall r1 r2 : reg, {r1 = r2} + {r1 <> r2}
+[HYPOTHESIS] reg : Type
+[STATE] 4
+move_no_temp (mu1 ++ mu2)
+[HYPOTHESES]
+[HYPOTHESIS] D : is_path ((s, d) :: sigma)
+[HYPOTHESIS] C : temp_last ((s, d) :: sigma)
+[HYPOTHESIS] B : move_no_temp (mu1 ++ (d, r) :: mu2)
+[HYPOTHESIS] A : (is_mill mu1 /\
+ (is_mill mu2 /\ ~ In r (dests mu2)) /\
+ dests_disjoint mu1 mu2 /\ ~ In r (dests mu1)) /\
+(is_mill sigma /\ ~ In d (dests sigma)) /\
+(dests_disjoint mu1 sigma /\ ~ In d (dests mu1)) /\
+(dests_disjoint mu2 sigma /\ ~ In r (dests sigma)) /\
+d <> r /\ ~ In d (dests mu2)
+[HYPOTHESIS] WF : state_wf (State (mu1 ++ (d, r) :: mu2) ((s, d) :: sigma) tau)
+[HYPOTHESIS] tau : moves
+[HYPOTHESIS] sigma : list (reg * reg)
+[HYPOTHESIS] s : reg
+[HYPOTHESIS] mu2 : list (reg * reg)
+[HYPOTHESIS] d,r : reg
+[HYPOTHESIS] mu1 : list (reg * reg)
+[HYPOTHESIS] val : Type
+[HYPOTHESIS] temp : reg -> reg
+[HYPOTHESIS] reg_eq : forall r1 r2 : reg, {r1 = r2} + {r1 <> r2}
+[HYPOTHESIS] reg : Type
+[STATE] 5
+temp_last ((d, r) :: (s, d) :: sigma)
+[HYPOTHESES]
+[HYPOTHESIS] D : is_path ((s, d) :: sigma)
+[HYPOTHESIS] C : temp_last ((s, d) :: sigma)
+[HYPOTHESIS] B : move_no_temp (mu1 ++ (d, r) :: mu2)
+[HYPOTHESIS] A : (is_mill mu1 /\
+ (is_mill mu2 /\ ~ In r (dests mu2)) /\
+ dests_disjoint mu1 mu2 /\ ~ In r (dests mu1)) /\
+(is_mill sigma /\ ~ In d (dests sigma)) /\
+(dests_disjoint mu1 sigma /\ ~ In d (dests mu1)) /\
+(dests_disjoint mu2 sigma /\ ~ In r (dests sigma)) /\
+d <> r /\ ~ In d (dests mu2)
+[HYPOTHESIS] WF : state_wf (State (mu1 ++ (d, r) :: mu2) ((s, d) :: sigma) tau)
+[HYPOTHESIS] tau : moves
+[HYPOTHESIS] sigma : list (reg * reg)
+[HYPOTHESIS] s : reg
+[HYPOTHESIS] mu2 : list (reg * reg)
+[HYPOTHESIS] d,r : reg
+[HYPOTHESIS] mu1 : list (reg * reg)
+[HYPOTHESIS] val : Type
+[HYPOTHESIS] temp : reg -> reg
+[HYPOTHESIS] reg_eq : forall r1 r2 : reg, {r1 = r2} + {r1 <> r2}
+[HYPOTHESIS] reg : Type
+[STATE] 6
+is_path ((d, r) :: (s, d) :: sigma)
+[HYPOTHESES]
+[HYPOTHESIS] D : is_path ((s, d) :: sigma)
+[HYPOTHESIS] C : temp_last ((s, d) :: sigma)
+[HYPOTHESIS] B : move_no_temp (mu1 ++ (d, r) :: mu2)
+[HYPOTHESIS] A : (is_mill mu1 /\
+ (is_mill mu2 /\ ~ In r (dests mu2)) /\
+ dests_disjoint mu1 mu2 /\ ~ In r (dests mu1)) /\
+(is_mill sigma /\ ~ In d (dests sigma)) /\
+(dests_disjoint mu1 sigma /\ ~ In d (dests mu1)) /\
+(dests_disjoint mu2 sigma /\ ~ In r (dests sigma)) /\
+d <> r /\ ~ In d (dests mu2)
+[HYPOTHESIS] WF : state_wf (State (mu1 ++ (d, r) :: mu2) ((s, d) :: sigma) tau)
+[HYPOTHESIS] tau : moves
+[HYPOTHESIS] sigma : list (reg * reg)
+[HYPOTHESIS] s : reg
+[HYPOTHESIS] mu2 : list (reg * reg)
+[HYPOTHESIS] d,r : reg
+[HYPOTHESIS] mu1 : list (reg * reg)
+[HYPOTHESIS] val : Type
+[HYPOTHESIS] temp : reg -> reg
+[HYPOTHESIS] reg_eq : forall r1 r2 : reg, {r1 = r2} + {r1 <> r2}
+[HYPOTHESIS] reg : Type
+[STATE] 7
+is_mill mu /\
+(is_mill sigma /\
+ (is_mill nil /\ ~ In d (dests nil)) /\
+ dests_disjoint sigma nil /\ ~ In d (dests sigma)) /\
+dests_disjoint mu sigma /\ dests_disjoint mu nil /\ ~ In d (dests mu)
+[HYPOTHESES]
+[HYPOTHESIS] D : is_path (sigma ++ (s, d) :: nil)
+[HYPOTHESIS] C : temp_last (sigma ++ (s, d) :: nil)
+[HYPOTHESIS] B : move_no_temp mu
+[HYPOTHESIS] A : is_mill mu /\
+(is_mill sigma /\
+ (is_mill nil /\ ~ In d (dests nil)) /\
+ dests_disjoint sigma nil /\ ~ In d (dests sigma)) /\
+dests_disjoint mu sigma /\ dests_disjoint mu nil /\ ~ In d (dests mu)
+[HYPOTHESIS] WF : state_wf (State mu (sigma ++ (s, d) :: nil) tau)
+[HYPOTHESIS] tau : moves
+[END]
+"""
+    next_state_res = ProofModelPredGrammar().parse(next_state, state_res)
+    formatted_out = ProofModelPredGrammar(state_delta=True).format_as_per_grammar(next_state_res)
