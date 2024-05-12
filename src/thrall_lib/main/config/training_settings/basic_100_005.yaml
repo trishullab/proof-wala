@@ -9,14 +9,14 @@ training_args:
   do_eval: True
   do_predict: False
   evaluation_strategy: steps
-  auto_find_batch_size: True
-  # per_device_train_batch_size: train_batch_size_per_device
-  per_device_eval_batch_size: 2
+  # auto_find_batch_size: True
+  per_device_train_batch_size: 1
+  per_device_eval_batch_size: 1
   gradient_accumulation_steps: 1
   learning_rate: 2e-4
   weight_decay: 0.001
   max_grad_norm: 0.3 # Gradient clipping
-  num_train_epochs: 3
+  num_train_epochs: 10
   max_steps: -1
   lr_scheduler_type: cosine
   warmup_ratio: 0.03
@@ -27,7 +27,7 @@ training_args:
   logging_first_step: True
   save_strategy: steps
   save_steps: 500
-  save_total_limit: 3
+  save_total_limit: 5
   # no_cuda: False
   # use_cpu: False
   seed: 42

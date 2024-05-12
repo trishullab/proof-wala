@@ -1,4 +1,4 @@
-imports/itp-interface/dist/itp_interface-0.0.2-py3-none-any.whl
+imports/itp-interface/dist/itp_interface-0.1.5-py3-none-any.whl
 accelerate==0.23.0
 bitsandbytes==0.41.1
 gradio==3.48.0

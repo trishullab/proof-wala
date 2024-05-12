@@ -17,7 +17,8 @@ class CodeT5TrainingDataset(TheoremProvingTrainingDataset):
     def __init__(self, 
             training_data: TrainingData,
             characters_per_token: float = 3.6,
-            max_tokens: int = 2048):
+            max_tokens: int = 2048,
+            no_steps: bool = False):
         assert characters_per_token >= 1, f"Characters per token must be at least 1, but is {characters_per_token}"
         super().__init__(training_data)
         self.response_grammar = CoqGPTResponseDfsGrammar()
@@ -27,6 +28,7 @@ class CodeT5TrainingDataset(TheoremProvingTrainingDataset):
         self.max_tokens = max_tokens
         self.max_tokens_in_prompt = self.max_tokens
         self.max_chars_in_prompt = int(self.max_tokens_in_prompt * self.characters_per_token)
+        self.no_steps = no_steps
         if self.max_tokens_in_prompt < 0:
             raise ValueError(f"Max tokens in prompt is negative: {self.max_tokens_in_prompt}, increase max tokens or decrease characters per token")
         self.prompt_delimiter = "\n"
@@ -42,16 +44,19 @@ class CodeT5TrainingDataset(TheoremProvingTrainingDataset):
         }
 
     def _get_response_request(self, idx):
-        last_tdf = self.training_data[idx]
-        tdf = self.training_data[idx - 1] if idx > 0 else None
-        last_step = tdf.proof_steps if tdf is not None and tdf.proof_id == last_tdf.proof_id else None
-        tdf = self.training_data[idx - 2] if idx > 1 else None
         steps : typing.List[str] = []
-        while tdf is not None and last_tdf.proof_id == tdf.proof_id:
-            steps.extend(reversed(tdf.proof_steps))
-            idx -= 1
-            tdf = self.training_data[idx - 1] if idx > 1 else None
-        steps.reverse()
+        last_step = None
+        last_tdf = self.training_data[idx]
+        if not self.no_steps:
+            assert last_tdf.proof_id is not None, f"Proof id is None for training data at index {idx}, cannot infer the previous steps in the proof"
+            tdf = self.training_data[idx - 1] if idx > 0 else None
+            last_step = tdf.proof_steps if tdf is not None and tdf.proof_id == last_tdf.proof_id else None
+            tdf = self.training_data[idx - 2] if idx > 1 else None
+            while tdf is not None and last_tdf.proof_id == tdf.proof_id:
+                steps.extend(reversed(tdf.proof_steps))
+                idx -= 1
+                tdf = self.training_data[idx - 1] if idx > 1 else None
+            steps.reverse()
         response = CoqGptResponse(
             success=True,
             steps=steps,
