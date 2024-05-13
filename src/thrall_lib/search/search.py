@@ -1,4 +1,5 @@
 import typing
+import logging
 from graphviz import Digraph
 from abc import ABC, abstractmethod
 
@@ -232,7 +233,8 @@ class SearchAlgorithm(ABC):
             generate_children: typing.Callable[[Node], typing.Tuple[typing.List[Node], typing.List[Edge]]] = None,
             parallel_count: int = None,
             build_tree: bool = True,
-            timeout_in_secs: float = None) -> typing.Tuple[Node, bool, float]:
+            timeout_in_secs: float = None,
+            logger: logging.Logger = None) -> typing.Tuple[Node, bool, float]:
         """
         Abstract method for implementing search algorithms.
         :param start: The start node for the search.
@@ -244,6 +246,7 @@ class SearchAlgorithm(ABC):
         :param build_tree: A boolean indicating whether to build a tree while searching, default True. 
         Set to False only if the tree is already built and children are already added to nodes.
         :param timeout_in_secs: An optional float for the maximum time to run the search.
+        :param logger: An optional logger for logging messages.
 
 
         :return: Returns a tuple of the form (Node, bool, float), 

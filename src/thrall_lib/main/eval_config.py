@@ -8,6 +8,7 @@ if root_dir not in sys.path:
 import typing
 import os
 import json
+import ray
 from dataclasses import dataclass, field
 from dataclasses_json import dataclass_json
 from enum import Enum
@@ -66,6 +67,7 @@ class EvalSettings(object):
     search_strategy: str = "BeamSearch"
     search_params: typing.Dict[str, typing.Any] = field(default_factory=lambda: {"width": 64, "max_new_tokens": 175, "temperature": 0.75, "do_sample": True, "top_k": 64, "padding": True, "return_full_text": False, "compute_probabilities": True})
     proof_search_heuristic: str = "NegLoglikelihoodMinimizingHeuristic"
+    model_parallelism: int = 4
 
     def get_search_algo(self):
         if self.search_strategy == "BeamSearch":
@@ -107,6 +109,7 @@ class EvalBenchmark(object):
     dfs_data_path_for_retrieval: str = None
     dfs_metadata_filename_for_retrieval: str = None
     timeout_per_theorem_in_secs: int = 720
+    setup_cmds: typing.List[str] = field(default_factory=list)
 
 @dataclass_json
 @dataclass
@@ -147,6 +150,36 @@ class EvalProofResults(object):
         with open(self.path, "w") as f:
             f.write(self.to_json(indent=4))
 
+@ray.remote
+class EvalProofResultsActor(object):
+    def __init__(self, eval_results: EvalProofResults):
+        self.eval_results = eval_results
+    
+    def get_proof_results(self):
+        return self.eval_results
+
+    def get_theorem_map(self):
+        return self.eval_results.theorem_map
+
+    def add_path_to_maps(self, path: str):
+        self.eval_results.add_path_to_maps(path)
+    
+    def add_theorem_to_maps(self, path: str, theorem: str, proof_result: ProofSearchResult):
+        self.eval_results.add_theorem_to_maps(path, theorem, proof_result)
+
+@ray.remote
+class EvalRunCheckpointInfoActor(object):
+    def __init__(self, eval_checkpoint: EvalRunCheckpointInfo):
+        self.eval_checkpoint = eval_checkpoint
+    
+    def get_checkpoint_info(self):
+        return self.eval_checkpoint
+
+    def add_path_to_maps(self, path: str):
+        self.eval_checkpoint.add_path_to_maps(path)
+    
+    def add_theorem_to_maps(self, path: str, theorem: str, success: bool):
+        self.eval_checkpoint.add_theorem_to_maps(path, theorem, success)
 
 def parse_config(cfg):
     env_settings_cfg = cfg["env_settings"]
@@ -184,7 +217,8 @@ def parse_config(cfg):
         num_goal_per_prompt=eval_settings_cfg["num_goal_per_prompt"],
         search_strategy=eval_settings_cfg["search_strategy"],
         search_params=eval_settings_cfg["search_params"],
-        proof_search_heuristic=eval_settings_cfg["proof_search_heuristic"]
+        proof_search_heuristic=eval_settings_cfg["proof_search_heuristic"],
+        model_parallelism=eval_settings_cfg["model_parallelism"]
     )
     benchmark_cfg = cfg["benchmark"]
     datasets_cfg = benchmark_cfg["datasets"]

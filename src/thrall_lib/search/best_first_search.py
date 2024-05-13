@@ -2,6 +2,7 @@ import heapq
 import os
 import typing
 import time
+import logging
 
 from multiprocessing import Pool
 try:
@@ -22,8 +23,9 @@ class BestFirstSearch(SearchAlgorithm):
             generate_children: typing.Callable[[Node], typing.Tuple[typing.List[Node], typing.List[Edge]]] = None,
             parallel_count: int = None,
             build_tree: bool = True,
-            timeout_in_secs: float = None) -> typing.Tuple[Node, bool, float]:
-
+            timeout_in_secs: float = None,
+            logger : logging.Logger = None) -> typing.Tuple[Node, bool, float]:
+        logger = logger if logger else logging.getLogger(__name__)
         assert (generate_children is not None and build_tree) or not build_tree, "Must provide generate_children function"
         time_elapsed = 0
         start_time = time.time()

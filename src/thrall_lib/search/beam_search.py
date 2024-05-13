@@ -2,6 +2,7 @@ import time
 from multiprocessing import Pool
 import os
 import typing
+import logging
 try:
     from .search import Node, Edge, SearchAlgorithm
 except ImportError:
@@ -21,12 +22,14 @@ class BeamSearch(SearchAlgorithm):
             generate_children: typing.Callable[[Node], typing.Tuple[typing.List[Node], typing.List[Edge]]] = None,
             parallel_count: int = None,
             build_tree: bool = True,
-            timeout_in_secs: float = None) -> typing.Tuple[Node, bool, float]:
+            timeout_in_secs: float = None,
+            logger: logging.Logger = None) -> typing.Tuple[Node, bool, float]:
 
         assert (generate_children is not None and build_tree) or not build_tree, "Must provide generate_children function"
         time_elapsed = 0
         start_time = time.time()
         timeout_in_secs = timeout_in_secs if timeout_in_secs else float('inf')
+        logger = logger if logger else logging.getLogger(__name__)
 
         # Instead of a min heap, use a list to maintain the current level's nodes
         current_level = [(heuristic(None, None, start), start)]
@@ -39,6 +42,7 @@ class BeamSearch(SearchAlgorithm):
         start.distance_from_root = 0
         tree_nodes : typing.Dict[Node, Node] = {}  # Map of all nodes in the tree
         tree_nodes[start] = start
+        should_stop = False
         while current_level:
             time_elapsed = time.time() - start_time
             if time_elapsed > timeout_in_secs:
@@ -46,14 +50,23 @@ class BeamSearch(SearchAlgorithm):
                 pool.join()
                 return (start, False, time_elapsed)
             new_tree_nodes : typing.List[typing.Tuple[Node, Node, Edge]] = []
+
+            # For early stopping, check if the goal node is in the current level
+            logger.info(f"Frontier size: {len(current_level)}")
+            logger.info("Dumping the frontier nodes")
+            logger.info("-" * 50)
             for _, current_node in current_level:
+                logger.info(f"Frontier node distance from root: {current_node.distance_from_root}, frontier node:\n {current_node}")
                 if current_node == goal:
                     pool.close()
                     pool.join()
                     time_elapsed = time.time() - start_time
                     assert len(current_node.parents) > 0, f"Goal node must have at least one parent"
                     return (current_node, True, time_elapsed)
+            logger.info("Dumped the frontier")
+            logger.info("-" * 50)
 
+            for _, current_node in current_level:
                 if build_tree:
                     children, edges = generate_children(current_node)
                 else:
@@ -71,6 +84,12 @@ class BeamSearch(SearchAlgorithm):
                 for (child, _), cost in zip(unique_children_edge, child_costs):
                     if child not in tree_nodes:
                         next_level.append((cost, child))
+                # Iterate over the children to check if we found the goal node for early stopping
+                for child, edge in zip(children, edges):
+                    if child == goal:
+                        should_stop = True
+                if should_stop:
+                    break
             
             current_level = next_level
             next_level = []

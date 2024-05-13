@@ -1,10 +1,12 @@
 # @package _global_
 defaults:
   - benchmark: compcert_subset_118
-  - eval_settings: codet5_beam_15
+  # - benchmark: simple_test
+  - eval_settings: codet5_beam_32
   - env_settings: bm25_retrieval
   - override hydra/job_logging: 'disabled'
 
+log_dir: /mnt/amthakur/data/CompCert/proof_logs
 # eval_settings:
 #  use_hammer: AUTO
 #  timeout_in_secs: 200

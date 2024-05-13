@@ -7,6 +7,7 @@ if root_dir not in sys.path:
 import typing
 import logging
 import os
+import time
 from abc import ABC, abstractmethod
 from itp_interface.tools.training_data_format import TrainingDataFormat, TrainingDataMetadataFormat
 from itp_interface.tools.training_data import TrainingData
@@ -90,6 +91,7 @@ class ProofSearchBranchGenerator(ABC):
         theorem_name: str,
         file_path: str,
         project_id: str,
+        logger: logging.Logger,
         tracer: typing.Optional[ProofPathTracer] = None,
         original_proofs: typing.Optional[typing.List[typing.List[TrainingDataFormat]]] = None):
         assert proof_action_generator is not None, "Proof action generator cannot be None"
@@ -108,6 +110,7 @@ class ProofSearchBranchGenerator(ABC):
         self.project_id = project_id
         self.original_proofs_state_names = set()
         self.state_action_map = set()
+        self.logger = logger
         for proof in self.original_proofs:
             for state in proof:
                 self.original_proofs_state_names.add(convert_state_to_string(state))
@@ -117,10 +120,54 @@ class ProofSearchBranchGenerator(ABC):
             self.state_id_to_env_map[state_idx].add(env_idx)
         pass
 
+    def get_unused_envs(self):
+        # Get all the environments for the start state
+        return list(self.state_id_to_env_map[0]) if 0 in self.state_id_to_env_map else []
+
+    def reset_envs(self, env_idxs: int, actions_till_states : typing.List[typing.List[ProofAction]], force_reset: bool = True):
+        if force_reset:
+            self.envs.reset(env_idxs)
+        for env_idx in env_idxs:
+            env_state_idx = self.env_to_state_map[env_idx]
+            assert env_state_idx in self.state_id_to_env_map, f"Env state idx {env_state_idx} not found in the state id to env map"
+            assert env_idx in self.state_id_to_env_map[env_state_idx], f"Env idx {env_idx} not found in the state id to env map for state {env_state_idx}"
+            self.state_id_to_env_map[env_state_idx].remove(env_idx)
+        new_env_state_idx = None
+        # Remove the env_idx from the old state id
+        actions_zipped : typing.List[typing.List[ProofAction]]= []
+        env_idxs_zipped : typing.List[typing.List[int]] = []
+        for _idx, actions in enumerate(actions_till_states):
+            assigned_env = env_idxs[_idx]
+            for __idx, action in enumerate(actions):
+                if len(actions_zipped) <= __idx:
+                    actions_zipped.append([])
+                if len(env_idxs_zipped) <= __idx:
+                    env_idxs_zipped.append([])
+                env_idxs_zipped[__idx].append(assigned_env)
+                actions_zipped[__idx].append(action)
+        for actions_flat, env_idxs_flat in zip(actions_zipped, env_idxs_zipped):
+            self.envs.step(actions_flat, env_idxs_flat)
+        env_states = self.envs.get_state(env_idxs)
+        for env_state, env_idx in zip(env_states, env_idxs):
+            env_state_str = convert_state_to_string(env_state)
+            if env_state_str not in self.state_to_state_id_map:
+                new_env_state_idx = len(self.state_to_state_id_map)
+                self.state_to_state_id_map[env_state_str] = new_env_state_idx
+            else:
+                new_env_state_idx = self.state_to_state_id_map[env_state_str]
+            self.env_to_state_map[env_idx] = new_env_state_idx
+            if new_env_state_idx not in self.state_id_to_env_map:
+                self.state_id_to_env_map[new_env_state_idx] = set()
+            self.state_id_to_env_map[new_env_state_idx].add(env_idx)
+
     def __call__(self, node: Node) -> typing.Tuple[typing.List[Node], typing.List[Edge]]:
         # Call the proof action generator to generate actions for each environment
         if node.other_data is None:
             return [] # This is kind of dead end
+        for _key, _valu in self.state_to_state_id_map.items():
+            self.logger.info(f"State_to_state_id_map: {_valu} -> \n{_key}")
+        for _key, _valu in self.state_id_to_env_map.items():
+            self.logger.info(f"State_id_to_env_map: {_key} -> {_valu}")
         state_info : ProofStateInfo = node.other_data
         state: ProofState = state_info.proof_state
         state_str = convert_state_to_string(state)
@@ -129,35 +176,26 @@ class ProofSearchBranchGenerator(ABC):
         actions_scores = self.proof_action_generator.generate_actions(state_info, k=self.width)
         nodes = []
         edges = []
+        start_time = time.time()
         while len(actions_scores) > 0:
             env_idxs : typing.List[int] = list(self.state_id_to_env_map.get(state_idx, set()))
-            if len(env_idxs) == 0:
+            if len(env_idxs) < len(actions_scores):
+
                 # This means that there is some backtracking and somewhere the original path got lost
                 # Reset the environment to the state
                 env_idx: int = state_info.env_idx
                 proof_tree : ProofTree = state.proof_tree
                 actions_till_state : typing.List[ProofAction] = proof_tree.actions
-                self.envs.reset([env_idx])
-                env_state_idx = self.env_to_state_map[env_idx]
-                assert env_state_idx in self.state_id_to_env_map, f"Env state idx {env_state_idx} not found in the state id to env map"
-                assert env_idx in self.state_id_to_env_map[env_state_idx], f"Env idx {env_idx} not found in the state id to env map for state {env_state_idx}"
-                self.state_id_to_env_map[env_state_idx].remove(env_idx)
-                new_env_state_idx = None
-                # Remove the env_idx from the old state id
-                for action in actions_till_state:
-                    self.envs.step([action], [env_idx])
-                env_state = self.envs.get_state([env_idx])[0]
-                env_state_str = convert_state_to_string(env_state)
-                if env_state_str not in self.state_to_state_id_map:
-                    new_env_state_idx = len(self.state_to_state_id_map)
-                    self.state_to_state_id_map[env_state_str] = new_env_state_idx
+                free_envs = self.get_unused_envs()
+                diff = len(actions_scores) - len(env_idxs)
+                if len(free_envs) == 0:
+                    self.reset_envs([env_idx], [actions_till_state], force_reset=True)
+                    env_idxs.append(env_idx)
                 else:
-                    new_env_state_idx = self.state_to_state_id_map[env_state_str]
-                self.env_to_state_map[env_idx] = new_env_state_idx
-                if new_env_state_idx not in self.state_id_to_env_map:
-                    self.state_id_to_env_map[new_env_state_idx] = set()
-                self.state_id_to_env_map[new_env_state_idx].add(env_idx)
-                env_idxs.append(env_idx)
+                    to_reset = free_envs[:diff] # We already have sufficient free envs so no need to reset all
+                    diff = len(to_reset)
+                    self.reset_envs(to_reset, [actions_till_state for _ in range(diff)], force_reset=False)
+                    env_idxs.extend(to_reset)
             assert len(env_idxs) > 0, f"No environments found for state {state_str}"
 
             actions_to_run = []
@@ -167,7 +205,10 @@ class ProofSearchBranchGenerator(ABC):
                 actions_to_run.append((env_idx, score, action))
             env_idxs = [env_idx for env_idx, _, _ in actions_to_run]
             actions = [action for _, _, action in actions_to_run]
+            action_start_time = time.time()
             results = self.envs.step(actions, env_idxs)
+            action_end_time = time.time()
+            self.logger.info(f"Finished executing {len(actions)} actions parallely in {action_end_time - action_start_time} seconds.")
             for idx, result in enumerate(results):
                 if len(result) == 6:
                     _, _, next_state, _, done, info  = result
@@ -207,14 +248,21 @@ class ProofSearchBranchGenerator(ABC):
                 else:
                     new_state_id = self.state_to_state_id_map[state_name]
                 self.env_to_state_map[env_idxs[idx]] = new_state_id
-                if new_state_id not in self.state_id_to_env_map:
-                    self.state_id_to_env_map[new_state_id] = set()
                 # Remove the env_idx from the old state id
                 if env_idxs[idx] in self.state_id_to_env_map[state_idx]:
                     self.state_id_to_env_map[state_idx].remove(env_idxs[idx])
+                if new_state_id not in self.state_id_to_env_map:
+                    self.state_id_to_env_map[new_state_id] = set()
                 self.state_id_to_env_map[new_state_id].add(env_idxs[idx])
+                if len(next_state.training_data_format.start_goals) == 0:
+                    # We found a very good action so we should signal the search to stop, regardless of the search heuristic
+                    _temp_list = list(actions_to_run[idx])
+                    _temp_list[1] = -100
+                    actions_to_run[idx] = tuple(_temp_list)
                 edges.append(Edge('\n'.join(actions[idx].kwargs['tactics']), actions_to_run[idx][1], actions_to_run[idx][2]))
                 nodes.append(Node(state_name, actions_to_run[idx][1], proof_state_info))
+        end_time = time.time()
+        self.logger.info(f"Finished executing {len(nodes)} branches in {end_time - start_time} seconds")
         return nodes, edges
     
 class ProofSearhHeuristic(ABC):
@@ -242,7 +290,7 @@ class ProofSearchDriver:
         self.logger = logger if logger is not None else logging.getLogger(__name__)
         self.width = width
         self.proof_search_heuristic = proof_search_heuristic
-        self.env_count = min(self.width, 20)
+        self.env_count = 2 * self.width # We need more environments to run in parallel without waiting
         self.tracer = tracer if tracer is not None else ProofPathTracer(False, "", "", TrainingDataMetadataFormat(), 1)
 
     def search_proof(
@@ -288,9 +336,9 @@ class ProofSearchDriver:
             start_state_str = convert_state_to_string(start_state)
             state_to_id_map = {start_state_str: 0}
             # the lower the score the better
-            start_goal = Node(start_state_str, float('inf'), start_state_info)
+            start_goal = Node(start_state_str, 100, start_state_info)
             language : ProofAction.Language = pool._get_attr('language', [0])[0]
-            end_goal = Node(end_state_string(language), float('-inf'))
+            end_goal = Node(end_state_string(language), -100)
             theorem_name = env.lemma_name
             file_path = env.dynamic_proof_executor_callback.file_path
             project_id = env.dynamic_proof_executor_callback.project_folder 
@@ -303,6 +351,7 @@ class ProofSearchDriver:
                 theorem_name,
                 file_path,
                 project_id,
+                self.logger,
                 self.tracer,
                 original_proofs)
             tree_node, found, time_taken = self.search_algorithm.search(
@@ -311,7 +360,8 @@ class ProofSearchDriver:
                 self.proof_search_heuristic, 
                 branch_generator, 
                 parallel_count=self.width,
-                timeout_in_secs=timeout_in_secs)
+                timeout_in_secs=timeout_in_secs,
+                logger=self.logger)
             lemma_name = pool._get_attr('_lemma_name_with_stmt', [0])[0]
             full_path = env.dynamic_proof_executor_callback.file_path
             if found:

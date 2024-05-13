@@ -5,6 +5,7 @@ root_dir = f"{__file__.split('thrall_lib')[0]}"
 if root_dir not in sys.path:
     sys.path.append(root_dir)
 import typing
+import copy
 from thrall_lib.llm_helpers.model import TrainingDataFormatterCallback
 from thrall_lib.llm_helpers.theorem_proving_training_dataset import TheoremProvingTrainingDataset
 from itp_interface.tools.training_data import TrainingData
@@ -71,9 +72,14 @@ class CodeT5TrainingDataset(TheoremProvingTrainingDataset):
     def prompt_formatter(
             response: CoqGptResponse, 
             max_tokens_in_prompt: int = None, 
-            characters_per_token: float = 4):
+            characters_per_token: float = 4,
+            no_steps: bool = False):
+        response_copy = copy.deepcopy(response)
+        if no_steps:
+            response_copy.steps = []
+            response_copy.last_step = None
         prompt = CodeT5TrainingDataset.response_grammar.format_as_per_grammar(
-            response, 
+            response_copy,
             max_token_cnt=max_tokens_in_prompt, 
             characters_per_token=characters_per_token)
         return prompt

@@ -68,7 +68,7 @@ class ProofFoundHeuristic(ProofSearhHeuristic):
         state_info : ProofStateInfo = node.other_data
         state : ProofState = state_info.proof_state
         if state_info.done or len(state.training_data_format.start_goals) == 0:
-            return float("-inf")
+            return -100.0
         else:
             return node.score
 

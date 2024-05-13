@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "5"
-os.environ["TOKENIZERS_PARALLELISM"] = "false"
+if __name__ == "__main__":
+    os.environ["CUDA_VISIBLE_DEVICES"] = "5"
+    os.environ["TOKENIZERS_PARALLELISM"] = "false"
 import sys
 root_dir = f"{__file__.split('thrall_lib')[0]}"
 if root_dir not in sys.path:
     sys.path.append(root_dir)
 import typing
 import logging
+import time
 import numpy as np
 from itp_interface.rl.simple_proof_env import ProofState, ProofAction, ProofEnvInfo, ProgressState, ProofTree
 from thrall_lib.proof_search.search_driver import ProofActionGenerator, ProofStateInfo, ProofSearhHeuristic, Node, Edge
@@ -45,15 +47,16 @@ class LlmProofActionGenerator(ProofActionGenerator):
         state : ProofState = state_info.proof_state
         done : bool = state_info.done
         if done:
-            return [ProofAction(ProofAction.ActionType.EXIT, state.language) for _ in range(k)]
+            return [ProofAction(ProofAction.ActionType.EXIT, state.language)]
         elif len(state.training_data_format.start_goals) == 0: # No more goals to prove
                 qed = get_qed_for_language(state.language)
-                return [(0.0, ProofAction(ProofAction.ActionType.RUN_TACTIC, state.language, tactics=[qed])) for _ in range(k)]
+                return [(-100.0, ProofAction(ProofAction.ActionType.RUN_TACTIC, state.language, tactics=[qed]))]
         else:
             # generate actions using the model
             prompt = self.prompt_formatter(state_info)
             problem = state.theorem_statement_with_name
             self.logger.info(f"Prompt for [{problem}]:\n{prompt}")
+            start_time = time.time()
             generation_results = self.model.generate(prompt, **self._generation_args)
             assert len(generation_results.results) == 1, "Only one prompt is used"
             result = generation_results[0]
@@ -62,23 +65,27 @@ class LlmProofActionGenerator(ProofActionGenerator):
             raw_output_set = set()
             raw_output_lst= []
             neg_log_probabilties_lst = []
+            actual_output_size = len(raw_outputs)
             for output, neg_log_prob in zip(raw_outputs, neg_log_probabilties):
                 if output not in raw_output_set:
                     raw_output_lst.append(output)
                     neg_log_probabilties_lst.append(neg_log_prob)
                     raw_output_set.add(output)
+            end_time = time.time()
             raw_outputs = raw_output_lst
             neg_log_probabilties = neg_log_probabilties_lst
             arg_max_output = raw_outputs[np.argmin(neg_log_probabilties)]
+            self.logger.info(f"Generated {len(raw_outputs)} distinct actions (actual output size={actual_output_size}) in {end_time - start_time} seconds")
             self.logger.info(f"Best generated action: {arg_max_output}")
             tactics_list = [self.response_parser(output) for output in raw_outputs]
             actions = [(neg_log_prob, ProofAction(ProofAction.ActionType.RUN_TACTIC, state.language, tactics=tactics)) for neg_log_prob, tactics in zip(neg_log_probabilties, tactics_list)]
             return actions
 
 class CodeT5PromptFormatter:
-    def __init__(self, max_token_in_prompt: int, character_per_token: float):
+    def __init__(self, max_token_in_prompt: int, character_per_token: float, no_steps: bool = False):
         self.max_token_in_prompt = max_token_in_prompt
         self.character_per_token = character_per_token
+        self.no_steps = no_steps
 
     def __call__(self, state_info: ProofStateInfo) -> str:
         state : ProofState = state_info.proof_state
@@ -94,7 +101,7 @@ class CodeT5PromptFormatter:
             error_message=info.error_message if info is not None else None,
             training_data_format=state.training_data_format
         )
-        return CodeT5TrainingDataset.prompt_formatter(coq_response, self.max_token_in_prompt, self.character_per_token)
+        return CodeT5TrainingDataset.prompt_formatter(coq_response, self.max_token_in_prompt, self.character_per_token, self.no_steps)
 
 class CodeT5ResponseParser:        
     def __call__(self, response: str) -> typing.List[str]:
@@ -109,7 +116,7 @@ class NegLoglikelihoodMinimizingHeuristic(ProofSearhHeuristic):
         state_info : ProofStateInfo = node.other_data
         state : ProofState = state_info.proof_state
         if state_info.done or len(state.training_data_format.start_goals) == 0:
-            return 0.0
+            return -100.0 # This is a terminal node
         else:
             if parent_node is not None and edge is not None:
                 return min(parent_node.cummulative_score + edge.score, node.cummulative_score)
