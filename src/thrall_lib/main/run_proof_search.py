@@ -151,15 +151,26 @@ def eval_dataset_once(
         if "lemmas" not in return_dict:
             logger.info(f"Failed to get all lemmas in file: {path}, moving on to the next file.")
             continue
-        lemmas_to_prove = return_dict["lemmas"]
+        lemmas_to_prove = list(return_dict["lemmas"])
         if isinstance(file.theorems, str) and file.theorems == "*":
             file.theorems = list(lemmas_to_prove)
             file.theorems.sort() # sort to ensure one order when no theorems are specified
         elif isinstance(file.theorems, list):
-            # Check all theorems which can be proved
-            intersection = set(file.theorems).intersection(lemmas_to_prove)
-            # Arrange them in the order of the file.theorems
-            file.theorems = [x for x in file.theorems if x in intersection]
+            logger.info(f"Discovered {len(lemmas_to_prove)} lemmas in file: {path}")
+            if not dataset.negation:
+                # Check all theorems which can be proved
+                intersection = set(file.theorems).intersection(lemmas_to_prove)
+                # Arrange them in the order of the file.theorems
+                file.theorems = [x for x in file.theorems if x in intersection]
+            else:
+                logger.info("Dataset is negation dataset. So, removing the theorems which are mentioned in the dataset.")
+                # Take the difference of the theorems which can be proved
+                difference = set(lemmas_to_prove).difference(file.theorems)
+                for lemma in difference:
+                    logger.info(f"Lemma: {lemma} is not in the dataset.")
+                difference = list(difference)
+                difference.sort()
+                file.theorems = difference
         else:
             raise ValueError(f"Invalid theorems: {file.theorems}")
         logger.info(f"Discovered {len(file.theorems)} lemmas to prove in {path}")
@@ -415,7 +426,7 @@ def eval_dataset(env_settings: EnvSettings, eval_benchmark: EvalBenchmark, datas
         files = dataset.files[start:end]
         if len(files) == 0:
             break
-        dataset_chunks.append(EvalDataset(project=dataset.project, files=dataset.files[start:end]))
+        dataset_chunks.append(EvalDataset(project=dataset.project, files=dataset.files[start:end], negation=dataset.negation))
     remotes = []
     # Add thrall lib to python path
     root_dir = f"{__file__.split('thrall_lib')[0]}"

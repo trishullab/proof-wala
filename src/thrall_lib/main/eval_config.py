@@ -96,6 +96,7 @@ class EvalFile(object):
 class EvalDataset(object):
     project: str
     files: typing.List[EvalFile]
+    negation: bool
 
 @dataclass_json
 @dataclass
@@ -247,7 +248,8 @@ def parse_config(cfg):
                 max_time_limits_in_secs=max_time_limits_in_secs))
         eval_datasets.append(EvalDataset(
             project=dataset_cfg["project"],
-            files=eval_files))
+            files=eval_files,
+            negation=dataset_cfg["negation"] if "negation" in dataset_cfg else False))
     language = ProofAction.Language(benchmark_cfg["language"])
     benchmark = EvalBenchmark(
         name=benchmark_cfg["name"],
