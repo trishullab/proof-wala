@@ -16,6 +16,8 @@ import math
 import typing
 import ray
 import multiprocessing
+import unicodedata
+import re
 multiprocessing.set_start_method('spawn', force=True)
 from datetime import datetime
 from thrall_lib.llm_helpers.model import Model
@@ -29,6 +31,22 @@ from itp_interface.tools.proof_exec_callback import ProofExecutorCallback
 from itp_interface.tools.dynamic_coq_proof_exec import DynamicProofExecutor as DynamicCoqProofExecutor
 from itp_interface.tools.dynamic_lean_proof_exec import DynamicProofExecutor as DynamicLeanProofExecutor
 from itp_interface.tools.lean4_sync_executor import get_all_theorems_in_file as get_all_theorems_in_file_lean4, get_fully_qualified_theorem_name as get_fully_qualified_theorem_name_lean4, get_theorem_name_resembling as get_theorem_name_resembling_lean4
+
+def slugify(value, allow_unicode=False):
+    """
+    Taken from https://github.com/django/django/blob/master/django/utils/text.py
+    Convert to ASCII if 'allow_unicode' is False. Convert spaces or repeated
+    dashes to single dashes. Remove characters that aren't alphanumerics,
+    underscores, or hyphens. Convert to lowercase. Also strip leading and
+    trailing whitespace, dashes, and underscores.
+    """
+    value = str(value)
+    if allow_unicode:
+        value = unicodedata.normalize('NFKC', value)
+    else:
+        value = unicodedata.normalize('NFKD', value).encode('ascii', 'ignore').decode('ascii')
+    value = re.sub(r'[^\w\s-]', '', value.lower())
+    return re.sub(r'[-\s]+', '-', value).strip('-_')
 
 def check_query_limit_reached(max_query_limit: int) -> typing.Callable[[int, typing.Dict[str, typing.Any]], bool]:
     def _check_query_limit_reached(steps: int, info: typing.Dict[str, typing.Any]):
@@ -262,10 +280,11 @@ def eval_dataset_once(
                             if proof_res.proof_found:
                                 proof_paths = algo.reconstruct_all_paths(start_node, tree_node)
                             dot = algo.visualize_search(start_node, show=False, mark_paths=proof_paths)
-                            tree_dump_folder = os.path.join(eval_settings.proof_dump_dir, "proof_trees", lemma_name)
+                            lemma_file_name = slugify(lemma_name, allow_unicode=False)
+                            tree_dump_folder = os.path.join(eval_settings.proof_dump_dir, "proof_trees", lemma_file_name)
                             os.makedirs(tree_dump_folder, exist_ok=True)
                             time_stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-                            tree_dump_path = os.path.join(tree_dump_folder, f"{lemma_name}_{time_stamp}")
+                            tree_dump_path = os.path.join(tree_dump_folder, f"{lemma_file_name}_{time_stamp}")
                             dot.render(tree_dump_path, format='svg', quiet=True)
                             ret_dict["proof_res"] = proof_res
                             ret_dict["attempted_success"] = True
