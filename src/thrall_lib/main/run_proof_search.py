@@ -24,10 +24,11 @@ from thrall_lib.proof_search.llm_tactic_generator import CodeT5PromptFormatter, 
 from thrall_lib.main.eval_config import EnvSettings, EvalBenchmark, EvalDataset, EvalProofResults, EvalProofResultsActor, EvalRunCheckpointInfoActor, EvalSettings, Experiments, EvalRunCheckpointInfo, parse_config
 from itp_interface.tools.log_utils import setup_logger
 from itp_interface.rl.proof_tree import ProofSearchResult
-from itp_interface.rl.simple_proof_env import ProofEnv
+from itp_interface.rl.simple_proof_env import ProofEnv, ProofAction
 from itp_interface.tools.proof_exec_callback import ProofExecutorCallback
 from itp_interface.tools.dynamic_coq_proof_exec import DynamicProofExecutor as DynamicCoqProofExecutor
 from itp_interface.tools.dynamic_lean_proof_exec import DynamicProofExecutor as DynamicLeanProofExecutor
+from itp_interface.tools.lean4_sync_executor import get_all_theorems_in_file as get_all_theorems_in_file_lean4, get_fully_qualified_theorem_name as get_fully_qualified_theorem_name_lean4, get_theorem_name_resembling as get_theorem_name_resembling_lean4
 
 def check_query_limit_reached(max_query_limit: int) -> typing.Callable[[int, typing.Dict[str, typing.Any]], bool]:
     def _check_query_limit_reached(steps: int, info: typing.Dict[str, typing.Any]):
@@ -41,27 +42,31 @@ def query_limit_info_message(max_query_limit: int) -> typing.Callable[[int, typi
 
 def get_all_lemmas(coq_proof_exec_callback: ProofExecutorCallback, logger: logging.Logger):
     lemmas_to_prove = []
-    with coq_proof_exec_callback.get_proof_executor() as main_executor:
-        if isinstance(main_executor, DynamicLeanProofExecutor):
-            main_executor.run_all_without_exec()
-            lemmas_to_prove = main_executor.find_all_theorems_names()
-        elif isinstance(main_executor, DynamicCoqProofExecutor):
-            while not main_executor.execution_complete:
-                assert not main_executor.is_in_proof_mode(), "main_executor must not be in proof mode"
-                _ = list(main_executor.run_till_next_lemma_return_exec_stmt())
-                if main_executor.execution_complete:
-                    break
-                lemma_name = main_executor.get_lemma_name_if_running()
-                if lemma_name is None:
-                    _ = list(main_executor.run_to_finish_lemma_return_exec())
+    if coq_proof_exec_callback.language == ProofAction.Language.LEAN4:
+        lemmas_to_prove = get_all_theorems_in_file_lean4(coq_proof_exec_callback.file_path, use_cache=True)
+        lemmas_to_prove = [get_fully_qualified_theorem_name_lean4(lemma) for lemma in lemmas_to_prove]
+    else:
+        with coq_proof_exec_callback.get_proof_executor() as main_executor:
+            if isinstance(main_executor, DynamicLeanProofExecutor):
+                main_executor.run_all_without_exec()
+                lemmas_to_prove = main_executor.find_all_theorems_names()
+            elif isinstance(main_executor, DynamicCoqProofExecutor):
+                while not main_executor.execution_complete:
+                    assert not main_executor.is_in_proof_mode(), "main_executor must not be in proof mode"
+                    _ = list(main_executor.run_till_next_lemma_return_exec_stmt())
                     if main_executor.execution_complete:
                         break
-                else:
-                    logger.info(f"Discovered lemma: {lemma_name}")
-                    lemmas_to_prove.append(lemma_name)
-                    main_executor.run_to_finish_lemma()
-        else:
-            raise Exception(f"Unsupported proof executor: {main_executor}")
+                    lemma_name = main_executor.get_lemma_name_if_running()
+                    if lemma_name is None:
+                        _ = list(main_executor.run_to_finish_lemma_return_exec())
+                        if main_executor.execution_complete:
+                            break
+                    else:
+                        logger.info(f"Discovered lemma: {lemma_name}")
+                        lemmas_to_prove.append(lemma_name)
+                        main_executor.run_to_finish_lemma()
+            else:
+                raise Exception(f"Unsupported proof executor: {main_executor}")
     logger.info(f"Discovered {len(lemmas_to_prove)} lemmas")
     return lemmas_to_prove
 
@@ -157,6 +162,9 @@ def eval_dataset_once(
             file.theorems.sort() # sort to ensure one order when no theorems are specified
         elif isinstance(file.theorems, list):
             logger.info(f"Discovered {len(lemmas_to_prove)} lemmas in file: {path}")
+            if proof_exec_callback.language == ProofAction.Language.LEAN4:
+                logger.info("Converting theorems to fully qualified names for Lean 4.")
+                lemmas_to_prove = [get_theorem_name_resembling_lean4(lemma) for lemma in lemmas_to_prove]
             if not dataset.negation:
                 # Check all theorems which can be proved
                 intersection = set(file.theorems).intersection(lemmas_to_prove)

@@ -1,0 +1,2421 @@
+name: leandojo-eval
+num_files: 709
+language: LEAN4
+few_shot_data_path_for_retrieval: null
+few_shot_metadata_filename_for_retrieval: null
+dfs_data_path_for_retrieval: null
+dfs_metadata_filename_for_retrieval: local.meta.json
+theorem_cnt: 991
+datasets:
+- project: data/benchmarks/mathlib4
+  files:
+  - path: Mathlib/Analysis/SpecificLimits/Normed.lean
+    theorems:
+    - tendsto_pow_const_mul_const_pow_of_abs_lt_one
+    - dist_partial_sum_le_of_le_geometric
+  - path: Mathlib/SetTheory/Cardinal/Cofinality.lean
+    theorems:
+    - Ordinal.cof_eq_one_iff_is_succ
+    - Ordinal.aleph0_le_cof
+  - path: Mathlib/GroupTheory/GroupAction/Quotient.lean
+    theorems:
+    - MulAction.Quotient.mk_smul_out'
+    - Subgroup.normalCore_eq_ker
+  - path: Mathlib/Data/Complex/Abs.lean
+    theorems:
+    - Complex.lim_im
+    - Complex.abs_le_abs_re_add_abs_im
+  - path: Mathlib/Tactic/ComputeDegree.lean
+    theorems:
+    - Mathlib.Tactic.ComputeDegree.coeff_int_cast_ite
+  - path: Mathlib/RingTheory/ChainOfDivisors.lean
+    theorems:
+    - DivisorChain.second_of_chain_is_irreducible
+  - path: Mathlib/Algebra/GroupWithZero/NonZeroDivisors.lean
+    theorems:
+    - mul_right_mem_nonZeroDivisors_eq_zero_iff
+  - path: Mathlib/Algebra/Algebra/NonUnitalSubalgebra.lean
+    theorems:
+    - Set.smul_mem_centralizer
+  - path: Mathlib/Dynamics/PeriodicPts.lean
+    theorems:
+    - MulAction.pow_add_period_smul
+  - path: Mathlib/Algebra/Order/ToIntervalMod.lean
+    theorems:
+    - toIcoMod_eq_iff
+    - toIcoMod_add_zsmul
+    - toIcoMod_apply_left
+    - toIcoMod_le_toIocMod
+    - iUnion_Ioc_int_cast
+    - toIcoMod_zsmul_add'
+  - path: Mathlib/Analysis/InnerProductSpace/Projection.lean
+    theorems:
+    - sub_orthogonalProjection_mem_orthogonal
+    - exists_norm_eq_iInf_of_complete_convex
+  - path: Mathlib/Data/Real/Sign.lean
+    theorems:
+    - Real.sign_zero
+  - path: Mathlib/LinearAlgebra/Reflection.lean
+    theorems:
+    - Module.preReflection_preReflection
+  - path: .lake/packages/std/Std/Data/String/Lemmas.lean
+    theorems:
+    - Substring.ValidFor.all
+    - String.data_take
+    - String.Iterator.ValidFor.nextn
+  - path: Mathlib/Order/Iterate.lean
+    theorems:
+    - Monotone.seq_pos_lt_seq_of_lt_of_le
+  - path: Mathlib/Data/Polynomial/Eval.lean
+    theorems:
+    - "Polynomial.eval\u2082_at_zero"
+    - "Polynomial.eval\u2082_mul'"
+  - path: Mathlib/Algebra/Group/Commute/Defs.lean
+    theorems:
+    - mul_pow_sub_one
+  - path: Mathlib/Data/Complex/Cardinality.lean
+    theorems:
+    - mk_complex
+    - mk_univ_complex
+  - path: Mathlib/FieldTheory/AbelRuffini.lean
+    theorems:
+    - gal_isSolvable_tower
+  - path: Mathlib/Computability/TuringMachine.lean
+    theorems:
+    - Turing.TM1to1.tr_supports
+    - Turing.TM0.univ_supports
+    - Turing.BlankExtends.below_of_le
+  - path: Mathlib/Data/Ordmap/Ordset.lean
+    theorems:
+    - Ordnode.pos_size_of_mem
+    - Ordnode.node4L_size
+    - Ordnode.size_dual
+  - path: Mathlib/SetTheory/Ordinal/FixedPoint.lean
+    theorems:
+    - Ordinal.apply_lt_nfpBFamily
+  - path: Mathlib/RingTheory/WittVector/Identities.lean
+    theorems:
+    - WittVector.coeff_p_pow
+  - path: Mathlib/Data/Real/EReal.lean
+    theorems:
+    - EReal.add_lt_add_left_coe
+  - path: Mathlib/Data/List/Basic.lean
+    theorems:
+    - List.map_bind
+    - "List.map\u2082Left_eq_map\u2082Left'"
+    - List.nthLe_cons
+    - Function.LeftInverse.list_map
+  - path: Mathlib/RingTheory/Algebraic.lean
+    theorems:
+    - IsAlgebraic.algHom
+  - path: Mathlib/Algebra/Group/Defs.lean
+    theorems:
+    - inv_mul_cancel_comm_assoc
+  - path: Mathlib/RingTheory/HahnSeries/Multiplication.lean
+    theorems:
+    - HahnSeries.single_mul_coeff_add
+  - path: Mathlib/Analysis/SpecialFunctions/Trigonometric/EulerSineProd.lean
+    theorems:
+    - EulerSine.tendsto_integral_cos_pow_mul_div
+  - path: Mathlib/Topology/Algebra/Group/Basic.lean
+    theorems:
+    - nhds_translation_mul_inv
+    - Subgroup.coe_topologicalClosure_bot
+  - path: Mathlib/RepresentationTheory/GroupCohomology/LowDegree.lean
+    theorems:
+    - groupCohomology.map_one_snd_of_isTwoCocycle
+  - path: Mathlib/Analysis/Normed/Group/Basic.lean
+    theorems:
+    - MonoidHomClass.lipschitz_of_bound
+    - NormedCommGroup.uniformity_basis_dist
+  - path: Mathlib/Order/GaloisConnection.lean
+    theorems:
+    - OrderIso.bddBelow_preimage
+  - path: Mathlib/Data/Num/Lemmas.lean
+    theorems:
+    - Num.add_toZNum
+  - path: Mathlib/MeasureTheory/Function/SimpleFuncDense.lean
+    theorems:
+    - MeasureTheory.SimpleFunc.nearestPtInd_succ
+    - MeasureTheory.SimpleFunc.tendsto_nearestPt
+  - path: Mathlib/Probability/Kernel/IntegralCompProd.lean
+    theorems:
+    - ProbabilityTheory.set_integral_compProd_univ_left
+  - path: Mathlib/FieldTheory/RatFunc.lean
+    theorems:
+    - RatFunc.ofFractionRing_mk'
+    - RatFunc.num_eq_zero_iff
+  - path: Mathlib/Algebra/AddConstMap/Basic.lean
+    theorems:
+    - AddConstMapClass.map_add_zsmul
+  - path: Mathlib/MeasureTheory/Measure/AEDisjoint.lean
+    theorems:
+    - Disjoint.aedisjoint
+  - path: Mathlib/LinearAlgebra/TensorAlgebra/Basic.lean
+    theorems:
+    - "TensorAlgebra.ringQuot_mkAlgHom_freeAlgebra_\u03B9_eq_\u03B9"
+  - path: Mathlib/Analysis/Convex/Between.lean
+    theorems:
+    - Wbtw.left_ne_right_of_ne_right
+    - Wbtw.left_ne_right_of_ne_left
+  - path: Mathlib/Data/Finset/Sups.lean
+    theorems:
+    - Finset.sized_compls
+    - Finset.powerset_infs_powerset_self
+    - Finset.forall_disjSups_iff
+  - path: Mathlib/Algebra/Module/PID.lean
+    theorems:
+    - Submodule.isSemisimple_torsionBy_of_irreducible
+  - path: Mathlib/RingTheory/Polynomial/Dickson.lean
+    theorems:
+    - Polynomial.dickson_add_two
+  - path: Mathlib/MeasureTheory/Function/LpSpace.lean
+    theorems:
+    - ContinuousLinearMap.add_compLpL
+    - MeasureTheory.indicatorConstLp_empty
+    - MeasureTheory.dist_indicatorConstLp_eq_norm
+    - "MeasureTheory.Lp.cauchy_complete_\u2112p"
+    - ContinuousLinearMap.smul_compLp
+  - path: .lake/packages/std/Std/Data/List/Perm.lean
+    theorems:
+    - List.nil_subperm
+    - List.Perm.pmap
+    - List.Perm.symm
+  - path: Mathlib/Data/Real/NNReal.lean
+    theorems:
+    - NNReal.iSup_div
+    - Real.toNNReal_sum_of_nonneg
+  - path: Mathlib/Topology/UniformSpace/UniformEmbedding.lean
+    theorems:
+    - uniformEmbedding_iff'
+  - path: Mathlib/LinearAlgebra/Matrix/Charpoly/Basic.lean
+    theorems:
+    - Matrix.charmatrix_apply_ne
+  - path: Mathlib/Data/PFunctor/Multivariate/M.lean
+    theorems:
+    - MvPFunctor.M.dest'_eq_dest'
+  - path: Mathlib/Analysis/Calculus/ContDiff/Defs.lean
+    theorems:
+    - hasFTaylorSeriesUpToOn_top_iff
+    - HasFTaylorSeriesUpTo.continuous
+    - ftaylorSeriesWithin_univ
+    - ContDiffWithinAt.continuousWithinAt
+  - path: Mathlib/FieldTheory/Adjoin.lean
+    theorems:
+    - IntermediateField.adjoin_eq_top_of_adjoin_eq_top
+    - IntermediateField.exists_finset_of_mem_supr''
+  - path: Mathlib/Analysis/SpecialFunctions/Stirling.lean
+    theorems:
+    - Stirling.log_stirlingSeq_bounded_by_constant
+    - Stirling.stirlingSeq_zero
+  - path: Mathlib/Algebra/Homology/Exact.lean
+    theorems:
+    - CategoryTheory.kernel_comp_cokernel
+    - CategoryTheory.exact_zero_left_of_mono
+  - path: Mathlib/LinearAlgebra/Matrix/Charpoly/Coeff.lean
+    theorems:
+    - Matrix.coeff_det_one_add_X_smul_one
+  - path: Mathlib/MeasureTheory/Constructions/BorelSpace/Basic.lean
+    theorems:
+    - Real.borel_eq_generateFrom_Ioi_rat
+    - borel_eq_generateFrom_Ico
+    - borel_eq_generateFrom_Ioc
+  - path: Mathlib/Order/Filter/Bases.lean
+    theorems:
+    - Filter.generate_eq_generate_inter
+    - Filter.IsBasis.mem_filter_iff
+  - path: Mathlib/Data/Real/Hyperreal.lean
+    theorems:
+    - Hyperreal.infinitesimal_pos_iff_infinitePos_inv
+  - path: Mathlib/Probability/CondCount.lean
+    theorems:
+    - ProbabilityTheory.condCount_singleton
+  - path: Mathlib/Analysis/InnerProductSpace/Basic.lean
+    theorems:
+    - norm_add_sq_eq_norm_sq_add_norm_sq_of_inner_eq_zero
+    - inner_eq_norm_mul_iff_div
+    - InnerProductSpace.Core.inner_self_ofReal_re
+    - OrthogonalFamily.summable_iff_norm_sq_summable
+    - DFinsupp.inner_sum
+  - path: Mathlib/Analysis/InnerProductSpace/Calculus.lean
+    theorems:
+    - HasDerivWithinAt.norm_sq
+  - path: Mathlib/Algebra/BigOperators/Basic.lean
+    theorems:
+    - Finset.mulIndicator_biUnion
+    - Multiset.add_eq_union_left_of_le
+  - path: Mathlib/Analysis/Complex/AbelLimit.lean
+    theorems:
+    - Real.tendsto_tsum_powerSeries_nhdsWithin_lt
+    - Complex.tendsto_tsum_powerSeries_nhdsWithin_stolzSet
+  - path: Mathlib/Order/JordanHolder.lean
+    theorems:
+    - CompositionSeries.Equivalent.symm
+    - CompositionSeries.mem_eraseTop
+  - path: Mathlib/Geometry/Euclidean/Angle/Oriented/Affine.lean
+    theorems:
+    - Collinear.two_zsmul_oangle_eq_right
+    - "EuclideanGeometry.oangle_swap\u2081\u2082_sign"
+  - path: Mathlib/Data/MvPolynomial/Degrees.lean
+    theorems:
+    - MvPolynomial.degreeOf_lt_iff
+  - path: Mathlib/Data/Set/Pointwise/Interval.lean
+    theorems:
+    - Set.image_sub_const_Ici
+    - Set.image_neg_Ioo
+    - Set.image_mul_right_Icc
+  - path: Mathlib/Algebra/IsPrimePow.lean
+    theorems:
+    - isPrimePow_nat_iff
+  - path: Mathlib/Data/Nat/Factorial/Cast.lean
+    theorems:
+    - Nat.cast_descFactorial
+  - path: Mathlib/Data/List/BigOperators/Lemmas.lean
+    theorems:
+    - unop_map_list_prod
+  - path: Mathlib/NumberTheory/VonMangoldt.lean
+    theorems:
+    - ArithmeticFunction.vonMangoldt_ne_zero_iff
+  - path: Mathlib/Topology/Sober.lean
+    theorems:
+    - genericPoint_specializes
+  - path: .lake/packages/std/Std/Data/Rat/Lemmas.lean
+    theorems:
+    - Rat.neg_divInt
+    - Rat.neg_mkRat
+  - path: Mathlib/RingTheory/Polynomial/Pochhammer.lean
+    theorems:
+    - descPochhammer_zero_eval_zero
+  - path: Mathlib/Topology/ContinuousOn.lean
+    theorems:
+    - continuousWithinAt_update_same
+    - nhdsWithin_pi_univ_eq
+  - path: Mathlib/MeasureTheory/Measure/Portmanteau.lean
+    theorems:
+    - MeasureTheory.le_liminf_measure_open_of_forall_tendsto_measure
+  - path: Mathlib/Geometry/Euclidean/Angle/Unoriented/Affine.lean
+    theorems:
+    - EuclideanGeometry.angle_eq_zero_of_angle_eq_pi_left
+  - path: Mathlib/Data/Matrix/Basis.lean
+    theorems:
+    - Matrix.StdBasisMatrix.mul_right_apply_of_ne
+    - Matrix.mem_range_scalar_iff_commute_stdBasisMatrix
+  - path: Mathlib/LinearAlgebra/SesquilinearForm.lean
+    theorems:
+    - LinearMap.IsRefl.domRestrict
+    - LinearMap.IsAdjointPair.sub
+  - path: Mathlib/Topology/MetricSpace/Antilipschitz.lean
+    theorems:
+    - antilipschitzWith_iff_le_mul_nndist
+    - AntilipschitzWith.comp
+  - path: Mathlib/Analysis/Asymptotics/SpecificAsymptotics.lean
+    theorems:
+    - pow_div_pow_eventuallyEq_atTop
+  - path: Mathlib/Algebra/FreeAlgebra.lean
+    theorems:
+    - FreeAlgebra.induction
+  - path: Mathlib/Probability/Martingale/Upcrossing.lean
+    theorems:
+    - MeasureTheory.upcrossingsBefore_bot
+  - path: Mathlib/Data/Set/UnionLift.lean
+    theorems:
+    - Set.iUnionLift_const
+  - path: Mathlib/NumberTheory/Divisors.lean
+    theorems:
+    - Nat.properDivisors_eq_empty
+    - Nat.sup_divisors_id
+  - path: Mathlib/ModelTheory/Substructures.lean
+    theorems:
+    - FirstOrder.Language.Substructure.range_subtype
+    - FirstOrder.Language.Substructure.closure_withConstants_eq
+  - path: Mathlib/RingTheory/UniqueFactorizationDomain.lean
+    theorems:
+    - Associates.le_of_count_ne_zero
+    - UniqueFactorizationMonoid.prime_of_normalized_factor
+  - path: Mathlib/Probability/Distributions/Geometric.lean
+    theorems:
+    - ProbabilityTheory.geometricPMFRealSum
+  - path: Mathlib/Analysis/LocallyConvex/WithSeminorms.lean
+    theorems:
+    - SeminormFamily.basisSets_add
+    - WithSeminorms.hasBasis
+  - path: Mathlib/Analysis/Normed/Group/SemiNormedGroupCat/Kernels.lean
+    theorems:
+    - SemiNormedGroupCat.ExplicitCoker.map_desc
+    - SemiNormedGroupCat.explicitCokernelDesc_normNoninc
+    - SemiNormedGroupCat.explicitCokernelIso_hom_desc
+    - "SemiNormedGroupCat.explicitCokernel\u03C0_apply_dom_eq_zero"
+  - path: Mathlib/Data/Seq/Computation.lean
+    theorems:
+    - Computation.LiftRel.equiv
+  - path: Mathlib/MeasureTheory/Covering/Besicovitch.lean
+    theorems:
+    - Besicovitch.ae_tendsto_measure_inter_div
+  - path: Mathlib/Analysis/SpecialFunctions/Trigonometric/Basic.lean
+    theorems:
+    - Real.cos_pi
+    - Real.cos_pi_div_four
+    - Real.sin_pi_div_two_sub
+    - Real.sin_eq_sqrt_one_sub_cos_sq
+  - path: Mathlib/Computability/AkraBazzi/AkraBazzi.lean
+    theorems:
+    - AkraBazziRecurrence.eventually_r_lt_n
+    - AkraBazziRecurrence.base_nonempty
+  - path: Mathlib/Topology/MetricSpace/Thickening.lean
+    theorems:
+    - Metric.cthickening_eq_biUnion_closedBall
+    - Metric.mem_thickening_iff
+  - path: Mathlib/Analysis/Calculus/Gradient/Basic.lean
+    theorems:
+    - HasGradientWithinAt.congr
+  - path: Mathlib/Analysis/InnerProductSpace/PiL2.lean
+    theorems:
+    - OrthonormalBasis.orthogonalProjection_eq_sum
+  - path: Mathlib/Topology/Instances/NNReal.lean
+    theorems:
+    - NNReal.tendsto_atTop_zero_of_summable
+  - path: Mathlib/Data/Finsupp/Basic.lean
+    theorems:
+    - Finsupp.embDomain_eq_mapDomain
+    - Finsupp.comapDomain_zero
+  - path: Mathlib/Logic/Relation.lean
+    theorems:
+    - Relation.comp_assoc
+  - path: Mathlib/Order/Filter/AtTopBot.lean
+    theorems:
+    - Filter.HasAntitoneBasis.subbasis_with_rel
+    - Filter.tendsto_const_mul_atBot_of_neg
+  - path: Mathlib/Topology/UniformSpace/Compact.lean
+    theorems:
+    - nhdsSet_diagonal_eq_uniformity
+  - path: Mathlib/Algebra/Lie/Semisimple.lean
+    theorems:
+    - LieAlgebra.subsingleton_of_semisimple_lie_abelian
+  - path: Mathlib/Analysis/Convex/Segment.lean
+    theorems:
+    - mem_segment_translate
+    - mem_segment_sub_add
+  - path: Mathlib/Algebra/Order/Group/Defs.lean
+    theorems:
+    - inv_mul_lt_one_iff
+  - path: Mathlib/Analysis/BoxIntegral/Partition/Tagged.lean
+    theorems:
+    - BoxIntegral.TaggedPrepartition.IsSubordinate.disjUnion
+  - path: Mathlib/GroupTheory/Submonoid/Membership.lean
+    theorems:
+    - MulMemClass.mul_mem_add_closure
+    - Submonoid.mem_closure_singleton
+  - path: Mathlib/CategoryTheory/Subobject/Limits.lean
+    theorems:
+    - CategoryTheory.Limits.factorThruKernelSubobject_comp_kernelSubobjectIso
+    - CategoryTheory.Limits.le_kernelSubobject
+  - path: Mathlib/Topology/Gluing.lean
+    theorems:
+    - TopCat.GlueData.rel_equiv
+  - path: Mathlib/CategoryTheory/Abelian/Generator.lean
+    theorems:
+    - CategoryTheory.Abelian.has_injective_coseparator
+  - path: Mathlib/Analysis/Calculus/Deriv/Inv.lean
+    theorems:
+    - HasDerivWithinAt.div
+  - path: Mathlib/Topology/CompactOpen.lean
+    theorems:
+    - ContinuousMap.compactOpen_eq_iInf_induced
+  - path: Mathlib/Algebra/Homology/HomotopyCategory/HomComplexShift.lean
+    theorems:
+    - CochainComplex.HomComplex.Cochain.shift_zero
+  - path: Mathlib/MeasureTheory/Measure/ProbabilityMeasure.lean
+    theorems:
+    - MeasureTheory.ProbabilityMeasure.apply_mono
+  - path: Mathlib/LinearAlgebra/DFinsupp.lean
+    theorems:
+    - Submodule.mem_iSup_finset_iff_exists_sum
+    - Submodule.biSup_eq_range_dfinsupp_lsum
+  - path: Mathlib/MeasureTheory/Measure/Restrict.lean
+    theorems:
+    - mem_map_indicator_ae_iff_mem_map_restrict_ae_of_zero_mem
+    - MeasureTheory.Measure.restrict_eq_self
+    - MeasureTheory.NullMeasurable.measure_preimage_eq_measure_restrict_preimage_of_ae_compl_eq_const
+  - path: Mathlib/Data/Sym/Basic.lean
+    theorems:
+    - Sym.cons_equiv_eq_equiv_cons
+  - path: Mathlib/Analysis/Convex/Function.lean
+    theorems:
+    - StrictConcaveOn.translate_left
+  - path: Mathlib/Data/Finset/Basic.lean
+    theorems:
+    - Finset.singleton_inter_of_mem
+    - Finset.biUnion_singleton_eq_self
+    - Finset.left_eq_union
+    - Finset.inter_erase
+    - Finset.insert_union_comm
+    - Finset.sdiff_eq_self
+  - path: Mathlib/MeasureTheory/Integral/IntegrableOn.lean
+    theorems:
+    - ContinuousOn.aemeasurable
+    - MeasurableEmbedding.integrableAtFilter_map_iff
+  - path: Mathlib/CategoryTheory/Monoidal/Category.lean
+    theorems:
+    - CategoryTheory.MonoidalCategory.associator_naturality_left
+    - CategoryTheory.MonoidalCategory.whiskerLeft_eqToHom
+    - CategoryTheory.MonoidalCategory.id_whiskerLeft
+    - CategoryTheory.MonoidalCategory.whiskerRight_tensor_symm
+    - CategoryTheory.MonoidalCategory.triangle_assoc_comp_left_inv
+  - path: Mathlib/MeasureTheory/Measure/LevyProkhorovMetric.lean
+    theorems:
+    - MeasureTheory.levyProkhorovDist_triangle
+  - path: Mathlib/Data/DFinsupp/Basic.lean
+    theorems:
+    - DFinsupp.erase_def
+    - DFinsupp.add_closure_iUnion_range_single
+    - DFinsupp.support_neg
+    - DFinsupp.filter_def
+    - DFinsupp.single_eq_of_ne
+  - path: Mathlib/Analysis/Convex/Jensen.lean
+    theorems:
+    - ConcaveOn.min_le_of_mem_Icc
+  - path: Mathlib/Topology/EMetricSpace/Basic.lean
+    theorems:
+    - edist_congr_right
+    - EMetric.mk_uniformity_basis_le
+  - path: Mathlib/MeasureTheory/Integral/IntegralEqImproper.lean
+    theorems:
+    - MeasureTheory.integral_Iic_of_hasDerivAt_of_tendsto
+    - MeasureTheory.integrableOn_Iic_of_intervalIntegral_norm_bounded
+  - path: Mathlib/Algebra/Order/Monovary.lean
+    theorems:
+    - "antivaryOn_inv\u2080"
+    - antivary_iff_forall_mul_nonpos
+    - antivaryOn_iff_forall_mul_nonpos
+  - path: Mathlib/Combinatorics/SetFamily/Kleitman.lean
+    theorems:
+    - Finset.card_biUnion_le_of_intersecting
+  - path: Mathlib/Data/List/Nodup.lean
+    theorems:
+    - List.Nodup.pairwise_coe
+    - List.inj_on_of_nodup_map
+  - path: Mathlib/Analysis/NormedSpace/OperatorNorm/NormedSpace.lean
+    theorems:
+    - LinearMap.bound_of_shell
+  - path: Mathlib/Data/Sym/Sym2.lean
+    theorems:
+    - Sym2.diag_injective
+    - Sym2.mem_map
+  - path: Mathlib/Topology/ContinuousFunction/NonUnitalFunctionalCalculus.lean
+    theorems:
+    - "cfc\u2099Hom_comp"
+  - path: Mathlib/RingTheory/PowerSeries/WellKnown.lean
+    theorems:
+    - PowerSeries.map_exp
+  - path: Mathlib/Algebra/Lie/Nilpotent.lean
+    theorems:
+    - LieModule.isNilpotent_iff_exists_ucs_eq_top
+  - path: Mathlib/Algebra/Lie/IdealOperations.lean
+    theorems:
+    - LieSubmodule.lie_le_right
+  - path: Mathlib/CategoryTheory/Quotient.lean
+    theorems:
+    - CategoryTheory.Quotient.compClosure_eq_self
+  - path: Mathlib/Algebra/Module/LinearMap/Basic.lean
+    theorems:
+    - LinearMap.map_smul_inv
+  - path: Mathlib/Analysis/InnerProductSpace/l2Space.lean
+    theorems:
+    - lp.inner_single_right
+    - lp.inner_single_left
+    - Orthonormal.isHilbertSum
+  - path: Mathlib/Data/Finset/PiAntidiagonal.lean
+    theorems:
+    - Finset.mem_piAntidiagonal
+  - path: Mathlib/AlgebraicGeometry/Gluing.lean
+    theorems:
+    - AlgebraicGeometry.Scheme.OpenCover.hom_ext
+  - path: Mathlib/LinearAlgebra/CliffordAlgebra/EvenEquiv.lean
+    theorems:
+    - CliffordAlgebra.ofEven_comp_toEven
+  - path: Mathlib/Data/Fin/Basic.lean
+    theorems:
+    - Fin.nontrivial_iff_two_le
+    - Fin.liftFun_iff_succ
+    - Fin.sub_one_lt_iff
+    - Fin.coe_orderIso_apply
+  - path: Mathlib/SetTheory/Cardinal/ENat.lean
+    theorems:
+    - Cardinal.nat_lt_ofENat
+    - Cardinal.nat_eq_ofENat
+  - path: Mathlib/Topology/Algebra/Module/Basic.lean
+    theorems:
+    - Submodule.ClosedComplemented.exists_submodule_equiv_prod
+    - ContinuousLinearMap.map_neg
+  - path: Mathlib/MeasureTheory/Function/SimpleFuncDenseLp.lean
+    theorems:
+    - MeasureTheory.SimpleFunc.tendsto_approxOn_range_Lp
+    - "MeasureTheory.SimpleFunc.measure_lt_top_of_mem\u2112p_indicator"
+  - path: Mathlib/Data/Polynomial/Reverse.lean
+    theorems:
+    - Polynomial.coeff_one_reverse
+  - path: Mathlib/Data/Int/GCD.lean
+    theorems:
+    - Int.lcm_zero_right
+  - path: Mathlib/Analysis/Convex/Topology.lean
+    theorems:
+    - Convex.openSegment_interior_closure_subset_interior
+  - path: Mathlib/RingTheory/Etale.lean
+    theorems:
+    - Algebra.FormallyEtale.iff_unramified_and_smooth
+  - path: Mathlib/Algebra/DirectLimit.lean
+    theorems:
+    - AddCommGroup.DirectLimit.congr_symm_apply_of
+  - path: Mathlib/Topology/Constructions.lean
+    theorems:
+    - isOpen_sigma_fst_preimage
+    - isClosedMap_sigmaMk
+  - path: Mathlib/Order/LiminfLimsup.lean
+    theorems:
+    - Filter.blimsup_eq_limsup_subtype
+    - Filter.bliminf_false
+    - Filter.frequently_lt_of_lt_limsup
+  - path: Mathlib/GroupTheory/Exponent.lean
+    theorems:
+    - Monoid.exponent_eq_iSup_orderOf'
+  - path: Mathlib/Data/ZMod/Basic.lean
+    theorems:
+    - ZMod.int_cast_mod
+    - ZMod.val_mul_of_lt
+  - path: Mathlib/Algebra/Order/Pointwise.lean
+    theorems:
+    - LinearOrderedField.smul_Iic
+  - path: Mathlib/Analysis/Complex/Basic.lean
+    theorems:
+    - Complex.normSq_eq_norm_sq
+  - path: Mathlib/Data/Nat/Totient.lean
+    theorems:
+    - Nat.totient_prime
+  - path: Mathlib/SetTheory/Game/PGame.lean
+    theorems:
+    - SetTheory.PGame.leftMoves_add_cases
+    - SetTheory.PGame.le_neg_iff
+  - path: Mathlib/MeasureTheory/Function/AEEqFun.lean
+    theorems:
+    - "MeasureTheory.AEEqFun.coeFn_comp\u2082"
+  - path: Mathlib/Algebra/GCDMonoid/Multiset.lean
+    theorems:
+    - Multiset.gcd_eq_zero_iff
+  - path: Mathlib/Analysis/BoundedVariation.lean
+    theorems:
+    - LocallyBoundedVariationOn.ae_differentiableWithinAt_of_mem_real
+  - path: Mathlib/LinearAlgebra/Finsupp.lean
+    theorems:
+    - Finsupp.lcongr_single
+    - Finsupp.total_comp_lmapDomain
+  - path: Mathlib/Analysis/SpecialFunctions/Log/Basic.lean
+    theorems:
+    - Real.continuousAt_log_iff
+  - path: Mathlib/Topology/ContinuousFunction/Weierstrass.lean
+    theorems:
+    - continuousMap_mem_polynomialFunctions_closure
+  - path: Mathlib/Analysis/InnerProductSpace/Orthogonal.lean
+    theorems:
+    - Submodule.sub_mem_orthogonal_of_inner_left
+  - path: Mathlib/GroupTheory/Perm/Cycle/Basic.lean
+    theorems:
+    - Equiv.Perm.SameCycle.conj
+    - Equiv.Perm.IsCycle.eq_on_support_inter_nonempty_congr
+  - path: Mathlib/Algebra/Module/LocalizedModule.lean
+    theorems:
+    - IsLocalizedModule.mk'_neg
+  - path: .lake/packages/std/Std/Data/Array/Lemmas.lean
+    theorems:
+    - Array.size_zipWith
+    - Array.get_extract_loop_lt
+    - Array.data_swap
+  - path: Mathlib/MeasureTheory/Measure/MeasureSpace.lean
+    theorems:
+    - MeasureTheory.Measure.AbsolutelyContinuous.smul
+    - MeasureTheory.ae_map_mem_range
+  - path: Mathlib/Probability/Independence/Basic.lean
+    theorems:
+    - ProbabilityTheory.iIndep_iff
+    - ProbabilityTheory.iIndepSet_iff
+  - path: Mathlib/Data/List/Forall2.lean
+    theorems:
+    - "List.forall\u2082_cons"
+  - path: Mathlib/Algebra/Order/Group/PosPart.lean
+    theorems:
+    - leOnePart_le_one
+    - mabs_div_eq_leOnePart_sq
+    - one_lt_ltOnePart
+  - path: Mathlib/Topology/MetricSpace/PiNat.lean
+    theorems:
+    - PiNat.mem_cylinder_iff_le_firstDiff
+  - path: Mathlib/Analysis/Analytic/Inverse.lean
+    theorems:
+    - FormalMultilinearSeries.comp_rightInv_aux1
+  - path: Mathlib/Topology/Connected/Basic.lean
+    theorems:
+    - IsConnected.union
+    - isPreconnected_of_forall_constant
+    - QuotientMap.image_connectedComponent
+  - path: Mathlib/MeasureTheory/Measure/Haar/Disintegration.lean
+    theorems:
+    - MeasureTheory.ae_ae_add_linearMap_mem_iff
+  - path: Mathlib/Data/Multiset/Bind.lean
+    theorems:
+    - Multiset.bind_congr
+  - path: Mathlib/Algebra/Algebra/Subalgebra/Basic.lean
+    theorems:
+    - AlgHom.coe_range
+  - path: Mathlib/Analysis/Convex/StrictConvexBetween.lean
+    theorems:
+    - Sbtw.dist_lt_max_dist
+    - Wbtw.dist_le_max_dist
+  - path: Mathlib/LinearAlgebra/Matrix/PosDef.lean
+    theorems:
+    - Matrix.PosSemidef.conjTranspose_mul_mul_same
+  - path: Mathlib/Algebra/Homology/HomotopyCategory/HomComplex.lean
+    theorems:
+    - CochainComplex.HomComplex.Cochain.comp_assoc_of_first_is_zero_cochain
+  - path: Mathlib/Order/Filter/Basic.lean
+    theorems:
+    - Filter.not_eventually
+    - Filter.comap_neBot_iff
+    - Filter.iInf_neBot_of_directed
+    - Filter.map_const
+    - Filter.prod_map_seq_comm
+    - Filter.EventuallyLE.congr
+  - path: Mathlib/MeasureTheory/Function/SimpleFunc.lean
+    theorems:
+    - MeasureTheory.SimpleFunc.FinMeasSupp.add
+    - MeasureTheory.SimpleFunc.approx_apply
+  - path: Mathlib/Analysis/InnerProductSpace/TwoDim.lean
+    theorems:
+    - Orientation.norm_kahler
+    - Orientation.inner_mul_areaForm_sub'
+    - Orientation.kahler_mul
+  - path: Mathlib/MeasureTheory/Measure/Lebesgue/Basic.lean
+    theorems:
+    - Real.volume_eq_stieltjes_id
+  - path: Mathlib/Combinatorics/SimpleGraph/Connectivity.lean
+    theorems:
+    - SimpleGraph.reachable_delete_edges_iff_exists_walk
+  - path: Mathlib/RingTheory/Ideal/Operations.lean
+    theorems:
+    - Ideal.iInf_span_singleton
+    - Ideal.radical_eq_iff
+    - Ideal.sup_mul_eq_of_coprime_left
+  - path: Mathlib/Algebra/Homology/ShortComplex/LeftHomology.lean
+    theorems:
+    - CategoryTheory.ShortComplex.LeftHomologyData.liftCycles_comp_cyclesIso_hom
+    - "CategoryTheory.ShortComplex.toCycles_comp_leftHomology\u03C0"
+  - path: Mathlib/CategoryTheory/Bicategory/Adjunction.lean
+    theorems:
+    - CategoryTheory.Bicategory.right_triangle_of_left_triangle
+  - path: Mathlib/GroupTheory/Subsemigroup/Membership.lean
+    theorems:
+    - Subsemigroup.mem_sSup_of_mem
+  - path: Mathlib/Algebra/Order/Hom/Monoid.lean
+    theorems:
+    - OrderMonoidWithZeroHom.toOrderMonoidHom_injective
+  - path: Mathlib/MeasureTheory/Integral/Average.lean
+    theorems:
+    - MeasureTheory.measure_setLaverage_le_pos
+    - MeasureTheory.laverage_eq
+  - path: Mathlib/Algebra/Order/Floor.lean
+    theorems:
+    - Nat.one_le_ceil_iff
+    - Int.fract_natCast
+  - path: Mathlib/Data/Set/Intervals/Basic.lean
+    theorems:
+    - Set.right_mem_Iic
+  - path: Mathlib/Topology/Algebra/Polynomial.lean
+    theorems:
+    - "Polynomial.continuous_eval\u2082"
+  - path: Mathlib/Data/Complex/Exponential.lean
+    theorems:
+    - Real.cosh_sub
+    - Real.exp_1_approx_succ_eq
+    - Complex.cos_sq
+  - path: Mathlib/Data/PFunctor/Multivariate/Basic.lean
+    theorems:
+    - MvPFunctor.const.get_map
+  - path: Mathlib/Logic/Embedding/Basic.lean
+    theorems:
+    - Equiv.embeddingCongr_apply_trans
+  - path: Mathlib/Algebra/Order/Module/Defs.lean
+    theorems:
+    - neg_of_smul_neg_right
+    - smul_pos_iff_of_neg_left
+    - PosSMulReflectLE.lift
+  - path: Mathlib/SetTheory/Ordinal/Notation.lean
+    theorems:
+    - ONote.repr_sub
+  - path: Mathlib/MeasureTheory/MeasurableSpace/Defs.lean
+    theorems:
+    - MeasurableSpace.measurableSpace_iSup_eq
+    - MeasurableSpace.measurableSet_bot_iff
+  - path: Mathlib/Combinatorics/SetFamily/Shadow.lean
+    theorems:
+    - Set.Sized.upShadow
+  - path: Mathlib/GroupTheory/Submonoid/Operations.lean
+    theorems:
+    - Submonoid.eq_bot_of_subsingleton
+  - path: Mathlib/RingTheory/IsAdjoinRoot.lean
+    theorems:
+    - IsAdjoinRootMonic.modByMonicHom_root_pow
+  - path: Mathlib/LinearAlgebra/Matrix/Spectrum.lean
+    theorems:
+    - Matrix.IsHermitian.eigenvectorMatrix_apply
+  - path: Mathlib/Algebra/GradedMonoid.lean
+    theorems:
+    - SetLike.pow_mem_graded
+  - path: Mathlib/Data/ENNReal/Real.lean
+    theorems:
+    - ENNReal.ofReal_lt_one
+  - path: Mathlib/Data/Nat/Log.lean
+    theorems:
+    - Nat.clog_eq_one
+  - path: Mathlib/LinearAlgebra/Dual.lean
+    theorems:
+    - Module.forall_dual_apply_eq_zero_iff
+    - Subspace.dualRestrict_comp_dualLift
+    - Subspace.map_dualCoannihilator
+    - Submodule.exists_dual_map_eq_bot_of_lt_top
+  - path: Mathlib/Algebra/Homology/HomologicalBicomplex.lean
+    theorems:
+    - "HomologicalComplex\u2082.d_comm"
+  - path: Mathlib/MeasureTheory/Function/LpSeminorm/Basic.lean
+    theorems:
+    - MeasureTheory.snorm'_measure_zero_of_neg
+    - MeasureTheory.snorm_zero'
+    - MeasureTheory.snormEssSup_mono_measure
+    - "MeasureTheory.mem\u2112p_const"
+  - path: Mathlib/Analysis/Calculus/LineDeriv/Basic.lean
+    theorems:
+    - HasLineDerivWithinAt.congr_mono
+    - HasFDerivWithinAt.hasLineDerivWithinAt
+  - path: Mathlib/AlgebraicTopology/SimplexCategory.lean
+    theorems:
+    - SimplexCategory.factorThruImage_eq
+    - SimplexCategory.iso_eq_iso_refl
+  - path: Mathlib/Data/Nat/Factorization/Root.lean
+    theorems:
+    - Nat.floorRoot_ne_zero
+  - path: Mathlib/GroupTheory/SpecificGroups/Dihedral.lean
+    theorems:
+    - DihedralGroup.orderOf_r_one
+    - DihedralGroup.r_one_pow
+  - path: Mathlib/Topology/Compactness/SigmaCompact.lean
+    theorems:
+    - CompactExhaustion.mem_diff_shiftr_find
+  - path: Mathlib/Algebra/Function/Support.lean
+    theorems:
+    - Function.mulSupport_extend_one
+    - Function.mulSupport_binop_subset
+    - Function.range_subset_insert_image_mulSupport
+  - path: Mathlib/Data/Set/Card.lean
+    theorems:
+    - Set.ncard_singleton_inter
+    - Set.one_le_encard_iff_nonempty
+    - Set.ncard_pair
+    - Set.ncard_insert_le
+    - Set.encard_eq_three
+    - Set.fiber_ncard_ne_zero_iff_mem_image
+  - path: Mathlib/RingTheory/WittVector/InitTail.lean
+    theorems:
+    - WittVector.init_init
+  - path: Mathlib/GroupTheory/HNNExtension.lean
+    theorems:
+    - HNNExtension.lift_t
+  - path: Mathlib/Data/List/BigOperators/Basic.lean
+    theorems:
+    - List.prod_isUnit_iff
+    - Commute.list_prod_right
+    - List.prod_map_neg
+  - path: Mathlib/AlgebraicGeometry/EllipticCurve/Jacobian.lean
+    theorems:
+    - WeierstrassCurve.Jacobian.equiv_of_Z_eq_zero
+  - path: Mathlib/Data/Int/Lemmas.lean
+    theorems:
+    - Int.natAbs_inj_of_nonneg_of_nonneg
+  - path: Mathlib/Data/Fintype/Basic.lean
+    theorems:
+    - Fintype.choose_subtype_eq
+  - path: Mathlib/RingTheory/Valuation/Basic.lean
+    theorems:
+    - Valuation.map_one_sub_of_lt
+  - path: Mathlib/Algebra/EuclideanDomain/Defs.lean
+    theorems:
+    - EuclideanDomain.div_add_mod'
+  - path: Mathlib/Analysis/SpecialFunctions/Gamma/BohrMollerup.lean
+    theorems:
+    - Real.BohrMollerup.logGammaSeq_add_one
+  - path: Mathlib/CategoryTheory/Localization/CalculusOfFractions.lean
+    theorems:
+    - CategoryTheory.Localization.essSurj_mapArrow_of_hasLeftCalculusofFractions
+    - CategoryTheory.MorphismProperty.LeftFraction.map_ofInv_hom_id
+  - path: Mathlib/Analysis/PSeries.lean
+    theorems:
+    - Real.not_summable_indicator_one_div_natCast
+    - Finset.le_sum_condensed'
+    - Real.summable_one_div_nat_pow
+  - path: Mathlib/Algebra/Lie/Submodule.lean
+    theorems:
+    - LieSubmodule.coe_toSubmodule_mk
+    - LieHom.mem_idealRange
+  - path: Mathlib/MeasureTheory/MeasurableSpace/Basic.lean
+    theorems:
+    - measurableSet_range_inl
+  - path: Mathlib/Data/List/Rotate.lean
+    theorems:
+    - List.rotate_eq_nil_iff
+    - List.get_rotate
+  - path: Mathlib/NumberTheory/Cyclotomic/Basic.lean
+    theorems:
+    - IsCyclotomicExtension.iff_union_of_dvd
+    - IsCyclotomicExtension.of_union_of_dvd
+    - IsCyclotomicExtension.adjoin_roots_cyclotomic_eq_adjoin_root_cyclotomic
+  - path: Mathlib/Data/List/Lattice.lean
+    theorems:
+    - List.nil_bagInter
+  - path: Mathlib/MeasureTheory/Constructions/Prod/Integral.lean
+    theorems:
+    - MeasureTheory.lintegral_fn_integral_sub
+  - path: Mathlib/Topology/Order/Basic.lean
+    theorems:
+    - interior_Ico
+    - nhds_eq_iInf_abs_sub
+  - path: Mathlib/Computability/Halting.lean
+    theorems:
+    - Partrec.merge'
+  - path: Mathlib/Topology/Separation.lean
+    theorems:
+    - isClosed_setOf_specializes
+    - compl_singleton_mem_nhdsSet_iff
+    - Set.EqOn.of_subset_closure
+  - path: Mathlib/Algebra/Homology/TotalComplexSymmetry.lean
+    theorems:
+    - "HomologicalComplex\u2082.totalFlipIso_hom_f_D\u2082"
+  - path: Mathlib/Order/SuccPred/Limit.lean
+    theorems:
+    - Order.not_isSuccLimit_of_noMax
+  - path: Mathlib/RingTheory/PolynomialAlgebra.lean
+    theorems:
+    - matPolyEquiv_map_C
+  - path: Mathlib/RingTheory/RootsOfUnity/Minpoly.lean
+    theorems:
+    - IsPrimitiveRoot.minpoly_dvd_expand
+  - path: Mathlib/CategoryTheory/Closed/Ideal.lean
+    theorems:
+    - CategoryTheory.bijection_natural
+  - path: Mathlib/Algebra/Lie/Weights/Basic.lean
+    theorems:
+    - LieModule.exists_weightSpace_le_ker_of_isNoetherian
+  - path: Mathlib/Analysis/LocallyConvex/AbsConvex.lean
+    theorems:
+    - gaugeSeminormFamily_ball
+  - path: Mathlib/Data/Nat/Sqrt.lean
+    theorems:
+    - Nat.sqrt_lt_self
+  - path: Mathlib/NumberTheory/Pell.lean
+    theorems:
+    - Pell.exists_of_not_isSquare
+  - path: Mathlib/Topology/ContinuousFunction/Algebra.lean
+    theorems:
+    - algebraMap_apply
+  - path: Mathlib/Algebra/Order/Rearrangement.lean
+    theorems:
+    - Monovary.sum_comp_perm_smul_lt_sum_smul_iff
+  - path: Mathlib/LinearAlgebra/AffineSpace/Matrix.lean
+    theorems:
+    - AffineBasis.det_smul_coords_eq_cramer_coords
+  - path: Mathlib/Topology/UniformSpace/Basic.lean
+    theorems:
+    - UniformSpace.to_nhds_mono
+    - uniformity_le_symm
+  - path: Mathlib/Data/List/Sigma.lean
+    theorems:
+    - List.keys_kreplace
+    - List.dlookup_kinsert
+  - path: Mathlib/Algebra/ContinuedFractions/Computation/Translations.lean
+    theorems:
+    - GeneralizedContinuedFraction.convergents'_of_int
+  - path: Mathlib/RingTheory/TensorProduct/Basic.lean
+    theorems:
+    - LinearMap.baseChange_mul
+    - Algebra.TensorProduct.lift_comp_includeRight
+    - Algebra.TensorProduct.lift_includeLeft_includeRight
+  - path: Mathlib/Algebra/CharP/Basic.lean
+    theorems:
+    - Ring.two_ne_zero
+  - path: Mathlib/Analysis/Complex/UpperHalfPlane/Basic.lean
+    theorems:
+    - UpperHalfPlane.im_inv_neg_coe_pos
+  - path: Mathlib/Data/Option/Basic.lean
+    theorems:
+    - Option.guard_eq_some'
+  - path: Mathlib/RingTheory/Ideal/Norm.lean
+    theorems:
+    - Ideal.absNorm_eq_zero_iff
+  - path: Mathlib/MeasureTheory/Measure/Haar/Unique.lean
+    theorems:
+    - MeasureTheory.Measure.measure_isMulInvariant_eq_smul_of_isCompact_closure
+    - MeasureTheory.Measure.isHaarMeasure_eq_of_isProbabilityMeasure
+  - path: Mathlib/Analysis/Analytic/Composition.lean
+    theorems:
+    - FormalMultilinearSeries.comp_removeZero
+  - path: Mathlib/Logic/Hydra.lean
+    theorems:
+    - Relation.cutExpand_fibration
+    - Relation.cutExpand_add_left
+  - path: Mathlib/LinearAlgebra/Matrix/ToLin.lean
+    theorems:
+    - LinearMap.toMatrixAlgEquiv_apply
+    - LinearMap.toMatrixAlgEquiv_mul
+    - LinearMap.toMatrix_basis_equiv
+  - path: Mathlib/NumberTheory/Rayleigh.lean
+    theorems:
+    - Beatty.hit_or_miss
+  - path: Mathlib/Analysis/Convolution.lean
+    theorems:
+    - ConvolutionExistsAt.distrib_add
+  - path: Mathlib/Data/Finset/LocallyFinite/Basic.lean
+    theorems:
+    - Finset.map_add_left_Ioo
+    - Finset.Icc_erase_right
+  - path: Mathlib/Algebra/Group/Ext.lean
+    theorems:
+    - CommGroup.toGroup_injective
+  - path: Mathlib/LinearAlgebra/AffineSpace/Combination.lean
+    theorems:
+    - Finset.affineCombinationSingleWeights_apply_self
+  - path: Mathlib/GroupTheory/Perm/Fin.lean
+    theorems:
+    - Fin.cycleRange_symm_succ
+  - path: Mathlib/Topology/Algebra/UniformGroup.lean
+    theorems:
+    - UniformContinuous.pow_const
+  - path: Mathlib/Topology/MetricSpace/Bounded.lean
+    theorems:
+    - Metric.ediam_univ_eq_top_iff_noncompact
+    - Metric.diam_triple
+  - path: Mathlib/Algebra/Order/Field/Basic.lean
+    theorems:
+    - div_mul_le_div_mul_of_div_le_div
+    - le_div_iff_of_neg'
+    - div_pos_iff
+  - path: Mathlib/MeasureTheory/Function/UniformIntegrable.lean
+    theorems:
+    - MeasureTheory.tendsto_Lp_of_tendsto_ae
+  - path: .lake/packages/std/Std/Data/HashMap/WF.lean
+    theorems:
+    - Std.HashMap.Imp.Buckets.exists_of_update
+  - path: Mathlib/RingTheory/Polynomial/ScaleRoots.lean
+    theorems:
+    - Polynomial.support_scaleRoots_eq
+  - path: Mathlib/CategoryTheory/Limits/MonoCoprod.lean
+    theorems:
+    - CategoryTheory.Limits.MonoCoprod.mono_binaryCofanSum_inr'
+  - path: Mathlib/Algebra/Module/Injective.lean
+    theorems:
+    - Module.Baer.injective
+  - path: Mathlib/LinearAlgebra/RootSystem/Basic.lean
+    theorems:
+    - RootPairing.isCrystallographic_iff
+  - path: Mathlib/RepresentationTheory/Action/Monoidal.lean
+    theorems:
+    - Action.rightUnitor_hom_hom
+  - path: Mathlib/Data/Part.lean
+    theorems:
+    - Part.toOption_isNone
+  - path: Mathlib/Algebra/BigOperators/Intervals.lean
+    theorems:
+    - Finset.prod_Ico_add'
+    - Finset.prod_Ico_mul_eq_prod_Icc
+    - Finset.prod_Ico_reflect
+  - path: Mathlib/Algebra/Lie/Weights/Chain.lean
+    theorems:
+    - LieModule.weightSpaceChain_neg
+  - path: Mathlib/CategoryTheory/Limits/Types.lean
+    theorems:
+    - CategoryTheory.Limits.Types.Image.lift_fac
+  - path: Mathlib/Algebra/Homology/ShortComplex/RightHomology.lean
+    theorems:
+    - CategoryTheory.ShortComplex.RightHomologyMapData.opcyclesMap_eq
+    - CategoryTheory.ShortComplex.opcyclesMap'_comp
+  - path: Mathlib/Order/Filter/Lift.lean
+    theorems:
+    - Filter.prod_lift'_lift'
+  - path: Mathlib/AlgebraicGeometry/Morphisms/Basic.lean
+    theorems:
+    - AlgebraicGeometry.targetAffineLocallyOfOpenCover
+    - AlgebraicGeometry.AffineTargetMorphismProperty.isLocalOfOpenCoverImply
+  - path: Mathlib/RingTheory/Norm.lean
+    theorems:
+    - Algebra.norm_eq_prod_embeddings_gen
+  - path: Mathlib/Data/PNat/Prime.lean
+    theorems:
+    - PNat.gcd_eq_right_iff_dvd
+  - path: Mathlib/SetTheory/Ordinal/Arithmetic.lean
+    theorems:
+    - Ordinal.bsup_not_succ_of_ne_bsup
+    - Ordinal.IsNormal.eq_iff_zero_and_succ
+    - Acc.rank_lt_of_rel
+    - Ordinal.div_nonempty
+  - path: Mathlib/MeasureTheory/Integral/IntervalIntegral.lean
+    theorems:
+    - intervalIntegral.integral_interval_sub_interval_comm
+    - intervalIntegral.smul_integral_comp_add_mul
+    - intervalIntegral.integral_cases
+    - intervalIntegral.integral_congr
+    - IntervalIntegrable.comp_add_right
+  - path: Mathlib/RingTheory/DedekindDomain/Ideal.lean
+    theorems:
+    - FractionalIdeal.mul_inv_cancel
+    - irreducible_pow_sup_of_le
+  - path: Mathlib/Analysis/SpecialFunctions/Pow/Real.lean
+    theorems:
+    - Real.exists_rat_pow_btwn
+    - Real.one_le_rpow
+  - path: Mathlib/RingTheory/Subring/Basic.lean
+    theorems:
+    - coe_int_mem
+  - path: Mathlib/LinearAlgebra/Matrix/Basis.lean
+    theorems:
+    - Basis.coePiBasisFun.toMatrix_eq_transpose
+  - path: Mathlib/AlgebraicTopology/DoldKan/FunctorGamma.lean
+    theorems:
+    - "AlgebraicTopology.DoldKan.\u0393\u2080.Obj.map_epi_on_summand_id"
+  - path: Mathlib/Topology/Baire/Lemmas.lean
+    theorems:
+    - dense_biInter_of_isOpen
+  - path: .lake/packages/std/Std/Data/Range/Lemmas.lean
+    theorems:
+    - Std.Range.forIn_eq_forIn_range'
+  - path: Mathlib/Logic/Nontrivial/Basic.lean
+    theorems:
+    - Function.Injective.exists_ne
+  - path: Mathlib/MeasureTheory/OuterMeasure/Basic.lean
+    theorems:
+    - MeasureTheory.OuterMeasure.restrict_apply
+    - MeasureTheory.OuterMeasure.le_trim
+  - path: Mathlib/AlgebraicGeometry/ProjectiveSpectrum/Topology.lean
+    theorems:
+    - ProjectiveSpectrum.basicOpen_mul_le_left
+  - path: Mathlib/Algebra/Parity.lean
+    theorems:
+    - range_two_mul
+  - path: Mathlib/Logic/Lemmas.lean
+    theorems:
+    - dite_dite_distrib_right
+  - path: Mathlib/Data/Matroid/Dual.lean
+    theorems:
+    - Matroid.dual_dual
+  - path: Mathlib/Data/Polynomial/Smeval.lean
+    theorems:
+    - Polynomial.smeval_C
+  - path: Mathlib/Algebra/ModEq.lean
+    theorems:
+    - AddCommGroup.modEq_refl
+  - path: Mathlib/Logic/Function/Conjugate.lean
+    theorems:
+    - Function.Semiconj.inverses_right
+  - path: Mathlib/Topology/Algebra/InfiniteSum/Ring.lean
+    theorems:
+    - summable_mul_right_iff
+  - path: Mathlib/LinearAlgebra/Alternating/Basic.lean
+    theorems:
+    - AlternatingMap.curryLeft_same
+  - path: Mathlib/RingTheory/FractionalIdeal/Operations.lean
+    theorems:
+    - FractionalIdeal.map_symm_map
+  - path: Mathlib/Logic/Function/Basic.lean
+    theorems:
+    - Function.sometimes_spec
+    - Function.extend_def
+  - path: Mathlib/Algebra/Homology/Homotopy.lean
+    theorems:
+    - Homotopy.nullHomotopicMap'_f
+  - path: Mathlib/Analysis/Complex/PhragmenLindelof.lean
+    theorems:
+    - PhragmenLindelof.right_half_plane_of_tendsto_zero_on_real
+    - PhragmenLindelof.horizontal_strip
+  - path: Mathlib/CategoryTheory/Comma/Presheaf.lean
+    theorems:
+    - "CategoryTheory.OverPresheafAux.YonedaCollection.map\u2081_fst"
+  - path: Mathlib/LinearAlgebra/BilinearForm/Basic.lean
+    theorems:
+    - BilinForm.coe_injective
+  - path: Mathlib/Data/Vector.lean
+    theorems:
+    - Vector.toList_drop
+  - path: Mathlib/Data/Int/CardIntervalMod.lean
+    theorems:
+    - Nat.count_modEq_card
+    - Int.Ioc_filter_modEq_card
+  - path: Mathlib/SetTheory/Cardinal/Basic.lean
+    theorems:
+    - Cardinal.power_mul
+    - Cardinal.lift_le_aleph0
+    - Cardinal.lift_mk_le_lift_mk_mul_of_lift_mk_preimage_le
+  - path: Mathlib/CategoryTheory/Limits/Shapes/BinaryProducts.lean
+    theorems:
+    - CategoryTheory.Limits.prod.comp_lift
+  - path: Mathlib/Geometry/Manifold/SmoothManifoldWithCorners.lean
+    theorems:
+    - PartialHomeomorph.extend_image_nhd_mem_nhds_of_boundaryless
+  - path: Mathlib/LinearAlgebra/Pi.lean
+    theorems:
+    - LinearMap.pi_zero
+    - LinearMap.iInf_ker_proj
+  - path: Mathlib/Data/Polynomial/Basic.lean
+    theorems:
+    - Polynomial.toFinsupp_sub
+  - path: Mathlib/RingTheory/Ideal/Basic.lean
+    theorems:
+    - Ideal.mem_span_singleton
+    - Ideal.eq_bot_or_top
+  - path: Mathlib/Topology/Semicontinuous.lean
+    theorems:
+    - lowerSemicontinuousWithinAt_tsum
+    - lowerSemicontinuousAt_tsum
+    - upperSemicontinuousAt_sum
+  - path: Mathlib/Data/Multiset/Basic.lean
+    theorems:
+    - Multiset.Rel.add
+    - Multiset.cons_subset
+    - Multiset.erase_add_right_pos
+  - path: Mathlib/MeasureTheory/Measure/VectorMeasure.lean
+    theorems:
+    - MeasureTheory.Measure.toENNRealVectorMeasure_ennrealToMeasure
+    - MeasureTheory.VectorMeasure.restrict_add
+    - MeasureTheory.Measure.toSignedMeasure_congr
+    - MeasureTheory.VectorMeasure.hasSum_of_disjoint_iUnion
+  - path: Mathlib/Algebra/Order/Sub/Defs.lean
+    theorems:
+    - AddLECancellable.tsub_eq_of_eq_add_rev
+  - path: Mathlib/Analysis/NormedSpace/Spectrum.lean
+    theorems:
+    - spectrum.differentiableOn_inverse_one_sub_smul
+  - path: Mathlib/Computability/Partrec.lean
+    theorems:
+    - Computable.ofOption
+  - path: Mathlib/CategoryTheory/Limits/Shapes/Types.lean
+    theorems:
+    - CategoryTheory.Limits.Types.equalizerIso_hom_comp_subtype
+  - path: Mathlib/Control/EquivFunctor.lean
+    theorems:
+    - EquivFunctor.mapEquiv.injective
+  - path: Mathlib/Dynamics/Ergodic/MeasurePreserving.lean
+    theorems:
+    - MeasureTheory.MeasurePreserving.restrict_image_emb
+    - MeasureTheory.MeasurePreserving.restrict_preimage_emb
+  - path: Mathlib/Analysis/Calculus/Implicit.lean
+    theorems:
+    - ImplicitFunctionData.map_nhds_eq
+  - path: Mathlib/Data/Finmap.lean
+    theorems:
+    - Finmap.keys_union
+    - Finmap.keysLookupEquiv_symm_apply_keys
+  - path: Mathlib/RingTheory/Ideal/Cotangent.lean
+    theorems:
+    - Ideal.to_quotient_square_range
+  - path: Mathlib/Topology/Algebra/Order/Field.lean
+    theorems:
+    - Filter.Tendsto.div_atTop
+  - path: Mathlib/NumberTheory/Liouville/LiouvilleWith.lean
+    theorems:
+    - LiouvilleWith.int_add_iff
+  - path: Mathlib/AlgebraicGeometry/Properties.lean
+    theorems:
+    - AlgebraicGeometry.basicOpen_eq_bot_iff
+  - path: Mathlib/Order/ModularLattice.lean
+    theorems:
+    - eq_of_le_of_inf_le_of_sup_le
+  - path: Mathlib/Combinatorics/SimpleGraph/Maps.lean
+    theorems:
+    - SimpleGraph.map_le_iff_le_comap
+  - path: Mathlib/Data/Set/Intervals/Instances.lean
+    theorems:
+    - Set.Ioc.coe_eq_one
+    - Set.Icc.one_sub_nonneg
+  - path: Mathlib/Data/Matroid/Basic.lean
+    theorems:
+    - Matroid.base_compl_iff_mem_maximals_disjoint_base
+  - path: Mathlib/Algebra/Group/Basic.lean
+    theorems:
+    - conj_eq_one_iff
+  - path: Mathlib/Computability/AkraBazzi/GrowsPolynomially.lean
+    theorems:
+    - AkraBazziRecurrence.GrowsPolynomially.eventually_atTop_zero_or_pos_or_neg
+  - path: Mathlib/Analysis/Convex/Intrinsic.lean
+    theorems:
+    - intrinsicClosure_empty
+  - path: Mathlib/GroupTheory/Complement.lean
+    theorems:
+    - Subgroup.coe_transferFunction
+    - Subgroup.IsComplement.equiv_mul_left
+  - path: Mathlib/Analysis/Normed/Group/HomCompletion.lean
+    theorems:
+    - NormedAddGroupHom.ker_le_ker_completion
+  - path: Mathlib/MeasureTheory/Constructions/Polish.lean
+    theorems:
+    - MeasurableSet.isClopenable
+  - path: Mathlib/Topology/Bases.lean
+    theorems:
+    - Pairwise.countable_of_isOpen_disjoint
+  - path: Mathlib/Data/List/Infix.lean
+    theorems:
+    - List.map_reverse_inits
+  - path: Mathlib/Algebra/Module/Zlattice.lean
+    theorems:
+    - Zlattice.FG
+  - path: Mathlib/SetTheory/ZFC/Basic.lean
+    theorems:
+    - Class.coe_sUnion
+    - ZFSet.toSet_sep
+    - ZFSet.toSet_subset_iff
+  - path: Mathlib/Analysis/Asymptotics/Theta.lean
+    theorems:
+    - Asymptotics.isTheta_inv
+  - path: Mathlib/Data/PFunctor/Univariate/M.lean
+    theorems:
+    - PFunctor.M.ext_aux
+  - path: Mathlib/Order/ConditionallyCompleteLattice/Basic.lean
+    theorems:
+    - WithTop.coe_iSup
+  - path: Mathlib/NumberTheory/NumberField/CanonicalEmbedding.lean
+    theorems:
+    - NumberField.mixedEmbedding.convexBodySum_volume
+  - path: Mathlib/Algebra/GCDMonoid/Basic.lean
+    theorems:
+    - normalize_coe_units
+    - lcm_mul_right
+    - Associates.dvd_out_iff
+  - path: Mathlib/Data/Set/Image.lean
+    theorems:
+    - Set.forall_mem_range
+    - Set.image_union_image_compl_eq_range
+    - Set.image_preimage_eq_of_subset
+  - path: Mathlib/FieldTheory/ChevalleyWarning.lean
+    theorems:
+    - char_dvd_card_solutions_of_fintype_sum_lt
+  - path: .lake/packages/std/Std/Data/List/Count.lean
+    theorems:
+    - List.count_le_count_map
+  - path: Mathlib/Data/Fintype/BigOperators.lean
+    theorems:
+    - Finset.prod_toFinset_eq_subtype
+  - path: Mathlib/MeasureTheory/Integral/IntervalAverage.lean
+    theorems:
+    - interval_average_symm
+  - path: Mathlib/Geometry/Euclidean/Basic.lean
+    theorems:
+    - EuclideanGeometry.dist_smul_vadd_eq_dist
+    - EuclideanGeometry.dist_left_midpoint_eq_dist_right_midpoint
+  - path: Mathlib/RingTheory/RingHomProperties.lean
+    theorems:
+    - RingHom.RespectsIso.cancel_right_isIso
+  - path: Mathlib/Data/Set/Prod.lean
+    theorems:
+    - Set.range_pair_subset
+  - path: Mathlib/LinearAlgebra/Matrix/Block.lean
+    theorems:
+    - Matrix.blockTriangular_stdBasisMatrix
+  - path: Mathlib/Topology/Instances/Sign.lean
+    theorems:
+    - continuousAt_sign_of_pos
+  - path: Mathlib/Data/DFinsupp/Order.lean
+    theorems:
+    - DFinsupp.support_tsub
+  - path: Mathlib/Topology/MetricSpace/Basic.lean
+    theorems:
+    - MetricSpace.replaceBornology_eq
+  - path: Mathlib/Data/Nat/Digits.lean
+    theorems:
+    - Nat.ofDigits_one_cons
+  - path: Mathlib/NumberTheory/FLT/Four.lean
+    theorems:
+    - Fermat42.comm
+  - path: Mathlib/Data/Nat/GCD/Basic.lean
+    theorems:
+    - Nat.coprime_pow_left_iff
+  - path: Mathlib/Logic/Equiv/PartialEquiv.lean
+    theorems:
+    - PartialEquiv.refl_restr_target
+  - path: Mathlib/Analysis/Complex/AbsMax.lean
+    theorems:
+    - Complex.exists_mem_frontier_isMaxOn_norm
+  - path: Mathlib/Computability/Reduce.lean
+    theorems:
+    - ComputablePred.computable_of_manyOneReducible
+  - path: Mathlib/NumberTheory/NumberField/Embeddings.lean
+    theorems:
+    - NumberField.InfinitePlace.exists_smul_eq_of_comap_eq
+  - path: Mathlib/CategoryTheory/Bicategory/Basic.lean
+    theorems:
+    - CategoryTheory.Bicategory.leftUnitor_inv_naturality
+  - path: Mathlib/Analysis/Calculus/Deriv/Mul.lean
+    theorems:
+    - HasDerivAtFilter.const_smul
+  - path: Mathlib/CategoryTheory/Monoidal/Preadditive.lean
+    theorems:
+    - "CategoryTheory.leftDistributor_ext\u2082_right"
+  - path: Mathlib/Algebra/ContinuedFractions/Translations.lean
+    theorems:
+    - GeneralizedContinuedFraction.first_denominator_eq
+  - path: Mathlib/Geometry/Manifold/MFDeriv/Atlas.lean
+    theorems:
+    - PartialHomeomorph.MDifferentiable.symm_comp_deriv
+  - path: Mathlib/GroupTheory/Index.lean
+    theorems:
+    - Subgroup.inf_relindex_left
+  - path: Mathlib/Data/Finset/Lattice.lean
+    theorems:
+    - Finset.card_le_of_interleaved
+    - Finset.sup_le_iff
+  - path: Mathlib/RingTheory/Ideal/Over.lean
+    theorems:
+    - Ideal.eq_bot_of_comap_eq_bot
+  - path: Mathlib/RingTheory/Derivation/Basic.lean
+    theorems:
+    - Derivation.leibniz_of_mul_eq_one
+  - path: Mathlib/Data/List/Chain.lean
+    theorems:
+    - List.Chain'.infix
+  - path: Mathlib/Data/Real/Irrational.lean
+    theorems:
+    - irrational_iff_ne_rational
+  - path: Mathlib/Data/List/Zip.lean
+    theorems:
+    - List.unzip_zip_left
+  - path: Mathlib/MeasureTheory/Group/Prod.lean
+    theorems:
+    - MeasureTheory.absolutelyContinuous_map_mul_right
+  - path: Mathlib/CategoryTheory/Sites/Coherent/Equivalence.lean
+    theorems:
+    - CategoryTheory.Equivalence.precoherent_eq
+  - path: Mathlib/MeasureTheory/Function/L1Space.lean
+    theorems:
+    - MeasureTheory.L1.dist_def
+  - path: Mathlib/Analysis/SpecialFunctions/Integrals.lean
+    theorems:
+    - integral_sin_pow_aux
+  - path: Mathlib/Data/Polynomial/Laurent.lean
+    theorems:
+    - LaurentPolynomial.T_sub
+    - LaurentPolynomial.invert_C
+  - path: Mathlib/Topology/Algebra/Order/Compact.lean
+    theorems:
+    - cocompact_le_atBot_atTop
+  - path: Mathlib/LinearAlgebra/QuadraticForm/Prod.lean
+    theorems:
+    - QuadraticForm.posDef_prod_iff
+  - path: Mathlib/MeasureTheory/Integral/Lebesgue.lean
+    theorems:
+    - NNReal.count_const_le_le_of_tsum_le
+    - MeasureTheory.lintegral_indicator_le
+  - path: Mathlib/CategoryTheory/Adjunction/Opposites.lean
+    theorems:
+    - CategoryTheory.Adjunction.homEquiv_leftAdjointUniq_hom_app
+  - path: Mathlib/Topology/UniformSpace/CompactConvergence.lean
+    theorems:
+    - ContinuousMap.mem_compactConvergence_entourage_iff
+    - Filter.HasBasis.compactConvergenceUniformity
+  - path: Mathlib/Algebra/Order/Sub/Canonical.lean
+    theorems:
+    - AddLECancellable.tsub_lt_iff_left
+  - path: Mathlib/MeasureTheory/Group/Integral.lean
+    theorems:
+    - MeasureTheory.Integrable.comp_div_right
+  - path: Mathlib/Combinatorics/SimpleGraph/Regularity/Bound.lean
+    theorems:
+    - SzemerediRegularity.eps_pos
+  - path: Mathlib/Topology/MetricSpace/PseudoMetric.lean
+    theorems:
+    - Real.Ioo_eq_ball
+    - swap_dist
+  - path: Mathlib/Order/Lattice.lean
+    theorems:
+    - sup_right_comm
+    - inf_eq_right
+  - path: Mathlib/Algebra/Module/Submodule/Bilinear.lean
+    theorems:
+    - "Submodule.map\u2082_flip"
+    - "Submodule.map\u2082_eq_span_image2"
+  - path: Mathlib/Order/WithBot.lean
+    theorems:
+    - WithBot.some_le_some
+  - path: Mathlib/Geometry/Manifold/InteriorBoundary.lean
+    theorems:
+    - ModelWithCorners.boundary_eq_complement_interior
+  - path: Mathlib/FieldTheory/Minpoly/MinpolyDiv.lean
+    theorems:
+    - natDegree_minpolyDiv_succ
+  - path: Mathlib/LinearAlgebra/Ray.lean
+    theorems:
+    - eq_zero_of_sameRay_self_neg
+  - path: Mathlib/Data/Finset/Pointwise.lean
+    theorems:
+    - "Finset.smul_univ\u2080"
+    - Finset.preimage_mul_left_singleton
+  - path: Mathlib/Data/Setoid/Partition.lean
+    theorems:
+    - Setoid.classes_ker_subset_fiber_set
+  - path: Mathlib/Topology/Connected/PathConnected.lean
+    theorems:
+    - Path.map_trans
+  - path: Mathlib/Algebra/Module/Submodule/Map.lean
+    theorems:
+    - LinearMap.map_codRestrict
+  - path: Mathlib/NumberTheory/RamificationInertia.lean
+    theorems:
+    - Ideal.powQuotSuccInclusion_injective
+  - path: Mathlib/Algebra/Homology/ShortComplex/QuasiIso.lean
+    theorems:
+    - CategoryTheory.ShortComplex.quasiIso_iff_isIso_descOpcycles
+    - CategoryTheory.ShortComplex.quasiIso_opMap_iff
+  - path: Mathlib/Data/Nat/Fib/Zeckendorf.lean
+    theorems:
+    - Nat.zeckendorf_succ
+  - path: Mathlib/Geometry/Euclidean/Angle/Oriented/RightAngle.lean
+    theorems:
+    - EuclideanGeometry.dist_div_sin_oangle_right_of_oangle_eq_pi_div_two
+    - Orientation.sin_oangle_sub_right_of_oangle_eq_pi_div_two
+  - path: Mathlib/LinearAlgebra/Contraction.lean
+    theorems:
+    - dualTensorHomEquivOfBasis_apply
+    - homTensorHomEquiv_toLinearMap
+  - path: Mathlib/GroupTheory/Subgroup/Basic.lean
+    theorems:
+    - Subgroup.Normal.comap
+    - mul_mem_cancel_right
+    - Subgroup.map_eq_comap_of_inverse
+  - path: Mathlib/Algebra/Periodic.lean
+    theorems:
+    - Function.Antiperiodic.neg_eq
+  - path: Mathlib/Data/Polynomial/Splits.lean
+    theorems:
+    - Polynomial.splits_mul
+  - path: Mathlib/Data/Finset/Card.lean
+    theorems:
+    - Finset.injOn_of_card_image_eq
+  - path: Mathlib/Tactic/Ring/Basic.lean
+    theorems:
+    - Mathlib.Tactic.Ring.div_pf
+    - Mathlib.Tactic.Ring.mul_one
+  - path: Mathlib/Data/Set/Pairwise/Lattice.lean
+    theorems:
+    - Set.pairwise_sUnion
+  - path: Mathlib/AlgebraicGeometry/StructureSheaf.lean
+    theorems:
+    - AlgebraicGeometry.StructureSheaf.comap_const
+  - path: Mathlib/Geometry/Euclidean/Angle/Oriented/Basic.lean
+    theorems:
+    - Orientation.oangle_sign_sub_smul_right
+    - Orientation.oangle_eq_zero_iff_sameRay
+  - path: Mathlib/LinearAlgebra/LinearIndependent.lean
+    theorems:
+    - linearIndependent_sum
+    - LinearIndependent.map'
+    - linearIndependent_iff
+  - path: Mathlib/RingTheory/Polynomial/Basic.lean
+    theorems:
+    - Polynomial.exists_irreducible_of_natDegree_pos
+  - path: Mathlib/MeasureTheory/Decomposition/Lebesgue.lean
+    theorems:
+    - MeasureTheory.Measure.mutuallySingular_singularPart
+  - path: Mathlib/CategoryTheory/Limits/Shapes/Images.lean
+    theorems:
+    - "CategoryTheory.Limits.image.map_\u03B9"
+  - path: Mathlib/Analysis/SpecialFunctions/Gamma/Basic.lean
+    theorems:
+    - Complex.Gamma_eq_GammaAux
+  - path: Mathlib/Analysis/Complex/CauchyIntegral.lean
+    theorems:
+    - Complex.circleIntegral_div_sub_of_differentiable_on_off_countable
+    - Complex.integral_boundary_rect_of_hasFDerivAt_real_off_countable
+  - path: Mathlib/Algebra/Lie/Basic.lean
+    theorems:
+    - LieHom.ext_iff
+  - path: Mathlib/LinearAlgebra/PiTensorProduct.lean
+    theorems:
+    - PiTensorProduct.tprodCoeff_eq_smul_tprod
+  - path: Mathlib/MeasureTheory/Measure/Tilted.lean
+    theorems:
+    - MeasureTheory.tilted_neg_same
+  - path: Mathlib/Data/Holor.lean
+    theorems:
+    - Holor.cprankMax_upper_bound
+  - path: Mathlib/Data/Polynomial/Degree/Definitions.lean
+    theorems:
+    - Polynomial.degree_X_sub_C
+    - Polynomial.leadingCoeff_quadratic
+    - Polynomial.X_pow_add_C_ne_one
+  - path: Mathlib/Analysis/Calculus/LHopital.lean
+    theorems:
+    - deriv.lhopital_zero_atBot_on_Iio
+  - path: Mathlib/MeasureTheory/Measure/Stieltjes.lean
+    theorems:
+    - StieltjesFunction.iInf_Ioi_eq
+    - StieltjesFunction.measure_singleton
+    - StieltjesFunction.measure_Ioc
+  - path: Mathlib/Analysis/Normed/Group/Pointwise.lean
+    theorems:
+    - IsCompact.closedBall_mul
+    - div_ball_one
+  - path: Mathlib/MeasureTheory/Group/Arithmetic.lean
+    theorems:
+    - List.aemeasurable_prod
+  - path: Mathlib/Algebra/Ring/Prod.lean
+    theorems:
+    - RingHom.prod_unique
+  - path: Mathlib/Algebra/Order/Archimedean.lean
+    theorems:
+    - existsUnique_sub_zsmul_mem_Ico
+  - path: Mathlib/Logic/Unique.lean
+    theorems:
+    - unique_subtype_iff_exists_unique
+  - path: Mathlib/GroupTheory/SpecificGroups/Cyclic.lean
+    theorems:
+    - IsCyclic.ext
+  - path: Mathlib/LinearAlgebra/QuadraticForm/Basic.lean
+    theorems:
+    - QuadraticForm.associated_left_inverse
+  - path: Mathlib/Algebra/Order/CompleteField.lean
+    theorems:
+    - LinearOrderedField.le_inducedMap_mul_self_of_mem_cutMap
+  - path: Mathlib/LinearAlgebra/Matrix/NonsingularInverse.lean
+    theorems:
+    - Matrix.nonsing_inv_mul_cancel_right
+  - path: Mathlib/MeasureTheory/Constructions/Prod/Basic.lean
+    theorems:
+    - MeasureTheory.Measure.measure_prod_null
+    - MeasureTheory.Measure.prod_restrict
+  - path: Mathlib/Computability/TMToPartrec.lean
+    theorems:
+    - Turing.PartrecToTM2.move_ok
+  - path: Mathlib/Algebra/Homology/HomotopyCategory/MappingCone.lean
+    theorems:
+    - CochainComplex.mappingCone.liftCochain_descCochain
+    - CochainComplex.mappingCone.ext_to
+  - path: Mathlib/MeasureTheory/Measure/FiniteMeasure.lean
+    theorems:
+    - MeasureTheory.FiniteMeasure.eq_of_forall_apply_eq
+  - path: Mathlib/Data/Analysis/Topology.lean
+    theorems:
+    - Ctop.ofEquiv_val
+  - path: Mathlib/NumberTheory/Modular.lean
+    theorems:
+    - ModularGroup.re_T_zpow_smul
+  - path: Mathlib/RingTheory/Polynomial/Content.lean
+    theorems:
+    - Polynomial.primPart_mul
+    - Polynomial.normUnit_content
+  - path: Mathlib/Order/Sublattice.lean
+    theorems:
+    - Sublattice.map_symm_eq_iff_eq_map
+  - path: Mathlib/Analysis/NormedSpace/PiLp.lean
+    theorems:
+    - PiLp.norm_equiv_symm_const'
+  - path: Mathlib/MeasureTheory/Measure/MeasureSpaceDef.lean
+    theorems:
+    - MeasureTheory.measure_eq_trim
+  - path: Mathlib/Probability/Process/Stopping.lean
+    theorems:
+    - MeasureTheory.IsStoppingTime.measurableSet_lt
+    - MeasureTheory.stronglyMeasurable_stoppedValue_of_le
+  - path: .lake/packages/std/Std/Data/Int/Order.lean
+    theorems:
+    - Int.natAbs_add_le
+  - path: Mathlib/FieldTheory/Finite/Trace.lean
+    theorems:
+    - FiniteField.trace_to_zmod_nondegenerate
+  - path: Mathlib/Probability/Independence/Kernel.lean
+    theorems:
+    - ProbabilityTheory.kernel.iIndepFun.indepFun_mul_left
+  - path: Mathlib/NumberTheory/ClassNumber/Finite.lean
+    theorems:
+    - ClassGroup.mkMMem_surjective
+  - path: Mathlib/Algebra/GroupWithZero/Hom.lean
+    theorems:
+    - NeZero.of_map
+  - path: Mathlib/LinearAlgebra/Quotient.lean
+    theorems:
+    - Submodule.unique_quotient_iff_eq_top
+  - path: Mathlib/Analysis/SpecialFunctions/Pow/NNReal.lean
+    theorems:
+    - NNReal.orderIsoRpow_symm_eq
+    - ENNReal.top_rpow_of_pos
+  - path: Mathlib/Geometry/Euclidean/Angle/Unoriented/RightAngle.lean
+    theorems:
+    - InnerProductGeometry.tan_angle_add_mul_norm_of_inner_eq_zero
+  - path: Mathlib/GroupTheory/Perm/Cycle/Factors.lean
+    theorems:
+    - Equiv.Perm.cycleFactorsFinset_injective
+    - Equiv.Perm.IsCycle.cycleOf
+  - path: Mathlib/LinearAlgebra/CliffordAlgebra/Conjugation.lean
+    theorems:
+    - CliffordAlgebra.evenOdd_comap_reverse
+  - path: Mathlib/AlgebraicGeometry/Spec.lean
+    theorems:
+    - AlgebraicGeometry.Spec.sheafedSpaceMap_comp
+  - path: Mathlib/Data/Nat/PartENat.lean
+    theorems:
+    - PartENat.withTopEquiv_ofNat
+    - PartENat.get_le_get
+  - path: Mathlib/NumberTheory/LSeries/Convergence.lean
+    theorems:
+    - LSeries.abscissaOfAbsConv_le_of_forall_lt_LSeriesSummable'
+  - path: Mathlib/Data/Nat/Order/Lemmas.lean
+    theorems:
+    - Nat.dvd_right_iff_eq
+    - Nat.div_eq_zero_iff
+  - path: Mathlib/Analysis/Convex/Side.lean
+    theorems:
+    - AffineSubspace.sSameSide_iff_exists_left
+  - path: Mathlib/Analysis/SpecialFunctions/Trigonometric/Angle.lean
+    theorems:
+    - Real.Angle.cos_toReal
+  - path: Mathlib/Data/Erased.lean
+    theorems:
+    - Erased.out_mk
+  - path: Mathlib/Topology/EMetricSpace/Lipschitz.lean
+    theorems:
+    - continuousOn_prod_of_subset_closure_continuousOn_lipschitzOnWith
+  - path: Mathlib/Algebra/Order/CauSeq/BigOperators.lean
+    theorems:
+    - IsCauSeq.of_abv_le
+    - IsCauSeq.series_ratio_test
+  - path: Mathlib/CategoryTheory/Functor/FullyFaithful.lean
+    theorems:
+    - CategoryTheory.preimage_comp
+  - path: Mathlib/Analysis/Calculus/Deriv/Comp.lean
+    theorems:
+    - HasDerivAt.iterate
+  - path: Mathlib/Algebra/Quandle.lean
+    theorems:
+    - Rack.self_distrib_inv
+  - path: Mathlib/ModelTheory/Algebra/Field/CharP.lean
+    theorems:
+    - FirstOrder.Field.realize_eqZero
+  - path: Mathlib/RingTheory/Polynomial/Cyclotomic/Basic.lean
+    theorems:
+    - Polynomial.cyclotomic_coeff_zero
+  - path: Mathlib/Analysis/ODE/Gronwall.lean
+    theorems:
+    - le_gronwallBound_of_liminf_deriv_right_le
+  - path: Mathlib/Analysis/SpecialFunctions/Exp.lean
+    theorems:
+    - Real.comap_exp_nhds_zero
+  - path: Mathlib/AlgebraicGeometry/PrimeSpectrum/Basic.lean
+    theorems:
+    - PrimeSpectrum.basicOpen_mul_le_left
+    - PrimeSpectrum.vanishingIdeal_strict_anti_mono_iff
+  - path: Mathlib/LinearAlgebra/Matrix/Transvection.lean
+    theorems:
+    - Matrix.det_transvection_of_ne
+  - path: Mathlib/Data/Matrix/Basic.lean
+    theorems:
+    - Matrix.comp_equiv_symm_dotProduct
+  - path: Mathlib/NumberTheory/Dioph.lean
+    theorems:
+    - Dioph.mod_dioph
+  - path: Mathlib/Data/Set/Lattice.lean
+    theorems:
+    - Set.iInter_eq_empty_iff
+    - Set.biInter_iUnion
+    - Set.iUnion_setOf
+  - path: Mathlib/RingTheory/Nullstellensatz.lean
+    theorems:
+    - MvPolynomial.vanishingIdeal_pointToPoint
+  - path: Mathlib/Geometry/Manifold/IntegralCurve.lean
+    theorems:
+    - isIntegralCurve_iff_isIntegralCurveAt
+  - path: Mathlib/LinearAlgebra/Lagrange.lean
+    theorems:
+    - Lagrange.natDegree_basisDivisor_self
+  - path: Mathlib/ModelTheory/Algebra/Ring/Basic.lean
+    theorems:
+    - FirstOrder.Ring.realize_one
+  - path: .lake/packages/std/Std/Data/Int/DivMod.lean
+    theorems:
+    - Int.negSucc_emod
+  - path: Mathlib/RingTheory/DedekindDomain/SelmerGroup.lean
+    theorems:
+    - IsDedekindDomain.HeightOneSpectrum.valuation_of_unit_eq
+  - path: Mathlib/Analysis/Fourier/FourierTransformDeriv.lean
+    theorems:
+    - Real.hasDerivAt_fourierChar
+  - path: Mathlib/Data/Multiset/LocallyFinite.lean
+    theorems:
+    - Multiset.Ico_filter_lt_of_le_right
+  - path: Mathlib/Topology/Algebra/InfiniteSum/Basic.lean
+    theorems:
+    - tsum_subtype_eq_of_support_subset
+    - hasSum_extend_zero
+  - path: Mathlib/Topology/Homotopy/Product.lean
+    theorems:
+    - Path.Homotopic.prod_projLeft_projRight
+  - path: Mathlib/Algebra/Homology/Additive.lean
+    theorems:
+    - HomologicalComplex.singleMapHomologicalComplex_hom_app_ne
+  - path: Mathlib/Algebra/Group/Units.lean
+    theorems:
+    - eq_divp_iff_mul_eq
+    - IsUnit.div_left_inj
+  - path: .lake/packages/std/Std/Data/List/Lemmas.lean
+    theorems:
+    - List.drop_take
+    - List.diff_cons
+    - List.Sublist.eq_of_length
+    - List.range'_eq_nil
+  - path: Mathlib/Data/Nat/Order/Basic.lean
+    theorems:
+    - Nat.findGreatest_spec
+  - path: Mathlib/LinearAlgebra/ExteriorAlgebra/Basic.lean
+    theorems:
+    - "ExteriorAlgebra.\u03B9Multi_span_fixedDegree"
+  - path: Mathlib/LinearAlgebra/CrossProduct.lean
+    theorems:
+    - triple_product_eq_det
+  - path: Mathlib/CategoryTheory/Limits/Shapes/ZeroMorphisms.lean
+    theorems:
+    - CategoryTheory.Limits.isIso_of_source_target_iso_zero
+  - path: Mathlib/Algebra/Divisibility/Units.lean
+    theorems:
+    - isRelPrime_mul_unit_left_right
+  - path: Mathlib/Analysis/Analytic/Basic.lean
+    theorems:
+    - HasFPowerSeriesOnBall.eventually_eq_zero
+    - HasFPowerSeriesOnBall.tendstoLocallyUniformlyOn'
+  - path: Mathlib/GroupTheory/FreeAbelianGroup.lean
+    theorems:
+    - FreeAbelianGroup.lift.map_hom
+  - path: Mathlib/CategoryTheory/Limits/Presheaf.lean
+    theorems:
+    - CategoryTheory.final_toCostructuredArrow_comp_pre
+  - path: Mathlib/Combinatorics/Young/SemistandardTableau.lean
+    theorems:
+    - SemistandardYoungTableau.ext
+  - path: Mathlib/Data/Nat/Pow.lean
+    theorems:
+    - Nat.one_lt_two_pow'
+  - path: Mathlib/CategoryTheory/Limits/FilteredColimitCommutesFiniteLimit.lean
+    theorems:
+    - "CategoryTheory.Limits.\u03B9_colimitLimitIso_limit_\u03C0"
+  - path: Mathlib/Data/Stream/Init.lean
+    theorems:
+    - Stream'.mem_interleave_left
+  - path: Mathlib/Data/Nat/ModEq.lean
+    theorems:
+    - Nat.odd_mul_odd
+  - path: Mathlib/Data/Nat/Factorial/Basic.lean
+    theorems:
+    - Nat.factorial_mul_ascFactorial
+  - path: Mathlib/CategoryTheory/Limits/HasLimits.lean
+    theorems:
+    - CategoryTheory.Limits.colimit.pre_post
+    - CategoryTheory.Limits.colimit.post_post
+  - path: Mathlib/RingTheory/DedekindDomain/Different.lean
+    theorems:
+    - Submodule.traceDual_top'
+  - path: Mathlib/Topology/Order/MonotoneConvergence.lean
+    theorems:
+    - tendsto_atTop_ciInf
+  - path: Mathlib/NumberTheory/SumFourSquares.lean
+    theorems:
+    - Int.exists_sq_add_sq_add_one_eq_mul
+  - path: Mathlib/NumberTheory/Padics/RingHoms.lean
+    theorems:
+    - PadicInt.ext_of_toZModPow
+  - path: Mathlib/RingTheory/Noetherian.lean
+    theorems:
+    - isNoetherian_iff_wellFounded
+  - path: Mathlib/RingTheory/Polynomial/Cyclotomic/Eval.lean
+    theorems:
+    - Polynomial.cyclotomic_pos_and_nonneg
+  - path: Mathlib/Analysis/SpecialFunctions/Gamma/Deligne.lean
+    theorems:
+    - "Complex.Gamma\u211D_mul_Gamma\u211D_add_one"
+  - path: Mathlib/AlgebraicGeometry/Pullbacks.lean
+    theorems:
+    - AlgebraicGeometry.Scheme.Pullback.cocycle_snd_fst_snd
+  - path: Mathlib/Topology/MetricSpace/Isometry.lean
+    theorems:
+    - IsometryEquiv.preimage_sphere
+    - IsometryEquiv.completeSpace_iff
+  - path: Mathlib/Probability/Kernel/MeasureCompProd.lean
+    theorems:
+    - MeasureTheory.Measure.snd_dirac_unit_compProd_const
+  - path: Mathlib/Tactic/NormNum/Pow.lean
+    theorems:
+    - Mathlib.Meta.NormNum.isNat_zpow_pos
+  - path: Mathlib/Data/Polynomial/Derivative.lean
+    theorems:
+    - Polynomial.iterate_derivative_X_pow_eq_smul
+  - path: Mathlib/RingTheory/FinitePresentation.lean
+    theorems:
+    - Algebra.FiniteType.of_finitePresentation
+  - path: Mathlib/CategoryTheory/ComposableArrows.lean
+    theorems:
+    - CategoryTheory.ComposableArrows.hom_ext_succ
+  - path: Mathlib/Algebra/GroupWithZero/Units/Basic.lean
+    theorems:
+    - mul_div_cancel_of_imp
+  - path: Mathlib/LinearAlgebra/Basic.lean
+    theorems:
+    - LinearEquiv.ofBijective_symm_apply_apply
+    - Submodule.map_comap_eq
+  - path: Mathlib/Algebra/CubicDiscriminant.lean
+    theorems:
+    - Cubic.natDegree_of_b_eq_zero
+  - path: Mathlib/Init/Data/Nat/Lemmas.lean
+    theorems:
+    - Nat.bit1_lt_bit0
+  - path: Mathlib/Order/CompleteSublattice.lean
+    theorems:
+    - CompleteSublattice.coe_sInf'
+  - path: Mathlib/CategoryTheory/Limits/Shapes/ConcreteCategory.lean
+    theorems:
+    - CategoryTheory.Limits.Concrete.pullbackMk_surjective
+  - path: Mathlib/Analysis/NormedSpace/Star/Multiplier.lean
+    theorems:
+    - DoubleCentralizer.norm_fst
+    - DoubleCentralizer.norm_fst_eq_snd
+  - path: Mathlib/Data/Nat/MaxPowDiv.lean
+    theorems:
+    - Nat.maxPowDiv.go_eq
+  - path: Mathlib/GroupTheory/Perm/Basic.lean
+    theorems:
+    - Equiv.mul_swap_eq_swap_mul
+  - path: Mathlib/Topology/UniformSpace/UniformConvergence.lean
+    theorems:
+    - tendstoLocallyUniformlyOn_univ
+  - path: Mathlib/NumberTheory/SmoothNumbers.lean
+    theorems:
+    - Nat.mem_smoothNumbers'
+  - path: Mathlib/Tactic/NormNum/Result.lean
+    theorems:
+    - Mathlib.Meta.NormNum.IsRat.to_isNat
+  - path: Mathlib/Algebra/BigOperators/Associated.lean
+    theorems:
+    - Associates.prod_mk
+  - path: Mathlib/CategoryTheory/Sites/IsSheafFor.lean
+    theorems:
+    - CategoryTheory.Presieve.isSheafFor_arrows_iff_pullbacks
+    - CategoryTheory.Presieve.FamilyOfElements.Compatible.pullback
+  - path: Mathlib/Combinatorics/SimpleGraph/AdjMatrix.lean
+    theorems:
+    - SimpleGraph.adjMatrix_pow_apply_eq_card_walk
+  - path: Mathlib/Analysis/SpecialFunctions/Pow/Continuity.lean
+    theorems:
+    - continuousAt_const_cpow
+  - path: Mathlib/Algebra/Homology/HomotopyCategory/Triangulated.lean
+    theorems:
+    - "CochainComplex.mappingConeCompTriangleh_comm\u2081"
+  - path: Mathlib/Algebra/Tropical/BigOperators.lean
+    theorems:
+    - List.trop_sum
+  - path: Mathlib/Analysis/Seminorm.lean
+    theorems:
+    - Seminorm.preimage_metric_ball
+  - path: Mathlib/FieldTheory/Minpoly/IsIntegrallyClosed.lean
+    theorems:
+    - Algebra.adjoin.powerBasis'_gen
+  - path: Mathlib/Combinatorics/SetFamily/Compression/UV.lean
+    theorems:
+    - UV.shadow_compression_subset_compression_shadow
+    - UV.compression_self
+  - path: Mathlib/NumberTheory/Zsqrtd/Basic.lean
+    theorems:
+    - Zsqrtd.nonnegg_comm
+  - path: Mathlib/Data/Rat/Cast/Order.lean
+    theorems:
+    - Rat.cast_abs
+    - Rat.cast_pos_of_pos
+  - path: Mathlib/Analysis/NormedSpace/FiniteDimension.lean
+    theorems:
+    - Basis.opNorm_le
+  - path: Mathlib/MeasureTheory/Decomposition/RadonNikodym.lean
+    theorems:
+    - MeasureTheory.Measure.rnDeriv_eq_zero_of_mutuallySingular
+  - path: Mathlib/Data/IsROrC/Basic.lean
+    theorems:
+    - IsROrC.re_eq_add_conj
+  - path: Mathlib/GroupTheory/DoubleCoset.lean
+    theorems:
+    - Doset.eq
+  - path: Mathlib/LinearAlgebra/Dimension/Free.lean
+    theorems:
+    - nonempty_linearEquiv_of_lift_rank_eq
+  - path: Mathlib/CategoryTheory/Category/Basic.lean
+    theorems:
+    - CategoryTheory.whisker_eq
+  - path: Mathlib/Algebra/Module/Submodule/LinearMap.lean
+    theorems:
+    - Submodule.subtype_comp_inclusion
+  - path: Mathlib/Algebra/Algebra/Operations.lean
+    theorems:
+    - Submodule.le_one_toAddSubmonoid
+  - path: Mathlib/Topology/MetricSpace/Dilation.lean
+    theorems:
+    - Dilation.ediam_image
+  - path: Mathlib/MeasureTheory/Function/StronglyMeasurable/Basic.lean
+    theorems:
+    - Measurable.stronglyMeasurable
+  - path: Mathlib/LinearAlgebra/Dimension/Finite.lean
+    theorems:
+    - CompleteLattice.Independent.subtype_ne_bot_le_rank
+  - path: Mathlib/Analysis/BoxIntegral/Box/Basic.lean
+    theorems:
+    - BoxIntegral.Box.mk'_eq_coe
+  - path: Mathlib/Algebra/Ring/Semiconj.lean
+    theorems:
+    - SemiconjBy.sub_right
+  - path: Mathlib/MeasureTheory/Integral/DivergenceTheorem.lean
+    theorems:
+    - MeasureTheory.integral_divergence_of_hasFDerivWithinAt_off_countable
+  - path: Mathlib/Data/Vector/Basic.lean
+    theorems:
+    - Vector.get_tail
+  - path: Mathlib/AlgebraicGeometry/EllipticCurve/Group.lean
+    theorems:
+    - WeierstrassCurve.Affine.CoordinateRing.exists_smul_basis_eq
+  - path: Mathlib/AlgebraicTopology/DoldKan/Projections.lean
+    theorems:
+    - AlgebraicTopology.DoldKan.Q_idem
+  - path: Mathlib/Analysis/BoxIntegral/Partition/Split.lean
+    theorems:
+    - BoxIntegral.Prepartition.not_disjoint_imp_le_of_subset_of_mem_splitMany
+  - path: Mathlib/Algebra/Category/GroupCat/FilteredColimits.lean
+    theorems:
+    - GroupCat.FilteredColimits.colimitInvAux_eq_of_rel
+  - path: Mathlib/Order/CompleteLattice.lean
+    theorems:
+    - iSup_option_elim
+    - "iInf\u2082_comm"
+  - path: Mathlib/GroupTheory/Perm/Cycle/Type.lean
+    theorems:
+    - Equiv.Perm.cycleType_eq'
+    - Equiv.Perm.IsThreeCycle.isCycle
+  - path: Mathlib/RingTheory/Polynomial/Nilpotent.lean
+    theorems:
+    - Polynomial.isNilpotent_X_mul_iff
+  - path: Mathlib/GroupTheory/GroupAction/Hom.lean
+    theorems:
+    - MulSemiringActionHom.id_comp
+  - path: Mathlib/RingTheory/PrincipalIdealDomain.lean
+    theorems:
+    - IsBezout.gcd_dvd_right
+  - path: Mathlib/Topology/DenseEmbedding.lean
+    theorems:
+    - DenseInducing.interior_compact_eq_empty
+  - path: Mathlib/Algebra/Field/Basic.lean
+    theorems:
+    - Commute.inv_sub_inv
+    - one_div_mul_add_mul_one_div_eq_one_div_add_one_div
+  - path: Mathlib/Geometry/Manifold/MFDeriv/Basic.lean
+    theorems:
+    - mfderiv_congr_point
+  - path: Mathlib/Topology/MetricSpace/PartitionOfUnity.lean
+    theorems:
+    - EMetric.exists_continuous_real_forall_closedBall_subset
+  - path: Mathlib/Data/Finset/Image.lean
+    theorems:
+    - Finset.map_subset_map
+  - path: Mathlib/Topology/MetricSpace/Infsep.lean
+    theorems:
+    - Set.infsep_pair_eq_toReal
+  - path: Mathlib/CategoryTheory/Sites/Sheaf.lean
+    theorems:
+    - CategoryTheory.Presheaf.isSheaf_iff_isSheaf_comp
+  - path: Mathlib/Data/Complex/Basic.lean
+    theorems:
+    - Complex.normSq_sub
+  - path: Mathlib/RingTheory/Discriminant.lean
+    theorems:
+    - Algebra.discr_not_zero_of_basis
+    - Algebra.discr_mul_isIntegral_mem_adjoin
+  - path: Mathlib/Algebra/Homology/ShortComplex/SnakeLemma.lean
+    theorems:
+    - "CategoryTheory.ShortComplex.SnakeInput.naturality_\u03B4"
+  - path: Mathlib/Data/Set/MemPartition.lean
+    theorems:
+    - memPartitionSet_eq_iff
+  - path: Mathlib/Topology/Algebra/Module/FiniteDimension.lean
+    theorems:
+    - LinearMap.continuous_of_isClosed_ker
+  - path: Mathlib/Data/Nat/PrimeFin.lean
+    theorems:
+    - Nat.Prime.primeFactors
+  - path: Mathlib/Order/SymmDiff.lean
+    theorems:
+    - bihimp_of_le
+    - Disjoint.symmDiff_eq_sup
+    - symmDiff_left_comm
+  - path: Mathlib/Algebra/Homology/HomotopyCofiber.lean
+    theorems:
+    - HomologicalComplex.homotopyCofiber.sndX_inrX
+    - "HomologicalComplex.cylinder.\u03B9\u2081_\u03C0"
+  - path: Mathlib/SetTheory/Cardinal/Ordinal.lean
+    theorems:
+    - Cardinal.mk_finsupp_of_infinite
+  - path: Mathlib/Topology/Basic.lean
+    theorems:
+    - nhds_basis_opens'
+  - path: Mathlib/FieldTheory/SeparableDegree.lean
+    theorems:
+    - Polynomial.IsSeparableContraction.natSepDegree_eq
+  - path: Mathlib/LinearAlgebra/CliffordAlgebra/Basic.lean
+    theorems:
+    - "CliffordAlgebra.lift_comp_\u03B9"
+  - path: Mathlib/ModelTheory/DirectLimit.lean
+    theorems:
+    - FirstOrder.Language.DirectLimit.equiv_iff
+  - path: Mathlib/CategoryTheory/Comma/Arrow.lean
+    theorems:
+    - CategoryTheory.Arrow.isIso_of_isIso_left_of_isIso_right
+  - path: Mathlib/GroupTheory/SemidirectProduct.lean
+    theorems:
+    - SemidirectProduct.lift_inr
+  - path: Mathlib/Topology/SeparatedMap.lean
+    theorems:
+    - isLocallyInjective_iff_isOpen_diagonal
+  - path: Mathlib/Data/Nat/Choose/Multinomial.lean
+    theorems:
+    - Nat.binomial_eq
+  - path: Mathlib/Probability/Kernel/CondDistrib.lean
+    theorems:
+    - ProbabilityTheory.condDistrib_apply_of_ne_zero
+  - path: Mathlib/Probability/Kernel/Disintegration/Density.lean
+    theorems:
+    - ProbabilityTheory.kernel.set_lintegral_density
+    - ProbabilityTheory.kernel.density_mono_set
+  - path: Mathlib/Data/Multiset/Fintype.lean
+    theorems:
+    - Multiset.toEmbedding_coeEquiv_trans
+  - path: Mathlib/Tactic/PushNeg.lean
+    theorems:
+    - Mathlib.Tactic.PushNeg.not_nonempty_eq
+  - path: Mathlib/Data/Finset/NAry.lean
+    theorems:
+    - "Finset.image_image\u2082_distrib"
+    - "Finset.forall_image\u2082_iff"
+  - path: Mathlib/CategoryTheory/Limits/Opposites.lean
+    theorems:
+    - CategoryTheory.Limits.PullbackCone.op_inl
+  - path: Mathlib/Algebra/Lie/Killing.lean
+    theorems:
+    - LieIdeal.coe_killingCompl_top
+  - path: Mathlib/Combinatorics/Colex.lean
+    theorems:
+    - Finset.Colex.toColex_sdiff_lt_toColex_sdiff'
+  - path: Mathlib/Analysis/NormedSpace/Pointwise.lean
+    theorems:
+    - closedBall_add_closedBall
+  - path: Mathlib/Combinatorics/Composition.lean
+    theorems:
+    - CompositionAsSet.boundary_length
+  - path: Mathlib/Tactic/LinearCombination.lean
+    theorems:
+    - Mathlib.Tactic.LinearCombination.eq_of_add_pow
+  - path: Mathlib/SetTheory/Cardinal/ToNat.lean
+    theorems:
+    - Cardinal.mk_toNat_of_infinite
+  - path: .lake/packages/std/Std/Data/RBMap/WF.lean
+    theorems:
+    - Std.RBNode.balance2_eq
+  - path: Mathlib/MeasureTheory/Integral/SetIntegral.lean
+    theorems:
+    - "integral_withDensity_eq_integral_smul\u2080"
+  - path: Mathlib/Algebra/BigOperators/Multiset/Basic.lean
+    theorems:
+    - Multiset.prod_induction_nonempty
+    - Multiset.sum_int_mod
+    - Multiset.one_le_prod_of_one_le
+  - path: Mathlib/RingTheory/JacobsonIdeal.lean
+    theorems:
+    - Ideal.eq_jacobson_iff_sInf_maximal
+  - path: Mathlib/Data/Rat/Star.lean
+    theorems:
+    - NNRat.addSubmonoid_closure_range_pow
+  - path: Mathlib/Topology/Compactness/Lindelof.lean
+    theorems:
+    - lindelofSpace_of_countable_subfamily_closed
+  - path: Mathlib/Data/Finset/Fold.lean
+    theorems:
+    - Finset.fold_union_inter
+  - path: Mathlib/LinearAlgebra/FiniteDimensional.lean
+    theorems:
+    - LinearMap.finrank_range_add_finrank_ker
+  - path: Mathlib/Combinatorics/Additive/PluenneckeRuzsa.lean
+    theorems:
+    - Finset.card_mul_mul_le_card_div_mul_card_div
+  - path: Mathlib/ModelTheory/Semantics.lean
+    theorems:
+    - FirstOrder.Language.BoundedFormula.realize_exs
+  - path: Mathlib/Algebra/EuclideanDomain/Basic.lean
+    theorems:
+    - EuclideanDomain.eq_div_of_mul_eq_right
+  - path: Mathlib/Computability/DFA.lean
+    theorems:
+    - DFA.pumping_lemma
+  - path: Mathlib/CategoryTheory/Localization/Equivalence.lean
+    theorems:
+    - CategoryTheory.Functor.IsLocalization.of_equivalence_source
+  - path: Mathlib/Data/Real/Pointwise.lean
+    theorems:
+    - Real.sSup_smul_of_nonneg
+  - path: Mathlib/SetTheory/Ordinal/Basic.lean
+    theorems:
+    - Ordinal.lift_down'
+  - path: Mathlib/Analysis/SpecialFunctions/Trigonometric/Inverse.lean
+    theorems:
+    - Real.arccos_of_le_neg_one
+  - path: Mathlib/Analysis/Calculus/FDeriv/Mul.lean
+    theorems:
+    - HasFDerivWithinAt.mul_const
+    - hasStrictFDerivAt_finset_prod
+  - path: Mathlib/MeasureTheory/Integral/DominatedConvergence.lean
+    theorems:
+    - MeasureTheory.hasSum_integral_of_summable_integral_norm
+  - path: Mathlib/RingTheory/Jacobson.lean
+    theorems:
+    - Ideal.Polynomial.isJacobson_polynomial_of_isJacobson
+  - path: Mathlib/Analysis/Calculus/BumpFunction/Normed.lean
+    theorems:
+    - ContDiffBump.measure_closedBall_div_le_integral
+  - path: Mathlib/Analysis/SpecialFunctions/Pow/Asymptotics.lean
+    theorems:
+    - Complex.isTheta_exp_arg_mul_im
+  - path: Mathlib/Algebra/Module/Torsion.lean
+    theorems:
+    - Module.isTorsionBySet_singleton_iff
+  - path: Mathlib/Algebra/Order/Group/Abs.lean
+    theorems:
+    - mabs_div_comm
+  - path: Mathlib/Data/Finsupp/Defs.lean
+    theorems:
+    - Finsupp.update_self
+  - path: Mathlib/Analysis/Calculus/FDeriv/Basic.lean
+    theorems:
+    - hasFDerivWithinAt_diff_singleton
+  - path: Mathlib/NumberTheory/LegendreSymbol/JacobiSymbol.lean
+    theorems:
+    - jacobiSym.eq_zero_iff_not_coprime
+  - path: Mathlib/SetTheory/Ordinal/Exponential.lean
+    theorems:
+    - Ordinal.opow_dvd_opow
+  - path: Mathlib/RingTheory/Trace.lean
+    theorems:
+    - Algebra.trace_eq_zero_of_not_exists_basis
+  - path: Mathlib/Analysis/NormedSpace/lpSpace.lean
+    theorems:
+    - LipschitzWith.uniformly_bounded
+  - path: Mathlib/Data/Nat/Fib/Basic.lean
+    theorems:
+    - Nat.fib_two_mul_add_two
+  - path: .lake/packages/std/Std/Data/Nat/Gcd.lean
+    theorems:
+    - Nat.gcd_mul_lcm
+    - Nat.lcm_comm
+  - path: Mathlib/Analysis/Calculus/InverseFunctionTheorem/FDeriv.lean
+    theorems:
+    - HasStrictFDerivAt.to_localInverse
+  - path: Mathlib/Order/Monotone/Union.lean
+    theorems:
+    - StrictMonoOn.union
+  - path: Mathlib/RingTheory/Flat/Basic.lean
+    theorems:
+    - Module.Flat.of_retract
+  - path: Mathlib/Algebra/Algebra/Tower.lean
+    theorems:
+    - IsScalarTower.algebraMap_apply
+  - path: Mathlib/Topology/PartialHomeomorph.lean
+    theorems:
+    - PartialHomeomorph.prod_eq_prod_of_nonempty
+  - path: Mathlib/Geometry/Manifold/ContMDiff/Basic.lean
+    theorems:
+    - ContMDiff.comp
+  - path: Mathlib/Data/Sign.lean
+    theorems:
+    - SignType.nonpos_iff_ne_one
+  - path: Mathlib/Data/Set/Subset.lean
+    theorems:
+    - Set.image_val_sUnion
+  - path: Mathlib/LinearAlgebra/Basis.lean
+    theorems:
+    - Basis.ext'
+    - Basis.repr_self_apply
+  - path: Mathlib/FieldTheory/PurelyInseparable.lean
+    theorems:
+    - isPurelyInseparable_of_finSepDegree_eq_one
+  - path: Mathlib/Data/List/Join.lean
+    theorems:
+    - List.length_join
+  - path: Mathlib/Data/Matrix/Rank.lean
+    theorems:
+    - Matrix.rank_diagonal
+  - path: Mathlib/Combinatorics/Schnirelmann.lean
+    theorems:
+    - exists_of_schnirelmannDensity_eq_zero
+  - path: Mathlib/RingTheory/IntegralClosure.lean
+    theorems:
+    - IsIntegral.fg_adjoin_singleton
+  - path: Mathlib/Data/Finset/Sigma.lean
+    theorems:
+    - Finset.card_sigmaLift
+  - path: Mathlib/Data/Option/NAry.lean
+    theorems:
+    - "Option.map_map\u2082"
+  - path: Mathlib/MeasureTheory/Function/ConditionalExpectation/AEMeasurable.lean
+    theorems:
+    - MeasureTheory.AEStronglyMeasurable'.continuous_comp
+  - path: Mathlib/LinearAlgebra/QuotientPi.lean
+    theorems:
+    - Submodule.piQuotientLift_single
+  - path: Mathlib/Order/Monotone/Basic.lean
+    theorems:
+    - monotone_dual_iff
+  - path: Mathlib/Order/PropInstances.lean
+    theorems:
+    - Pi.isCompl_iff
+  - path: Mathlib/Data/Set/Basic.lean
+    theorems:
+    - Set.mem_dite_empty_right
+  - path: Mathlib/RingTheory/Finiteness.lean
+    theorems:
+    - Submodule.fg_unit
+  - path: Mathlib/Topology/MetricSpace/Lipschitz.lean
+    theorems:
+    - lipschitzWith_iff_dist_le_mul
+  - path: Mathlib/Data/Complex/Module.lean
+    theorems:
+    - rank_real_of_complex
+  - path: Mathlib/Data/Rat/Defs.lean
+    theorems:
+    - Rat.mul_add
+  - path: Mathlib/Topology/LocallyFinite.lean
+    theorems:
+    - LocallyFinite.closure
+  - path: Mathlib/Algebra/Order/Monoid/MinMax.lean
+    theorems:
+    - fn_min_mul_fn_max
+  - path: Mathlib/Data/Int/Div.lean
+    theorems:
+    - Int.ofNat_add_negSucc_of_ge
+  - path: Mathlib/Data/List/NodupEquivFin.lean
+    theorems:
+    - List.sublist_of_orderEmbedding_get?_eq
+  - path: Mathlib/MeasureTheory/Function/ContinuousMapDense.lean
+    theorems:
+    - MeasureTheory.Lp.boundedContinuousFunction_dense
+  - path: Mathlib/Logic/Equiv/Functor.lean
+    theorems:
+    - Functor.mapEquiv_refl
+  - path: Mathlib/Combinatorics/SimpleGraph/LapMatrix.lean
+    theorems:
+    - SimpleGraph.lapMatrix_toLin'_apply_eq_zero_iff_forall_reachable
+  - path: Mathlib/Tactic/NormNum/DivMod.lean
+    theorems:
+    - Mathlib.Meta.NormNum.isInt_dvd_false
+  - path: Mathlib/Topology/Algebra/Order/LiminfLimsup.lean
+    theorems:
+    - iUnion_Ici_eq_Ioi_of_lt_of_tendsto
+  - path: Mathlib/NumberTheory/DirichletCharacter/Basic.lean
+    theorems:
+    - DirichletCharacter.changeLevel_trans
+  - path: Mathlib/Algebra/ContinuedFractions/Computation/TerminatesIffRat.lean
+    theorems:
+    - GeneralizedContinuedFraction.exists_rat_eq_nth_numerator
+  - path: Mathlib/Analysis/Normed/Group/AddCircle.lean
+    theorems:
+    - AddCircle.norm_coe_eq_abs_iff
+  - path: .lake/packages/std/Std/Data/AssocList.lean
+    theorems:
+    - Std.AssocList.contains_eq
+  - path: Mathlib/Data/PFun.lean
+    theorems:
+    - PFun.coe_preimage
+  - path: Mathlib/Data/PNat/Interval.lean
+    theorems:
+    - PNat.card_Ico
+  - path: Mathlib/Data/Nat/Choose/Cast.lean
+    theorems:
+    - Nat.cast_choose
+  - path: Mathlib/FieldTheory/Separable.lean
+    theorems:
+    - Polynomial.rootMultiplicity_le_one_of_separable
+  - path: Mathlib/Data/Fin/Tuple/Basic.lean
+    theorems:
+    - Fin.insertNth_apply_succAbove
+  - path: Mathlib/Analysis/NormedSpace/Multilinear/Curry.lean
+    theorems:
+    - ContinuousMultilinearMap.uncurry0_curry0
+  - path: Mathlib/Algebra/Order/Ring/Lemmas.lean
+    theorems:
+    - exists_square_le'
+  - path: Mathlib/Data/Nat/Defs.lean
+    theorems:
+    - Nat.pred_sub
+  - path: Mathlib/Analysis/Calculus/TangentCone.lean
+    theorems:
+    - UniqueDiffWithinAt.prod
+  - path: Mathlib/Analysis/Normed/Field/Basic.lean
+    theorems:
+    - antilipschitzWith_mul_right
+  - path: Mathlib/Combinatorics/SetFamily/FourFunctions.lean
+    theorems:
+    - collapse_modular
+  - path: Mathlib/Init/Logic.lean
+    theorems:
+    - let_eq
+  - path: Mathlib/Data/Finset/NoncommProd.lean
+    theorems:
+    - Multiset.noncommFoldr_eq_foldr
+  - path: Mathlib/Probability/Kernel/Composition.lean
+    theorems:
+    - ProbabilityTheory.kernel.snd_swapRight
+  - path: Mathlib/Data/Seq/Seq.lean
+    theorems:
+    - Stream'.Seq.dropn_tail
+  - path: Mathlib/Order/LocallyFinite.lean
+    theorems:
+    - Finset.map_subtype_embedding_Ici
+  - path: .lake/packages/std/Std/Data/Int/Gcd.lean
+    theorems:
+    - Int.gcd_neg
+  - path: Mathlib/Algebra/Order/Ring/WithTop.lean
+    theorems:
+    - WithTop.distrib'
+  - path: Mathlib/RingTheory/Kaehler.lean
+    theorems:
+    - Derivation.liftKaehlerDifferential_unique
+  - path: Mathlib/CategoryTheory/Limits/Fubini.lean
+    theorems:
+    - "CategoryTheory.Limits.colimitFlipCompColimIsoColimitCompColim_\u03B9_\u03B9\
+      _hom"
+  - path: Mathlib/MeasureTheory/Covering/VitaliFamily.lean
+    theorems:
+    - VitaliFamily.tendsto_filterAt_iff
+  - path: Mathlib/Combinatorics/SetFamily/Shatter.lean
+    theorems:
+    - Finset.shatters_empty
+  - path: Mathlib/CategoryTheory/Limits/Shapes/Equalizers.lean
+    theorems:
+    - "CategoryTheory.Limits.Cocone.ofCofork_\u03B9"
+  - path: Mathlib/Order/Filter/Pi.lean
+    theorems:
+    - Filter.pi_mem_pi
+  - path: Mathlib/Topology/MetricSpace/HausdorffDistance.lean
+    theorems:
+    - Metric.hausdorffDist_triangle'
+  - path: Mathlib/Topology/Instances/ENNReal.lean
+    theorems:
+    - ENNReal.continuousOn_sub_left
+  - path: .lake/packages/std/Std/Data/RBMap/Lemmas.lean
+    theorems:
+    - Std.RBNode.Stream.next?_toList
+  - path: Mathlib/Analysis/Convex/Star.lean
+    theorems:
+    - StarConvex.sub
