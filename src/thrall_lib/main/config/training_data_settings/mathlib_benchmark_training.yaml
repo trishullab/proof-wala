@@ -1,15 +1,15 @@
-training_data_dir: /mnt/amthakur/data/proofsteps/leandojo/random/train/20240511-230159
+training_data_dir: /mnt/sdd1/amthakur/shiva/data/proofsteps/leandojo/random/train/20240511-230159
 training_meta_filename: local.meta.json
-training_data_log_dir: /mnt/amthakur/data/proofsteps/training_results/logs
+training_data_log_dir: /mnt/sdd1/amthakur/shiva/data/proofsteps/training_results/logs
 training_dataset_type: CodeT5TrainingDataset
 training_data_formatter_type: CodeT5PromptTrainingDataFormatter
 training_dataset_args:
   characters_per_token: 3.6
   max_tokens: 2048
   no_steps: True
-eval_data_dir: /mnt/amthakur/data/proofsteps/leandojo/random/eval/20240511-230108
+eval_data_dir: /mnt/sdd1/amthakur/shiva/data/proofsteps/leandojo/random/eval/20240511-230108
 eval_meta_filename: local.meta.json
-eval_data_log_dir: /mnt/amthakur/data/proofsteps/training_results/logs
-test_data_dir: /mnt/amthakur/data/proofsteps/leandojo/random/test/20240511-230042
+eval_data_log_dir: /mnt/sdd1/amthakur/shiva/data/proofsteps/training_results/logs
+test_data_dir: /mnt/sdd1/amthakur/shiva/data/proofsteps/leandojo/random/test/20240511-230042
 test_meta_filename: local.meta.json
-test_data_log_dir: /mnt/amthakur/data/proofsteps/training_results/logs
+test_data_log_dir: /mnt/sdd1/amthakur/shiva/data/proofsteps/training_results/logs
