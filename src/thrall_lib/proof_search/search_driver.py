@@ -8,10 +8,11 @@ import typing
 import logging
 import os
 import time
+import enum
 from abc import ABC, abstractmethod
 from itp_interface.tools.training_data_format import TrainingDataFormat, TrainingDataMetadataFormat
 from itp_interface.tools.training_data import TrainingData
-from itp_interface.rl.simple_proof_env import ProofEnv, ProofState, ProofAction, ProofTree
+from itp_interface.rl.simple_proof_env import ProofEnv, ProofState, ProofAction, ProofTree, ProgressState
 from itp_interface.rl.simpl_proof_env_pool import ProofEnvPool, replicate_proof_env
 from itp_interface.tools.dynamic_coq_proof_exec import DynamicProofExecutor as DynamicCoqExecutor
 from itp_interface.rl.proof_tree import ProofSearchResult
@@ -22,6 +23,11 @@ from dataclasses_json import dataclass_json
  
 # Declaring namedtuple()
 ProofStateInfo = namedtuple('ProofStateInfo', ['proof_state', 'done', 'info', 'env_idx'])
+
+class SearchPolicy(enum.Enum):
+    DISCARD_FAILED_NODES = 1
+    KEEP_FAILED_NODES = 2
+
 
 @dataclass_json
 @dataclass
@@ -93,7 +99,8 @@ class ProofSearchBranchGenerator(ABC):
         project_id: str,
         logger: logging.Logger,
         tracer: typing.Optional[ProofPathTracer] = None,
-        original_proofs: typing.Optional[typing.List[typing.List[TrainingDataFormat]]] = None):
+        original_proofs: typing.Optional[typing.List[typing.List[TrainingDataFormat]]] = None,
+        search_policy: SearchPolicy = SearchPolicy.DISCARD_FAILED_NODES):
         assert proof_action_generator is not None, "Proof action generator cannot be None"
         assert envs is not None, "Environments cannot be None"
         assert envs.pool_size > 0, "Environments must contain at least one environment"
@@ -118,6 +125,7 @@ class ProofSearchBranchGenerator(ABC):
             if state_idx not in self.state_id_to_env_map:
                 self.state_id_to_env_map[state_idx] = set()
             self.state_id_to_env_map[state_idx].add(env_idx)
+        self.search_policy = search_policy
         pass
 
     def get_unused_envs(self):
@@ -259,8 +267,11 @@ class ProofSearchBranchGenerator(ABC):
                     _temp_list = list(actions_to_run[idx])
                     _temp_list[1] = -100
                     actions_to_run[idx] = tuple(_temp_list)
-                edges.append(Edge('\n'.join(actions[idx].kwargs['tactics']), actions_to_run[idx][1], actions_to_run[idx][2]))
-                nodes.append(Node(state_name, actions_to_run[idx][1], proof_state_info))
+                # TODO: Don't add the node if the action failed and the search policy is to discard failed nodes
+                if (info.progress != ProgressState.FAILED and info.progress != ProgressState.STATE_UNCHANGED) or \
+                    self.search_policy != SearchPolicy.DISCARD_FAILED_NODES:
+                    edges.append(Edge('\n'.join(actions[idx].kwargs['tactics']), actions_to_run[idx][1], actions_to_run[idx][2]))
+                    nodes.append(Node(state_name, actions_to_run[idx][1], proof_state_info))
         end_time = time.time()
         self.logger.info(f"Finished executing {len(nodes)} branches in {end_time - start_time} seconds")
         return nodes, edges
@@ -280,7 +291,8 @@ class ProofSearchDriver:
         proof_search_heuristic: ProofSearhHeuristic,
         width: int = 4,
         logger: logging.Logger = None,
-        tracer: typing.Optional[ProofPathTracer] = None):
+        tracer: typing.Optional[ProofPathTracer] = None,
+        search_policy: SearchPolicy = SearchPolicy.DISCARD_FAILED_NODES):
         assert search_algorithm is not None, "Search algorithm cannot be None"
         assert proof_action_generator is not None, "Proof action generator cannot be None"
         assert proof_search_heuristic is not None, "Proof search heuristic cannot be None"
@@ -292,6 +304,7 @@ class ProofSearchDriver:
         self.proof_search_heuristic = proof_search_heuristic
         self.env_count = 2 * self.width # We need more environments to run in parallel without waiting
         self.tracer = tracer if tracer is not None else ProofPathTracer(False, "", "", TrainingDataMetadataFormat(), 1)
+        self.search_policy = search_policy
 
     def search_proof(
         self, 
