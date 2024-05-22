@@ -458,7 +458,7 @@ class Model(object):
                 prefix = f"[Step = {trainer_state.global_step}] [Epoch = {trainer_state.epoch}] [Dataset = {eval_dataset_name}]"
                 self.code_logger.info(f"{prefix} [EM = {em}]")
                 # Sample some examples and log them
-                min_num_examples = 3
+                min_num_examples = 20
                 sampled_correct_pred_idx = random.sample(correct_pred_idx, min(min_num_examples, len(correct_pred_idx)))
                 for _idx in sampled_correct_pred_idx:
                     self.code_logger.info(f"{prefix} Prompt [{_idx + 1}]: {all_prompts[_idx]}")
@@ -499,7 +499,7 @@ class Model(object):
                 prefix = f"[Step = {trainer_state.global_step}] [Epoch = {trainer_state.epoch}] [Dataset = {eval_dataset_name}]"
                 self.code_logger.info(f"{prefix} [EM = {em}]")
                 # Sample some examples and log them
-                min_num_examples = 3
+                min_num_examples = 15
                 sampled_correct_pred_idx = random.sample(correct_pred_idx, min(min_num_examples, len(correct_pred_idx)))
                 for _idx in sampled_correct_pred_idx:
                     self.code_logger.info(f"{prefix} Prompt [{_idx + 1}]: {prompts[_idx]}")
