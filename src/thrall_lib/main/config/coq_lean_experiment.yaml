@@ -1,7 +1,7 @@
 defaults:
   - model_settings: codet5_small_2048.yaml # Name of model settings file
   - training_data_settings: coq_lean_benchmark_training.yaml # Name of training data settings file
-  - training_settings: basic_100_015 # Name of training settings file
+  - training_settings: basic_100_001 # Name of training settings file
   - override hydra/job_logging: 'disabled'
 
 name: thrall-codet5-small-coq-lean-4-2048 # Can be any name will be used in logs
