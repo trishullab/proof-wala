@@ -9,6 +9,7 @@ import typing
 import os
 import json
 import ray
+import omegaconf
 from dataclasses import dataclass, field
 from dataclasses_json import dataclass_json
 from enum import Enum
@@ -182,7 +183,40 @@ class EvalRunCheckpointInfoActor(object):
     def add_theorem_to_maps(self, path: str, theorem: str, success: bool):
         self.eval_checkpoint.add_theorem_to_maps(path, theorem, success)
 
+def recursive_replace_keywords(cfg, key_word: str, replace_word: str):
+    if isinstance(cfg, omegaconf.dictconfig.DictConfig) or isinstance(cfg, dict):
+        keys = [key for key in cfg] # to avoid immutable dict error
+        for key in keys:
+            value = cfg[key]
+            if isinstance(value, str):
+                cfg[key] = value.replace(key_word, replace_word)
+            elif isinstance(value, omegaconf.dictconfig.DictConfig) or \
+                isinstance(value, omegaconf.listconfig.ListConfig) or \
+                isinstance(value, dict) or \
+                isinstance(value, list):
+                recursive_replace_keywords(value, key_word, replace_word)
+    elif isinstance(cfg, omegaconf.listconfig.ListConfig) or isinstance(cfg, list):
+        for i in range(len(cfg)):
+            value = cfg[i]
+            if isinstance(value, str):
+                cfg[i] = value.replace(key_word, replace_word)
+            elif isinstance(value, omegaconf.dictconfig.DictConfig) or \
+                isinstance(value, omegaconf.listconfig.ListConfig) or \
+                isinstance(value, dict) or \
+                isinstance(value, list):
+                recursive_replace_keywords(value, key_word, replace_word)
+    else:
+        raise Exception(f"Invalid type: {type(cfg)}")
+
+
 def parse_config(cfg):
+    if "USER" in os.environ:
+        user = os.environ["USER"]
+    else:
+        user = None
+    if user is not None:
+        # Replace all the <user> placeholders in all the paths in all the setting
+        recursive_replace_keywords(cfg, "<user>", user)
     env_settings_cfg = cfg["env_settings"]
     env_settings = EnvSettings(
         name=env_settings_cfg["name"],

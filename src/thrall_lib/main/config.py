@@ -143,7 +143,6 @@ def parse_config(cfg) -> Experiment:
     if user is not None:
         # Replace all the <user> placeholders in all the paths in all the setting
         recursive_replace_keywords(cfg, "<user>", user)
-
     name = cfg["name"]
     experiment_type = ExperimentType(cfg["experiment_type"])
     model_settings : ModelSettings = ModelSettings.from_dict(cfg["model_settings"])
