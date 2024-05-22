@@ -1,5 +1,6 @@
 import typing
 import logging
+import json
 from graphviz import Digraph
 from abc import ABC, abstractmethod
 
@@ -87,6 +88,96 @@ class Node:
     def __ge__(self, other):
         assert isinstance(other, Node), "Can only compare Node objects"
         return self.score >= other.score
+
+def serialize_edge(edge: 'Edge', visited_edges: set) -> dict:
+    if edge in visited_edges:
+        return {'label': edge.label}  # Simplified representation for visited edges
+
+    visited_edges.add(edge)
+
+    edge_dict = {
+        'label': edge.label,
+        'score': edge.score,
+        'other_data': edge.other_data,
+        'equivalent_edges': [serialize_edge(eq_edge, visited_edges) for eq_edge in edge.equivalent_edges]
+    }
+    return edge_dict
+
+def serialize_node(node: 'Node', visited_nodes: set, visited_edges: set) -> dict:
+    if node in visited_nodes:
+        return {'name': node.name}  # Simplified representation for visited nodes
+
+    visited_nodes.add(node)
+
+    node_dict = {
+        'name': node.name,
+        'score': node.score,
+        'distance_from_root': node.distance_from_root,
+        'cummulative_score': node.cummulative_score,
+        'other_data': node.other_data,
+        'children': [serialize_node(child, visited_nodes, visited_edges) for child in node.children],
+        'edges': [serialize_edge(edge, visited_edges) for edge in node.edges]
+    }
+    return node_dict
+
+def serialize_graph(root: 'Node') -> str:
+    visited_nodes = set()
+    visited_edges = set()
+    graph_dict = serialize_node(root, visited_nodes, visited_edges)
+    return json.dumps(graph_dict, indent=2)
+
+def deserialize_edge(edge_dict: dict, edges_cache: dict) -> 'Edge':
+    edge_label = edge_dict['label']
+    
+    if edge_label in edges_cache:
+        return edges_cache[edge_label]
+    
+    edge = Edge(
+        label=edge_dict['label'],
+        score=edge_dict.get('score', 0),
+        other_data=edge_dict.get('other_data', None)
+    )
+
+    edges_cache[edge_label] = edge
+
+    for eq_edge_dict in edge_dict.get('equivalent_edges', []):
+        eq_edge = deserialize_edge(eq_edge_dict, edges_cache)
+        edge.add_equivalent_edge(eq_edge)
+    
+    return edge
+
+def deserialize_node(node_dict: dict, nodes_cache: dict, edges_cache: dict) -> 'Node':
+    node_name = node_dict['name']
+    
+    if node_name in nodes_cache:
+        return nodes_cache[node_name]
+    
+    node = Node(
+        name=node_dict['name'],
+        score=node_dict.get('score', 0),
+        other_data=node_dict.get('other_data', None)
+    )
+    node.distance_from_root = node_dict.get('distance_from_root', float('inf'))
+    node.cummulative_score = node_dict.get('cummulative_score', float('inf'))
+
+    nodes_cache[node_name] = node
+
+    for child_dict in node_dict['children']:
+        child_node = deserialize_node(child_dict, nodes_cache, edges_cache)
+        node.add_child(child_node)
+
+    for edge_dict in node_dict['edges']:
+        edge = deserialize_edge(edge_dict, edges_cache)
+        node.edges.append(edge)
+    
+    return node
+
+def deserialize_graph(json_str: str) -> 'Node':
+    graph_dict = json.loads(json_str)
+    nodes_cache = {}
+    edges_cache = {}
+    return deserialize_node(graph_dict, nodes_cache, edges_cache)
+
 
 class SearchAlgorithm(ABC):
     def __init__(self):

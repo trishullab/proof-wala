@@ -3,14 +3,14 @@ train_percentage: 1.0
 eval_percentage:  0.15
 test_percentage: 1.0
 training_args: 
-  output_dir: /mnt/amthakur/data/proofsteps/training_results/models
+  output_dir: /mnt/sdd1/amthakur/shiva/data/proofsteps/training_results/models
   overwrite_output_dir: False
   do_train: True
   do_eval: True
   do_predict: False
   evaluation_strategy: steps
   # auto_find_batch_size: True
-  per_device_train_batch_size: 1
+  per_device_train_batch_size: 2
   per_device_eval_batch_size: 1
   gradient_accumulation_steps: 1
   learning_rate: 2e-4
@@ -21,7 +21,7 @@ training_args:
   lr_scheduler_type: cosine
   warmup_ratio: 0.03
   warmup_steps: 0
-  logging_dir: /mnt/amthakur/data/proofsteps/training_results/logs/model
+  logging_dir: /mnt/sdd1/amthakur/shiva/data/proofsteps/training_results/logs/model
   logging_strategy: steps
   logging_steps: 1
   logging_first_step: True
