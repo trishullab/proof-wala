@@ -312,7 +312,7 @@ class ProofSearchDriver:
         self.logger = logger if logger is not None else logging.getLogger(__name__)
         self.width = width
         self.proof_search_heuristic = proof_search_heuristic
-        self.env_count = 2 * self.width # We need more environments to run in parallel without waiting
+        self.env_count = 8 * self.width # We need more environments to run in parallel without waiting
         self.tracer = tracer if tracer is not None else ProofPathTracer(False, "", "", TrainingDataMetadataFormat(), 1)
         self.search_policy = search_policy
 

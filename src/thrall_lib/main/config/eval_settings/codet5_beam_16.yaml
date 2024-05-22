@@ -18,7 +18,7 @@ stop_tokens:
 padding: True
 return_full_text: False
 compute_probabilities: True
-checkpoint_dir: .log/checkpoints/codet5_beam_32
+checkpoint_dir: .log/checkpoints/codet5_beam_16
 should_checkpoint: False
 proof_dump_dir: <user>/data/CompCert/proof_dumps
 use_human_readable_proof_context: True

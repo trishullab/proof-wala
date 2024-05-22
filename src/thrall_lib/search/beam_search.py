@@ -70,6 +70,7 @@ class BeamSearch(SearchAlgorithm):
                 if build_tree:
                     remaining_timeout = timeout_in_secs - time_elapsed
                     children, edges = generate_children(current_node, remaining_timeout)
+                    time_elapsed = time.time() - start_time
                 else:
                     children = current_node.children
                     edges = current_node.edges
