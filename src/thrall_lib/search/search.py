@@ -321,7 +321,7 @@ class SearchAlgorithm(ABC):
             start: Node, 
             goal: Node,
             heuristic: typing.Callable[[Node, Edge, Node], float], 
-            generate_children: typing.Callable[[Node], typing.Tuple[typing.List[Node], typing.List[Edge]]] = None,
+            generate_children: typing.Callable[[Node, float], typing.Tuple[typing.List[Node], typing.List[Edge]]] = None,
             parallel_count: int = None,
             build_tree: bool = True,
             timeout_in_secs: float = None,

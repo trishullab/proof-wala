@@ -168,14 +168,21 @@ class ProofSearchBranchGenerator(ABC):
                 self.state_id_to_env_map[new_env_state_idx] = set()
             self.state_id_to_env_map[new_env_state_idx].add(env_idx)
 
-    def __call__(self, node: Node) -> typing.Tuple[typing.List[Node], typing.List[Edge]]:
+    def _check_if_within_timeout(self, start_time: float, timeout_in_secs: float, logger: logging.Logger) -> bool:
+        timedout = time.time() - start_time >= timeout_in_secs
+        if timedout:
+            logger.info("Search timed out, returning without generating more nodes")
+        return timedout
+
+    def __call__(self, node: Node, timeout_in_secs: float) -> typing.Tuple[typing.List[Node], typing.List[Edge]]:
         # Call the proof action generator to generate actions for each environment
-        if node.other_data is None:
+        if node.other_data is None or timeout_in_secs <= 0:
             return [] # This is kind of dead end
-        for _key, _valu in self.state_to_state_id_map.items():
-            self.logger.info(f"State_to_state_id_map: {_valu} -> \n{_key}")
-        for _key, _valu in self.state_id_to_env_map.items():
-            self.logger.info(f"State_id_to_env_map: {_key} -> {_valu}")
+        # for _key, _valu in self.state_to_state_id_map.items():
+        #     self.logger.info(f"State_to_state_id_map: {_valu} -> \n{_key}")
+        # for _key, _valu in self.state_id_to_env_map.items():
+        #     self.logger.info(f"State_id_to_env_map: {_key} -> {_valu}")
+        node_gen_start_time = time.time()
         state_info : ProofStateInfo = node.other_data
         state: ProofState = state_info.proof_state
         state_str = convert_state_to_string(state)
@@ -184,7 +191,8 @@ class ProofSearchBranchGenerator(ABC):
         actions_scores = self.proof_action_generator.generate_actions(state_info, k=self.width)
         nodes = []
         edges = []
-        start_time = time.time()
+        if self._check_if_within_timeout(node_gen_start_time, timeout_in_secs, self.logger):
+            return nodes, edges
         while len(actions_scores) > 0:
             env_idxs : typing.List[int] = list(self.state_id_to_env_map.get(state_idx, set()))
             if len(env_idxs) < len(actions_scores):
@@ -272,8 +280,10 @@ class ProofSearchBranchGenerator(ABC):
                     self.search_policy != SearchPolicy.DISCARD_FAILED_NODES:
                     edges.append(Edge('\n'.join(actions[idx].kwargs['tactics']), actions_to_run[idx][1], actions_to_run[idx][2]))
                     nodes.append(Node(state_name, actions_to_run[idx][1], proof_state_info))
-        end_time = time.time()
-        self.logger.info(f"Finished executing {len(nodes)} branches in {end_time - start_time} seconds")
+            if self._check_if_within_timeout(node_gen_start_time, timeout_in_secs, self.logger):
+                return nodes, edges
+        node_gen_end_time = time.time()
+        self.logger.info(f"Finished executing {len(nodes)} branches in {node_gen_end_time - node_gen_start_time} seconds")
         return nodes, edges
     
 class ProofSearhHeuristic(ABC):

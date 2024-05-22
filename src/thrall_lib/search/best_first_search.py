@@ -20,7 +20,7 @@ class BestFirstSearch(SearchAlgorithm):
             start: Node, 
             goal: Node,
             heuristic: typing.Callable[[Node, Edge, Node], float], 
-            generate_children: typing.Callable[[Node], typing.Tuple[typing.List[Node], typing.List[Edge]]] = None,
+            generate_children: typing.Callable[[Node, float], typing.Tuple[typing.List[Node], typing.List[Edge]]] = None,
             parallel_count: int = None,
             build_tree: bool = True,
             timeout_in_secs: float = None,
@@ -54,7 +54,8 @@ class BestFirstSearch(SearchAlgorithm):
                 return (start, False, time_elapsed)
 
             if build_tree:
-                children, edges = generate_children(current_node)
+                remaining_timeout = timeout_in_secs - time_elapsed
+                children, edges = generate_children(current_node, remaining_timeout)
             else:
                 children = [(child, edge) for child, edge in zip(current_node.children, current_node.edges)]
                 children = current_node.children
