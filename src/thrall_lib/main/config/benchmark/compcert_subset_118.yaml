@@ -9,7 +9,7 @@ timeout_per_theorem_in_secs: 720
 setup_cmds:
   - opam env --switch=CompCert --set-switch
 datasets:
-  - project: /mnt/amthakur/data/repos/CompCert
+  - project: <user>/data/repos/CompCert
     files:
       - path: backend/Locations.v
         theorems:

@@ -3,7 +3,7 @@ train_percentage: 1.0
 eval_percentage:  0.01
 test_percentage: 1.0
 training_args: 
-  output_dir: /mnt/amthakur/data/proofsteps/training_results/models
+  output_dir: <user>/data/proofsteps/training_results/models
   overwrite_output_dir: False
   do_train: True
   do_eval: True
@@ -21,7 +21,7 @@ training_args:
   lr_scheduler_type: cosine
   warmup_ratio: 0.03
   warmup_steps: 0
-  logging_dir: /mnt/amthakur/data/proofsteps/training_results/logs/model
+  logging_dir: <user>/data/proofsteps/training_results/logs/model
   logging_strategy: steps
   logging_steps: 1
   logging_first_step: True

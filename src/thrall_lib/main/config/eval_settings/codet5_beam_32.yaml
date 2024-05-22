@@ -1,7 +1,7 @@
 name: codet5_beam_32
 use_hammer: False
 # model_name: .log/run_training/new_model/thrall-codet5-small-compcert-2048/best-model-20240228-072825
-model_name: /mnt/amthakur/models/compcert/codet5/small/2048/98500
+model_name: <user>/models/compcert/codet5/small/2048/98500
 is_seq2seq: True
 max_proof_depth: 50
 max_seq_length: 2048
@@ -20,7 +20,7 @@ return_full_text: False
 compute_probabilities: True
 checkpoint_dir: .log/checkpoints/codet5_beam_32
 should_checkpoint: False
-proof_dump_dir: /mnt/amthakur/data/CompCert/proof_dumps
+proof_dump_dir: <user>/data/CompCert/proof_dumps
 use_human_readable_proof_context: True
 sample: 1.0
 sample_seed: 0xf00

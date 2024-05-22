@@ -1,4 +1,4 @@
-training_data_dir: /mnt/amthakur/data/proofsteps/CompCert/20240510-053859/train/
+training_data_dir: <user>/data/proofsteps/CompCert/20240510-053859/train/
 training_meta_filename: local.meta.json
 training_data_log_dir: .log/run_training/logs/dataset_logs
 training_dataset_type: CodeT5TrainingDataset
@@ -7,7 +7,7 @@ training_dataset_args:
   characters_per_token: 3.6
   max_tokens: 2048
   no_steps: True
-eval_data_dir: /mnt/amthakur/data/proofsteps/CompCert/20240510-053859/test
+eval_data_dir: <user>/data/proofsteps/CompCert/20240510-053859/test
 eval_meta_filename: local.meta.json
 eval_data_log_dir: .log/run_training/logs/dataset_logs
 test_data_dir: 

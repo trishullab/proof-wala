@@ -6,7 +6,7 @@ defaults:
   - env_settings: bm25_retrieval
   - override hydra/job_logging: 'disabled'
 
-log_dir: /mnt/amthakur/data/CompCert/proof_logs
+log_dir: <user>/data/CompCert/proof_logs
 # eval_settings:
 #  use_hammer: AUTO
 #  timeout_in_secs: 200
