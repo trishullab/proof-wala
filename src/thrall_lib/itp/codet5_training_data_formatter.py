@@ -19,7 +19,8 @@ class CodeT5TrainingDataset(TheoremProvingTrainingDataset):
             training_data: TrainingData,
             characters_per_token: float = 3.6,
             max_tokens: int = 2048,
-            no_steps: bool = False):
+            no_steps: bool = False,
+            lang_tag: typing.Optional[str] = None):
         assert characters_per_token >= 1, f"Characters per token must be at least 1, but is {characters_per_token}"
         super().__init__(training_data)
         self.response_grammar = CoqGPTResponseDfsGrammar()
@@ -30,6 +31,7 @@ class CodeT5TrainingDataset(TheoremProvingTrainingDataset):
         self.max_tokens_in_prompt = self.max_tokens
         self.max_chars_in_prompt = int(self.max_tokens_in_prompt * self.characters_per_token)
         self.no_steps = no_steps
+        self.lang_tag = lang_tag
         if self.max_tokens_in_prompt < 0:
             raise ValueError(f"Max tokens in prompt is negative: {self.max_tokens_in_prompt}, increase max tokens or decrease characters per token")
         self.prompt_delimiter = "\n"
@@ -39,6 +41,8 @@ class CodeT5TrainingDataset(TheoremProvingTrainingDataset):
         prompt = self.response_grammar.format_as_per_grammar(response, max_token_cnt=self.max_tokens_in_prompt, characters_per_token=self.characters_per_token)
         completion = self.request_grammar.generate_message_from_gpt_request(request)
         prompt += self.prompt_delimiter
+        if self.lang_tag is not None:
+            prompt = f"{self.lang_tag}\n{prompt}"
         return {
             "prompt": prompt,
             "completion": completion
@@ -73,7 +77,8 @@ class CodeT5TrainingDataset(TheoremProvingTrainingDataset):
             response: CoqGptResponse, 
             max_tokens_in_prompt: int = None, 
             characters_per_token: float = 4,
-            no_steps: bool = False):
+            no_steps: bool = False,
+            lang_tag: typing.Optional[str] = None) -> str:
         response_copy = copy.deepcopy(response)
         if no_steps:
             response_copy.steps = []
@@ -82,6 +87,8 @@ class CodeT5TrainingDataset(TheoremProvingTrainingDataset):
             response_copy,
             max_token_cnt=max_tokens_in_prompt, 
             characters_per_token=characters_per_token)
+        if lang_tag is not None:
+            prompt = f"{lang_tag}\n{prompt}"
         return prompt
 
     def response_parser(request_str: str) -> CoqGptRequest:
