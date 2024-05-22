@@ -177,7 +177,7 @@ class ProofSearchBranchGenerator(ABC):
     def __call__(self, node: Node, timeout_in_secs: float) -> typing.Tuple[typing.List[Node], typing.List[Edge]]:
         # Call the proof action generator to generate actions for each environment
         if node.other_data is None or timeout_in_secs <= 0:
-            return [] # This is kind of dead end
+            return [], [] # This is kind of dead end
         # for _key, _valu in self.state_to_state_id_map.items():
         #     self.logger.info(f"State_to_state_id_map: {_valu} -> \n{_key}")
         # for _key, _valu in self.state_id_to_env_map.items():
