@@ -53,18 +53,18 @@ class BeamSearch(SearchAlgorithm):
 
             # For early stopping, check if the goal node is in the current level
             logger.info(f"Frontier size: {len(current_level)}")
-            logger.info("Dumping the frontier nodes")
-            logger.info("-" * 50)
+            # logger.info("Dumping the frontier nodes")
+            # logger.info("-" * 50)
             for _, current_node in current_level:
-                logger.info(f"Frontier node distance from root: {current_node.distance_from_root}, frontier node:\n {current_node}")
+                # logger.info(f"Frontier node distance from root: {current_node.distance_from_root}, frontier node:\n {current_node}")
                 if current_node == goal:
                     pool.close()
                     pool.join()
                     time_elapsed = time.time() - start_time
                     assert len(current_node.parents) > 0, f"Goal node must have at least one parent"
                     return (current_node, True, time_elapsed)
-            logger.info("Dumped the frontier")
-            logger.info("-" * 50)
+            # logger.info("Dumped the frontier")
+            # logger.info("-" * 50)
 
             for _, current_node in current_level:
                 if build_tree:

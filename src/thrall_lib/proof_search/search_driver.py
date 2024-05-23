@@ -15,6 +15,7 @@ from itp_interface.tools.training_data import TrainingData
 from itp_interface.rl.simple_proof_env import ProofEnv, ProofState, ProofAction, ProofTree, ProgressState
 from itp_interface.rl.simpl_proof_env_pool import ProofEnvPool, replicate_proof_env
 from itp_interface.tools.dynamic_coq_proof_exec import DynamicProofExecutor as DynamicCoqExecutor
+from itp_interface.tools.dynamic_lean4_proof_exec import DynamicProofExecutor as DynamicLean4Executor
 from itp_interface.rl.proof_tree import ProofSearchResult
 from thrall_lib.search.search import SearchAlgorithm, Node, Edge
 from collections import namedtuple
@@ -73,8 +74,10 @@ def convert_state_to_string(state: typing.Union[ProofState, TrainingDataFormat])
 def end_state_string(language: ProofAction.Language) -> str:
     if language == ProofAction.Language.COQ:
         return DynamicCoqExecutor.NotInProofModeDescription
+    elif language == ProofAction.Language.LEAN4:
+        return DynamicLean4Executor.NotInProofModeDescription
     else:
-        raise NotImplementedError("Lean not supported yet")
+        raise ValueError(f"Language {language} not supported")
 
 
 class ProofActionGenerator(ABC):
@@ -185,6 +188,8 @@ class ProofSearchBranchGenerator(ABC):
         node_gen_start_time = time.time()
         state_info : ProofStateInfo = node.other_data
         state: ProofState = state_info.proof_state
+        if state_info.done:
+            return [], []
         state_str = convert_state_to_string(state)
         state_idx = self.state_to_state_id_map.get(state_str, -1)
         assert state_idx != -1, f"State {state_str} not found in the state to state id map"
@@ -196,7 +201,6 @@ class ProofSearchBranchGenerator(ABC):
         while len(actions_scores) > 0:
             env_idxs : typing.List[int] = list(self.state_id_to_env_map.get(state_idx, set()))
             if len(env_idxs) < len(actions_scores):
-
                 # This means that there is some backtracking and somewhere the original path got lost
                 # Reset the environment to the state
                 env_idx: int = state_info.env_idx
@@ -234,7 +238,8 @@ class ProofSearchBranchGenerator(ABC):
                     raise ValueError(f"Step tuple must contain 4 or 6 elements, but contains {len(result)} = {result}")
                 proof_state_info = ProofStateInfo(next_state, done, info, env_idxs[idx])
                 state_name = convert_state_to_string(next_state)
-                action_str = '\n'.join(actions[idx].kwargs['tactics'])
+                action_str = '\n'.join(actions[idx].kwargs['tactics']) if actions[idx].kwargs['tactics'] is not None else str(actions[idx])
+                self.logger.info(f"Action: {action_str}, Done: {done}, Progress: {info.progress}, Error: {info.error_message}")
                 new_state_id = None
                 if not done and (state_name, action_str) not in self.state_action_map:
                     self.state_action_map.add((state_name, action_str))
@@ -312,7 +317,9 @@ class ProofSearchDriver:
         self.logger = logger if logger is not None else logging.getLogger(__name__)
         self.width = width
         self.proof_search_heuristic = proof_search_heuristic
-        self.env_count = 8 * self.width # We need more environments to run in parallel without waiting
+        # don go beyond 0.75 * os.cpu_count()
+        max_parallelism = int(0.5 * os.cpu_count())
+        self.env_count = max(min(8 * self.width, max_parallelism), 1)   # We need more environments to run in parallel without waiting
         self.tracer = tracer if tracer is not None else ProofPathTracer(False, "", "", TrainingDataMetadataFormat(), 1)
         self.search_policy = search_policy
 

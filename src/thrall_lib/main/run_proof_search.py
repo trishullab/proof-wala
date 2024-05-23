@@ -18,12 +18,13 @@ import ray
 import multiprocessing
 import unicodedata
 import re
+import uuid
 multiprocessing.set_start_method('spawn', force=True)
 from datetime import datetime
 from thrall_lib.llm_helpers.model import Model
 from thrall_lib.proof_search.search_driver import ProofSearchDriver
 from thrall_lib.proof_search.llm_tactic_generator import CodeT5PromptFormatter, CodeT5ResponseParser, LlmProofActionGenerator
-from thrall_lib.main.eval_config import EnvSettings, EvalBenchmark, EvalDataset, EvalProofResults, EvalProofResultsActor, EvalRunCheckpointInfoActor, EvalSettings, Experiments, EvalRunCheckpointInfo, parse_config
+from thrall_lib.main.eval_config import EnvSettings, EvalBenchmark, EvalDataset, EvalFile, EvalProofResults, EvalProofResultsActor, EvalRunCheckpointInfoActor, EvalSettings, Experiments, EvalRunCheckpointInfo, parse_config
 from itp_interface.tools.log_utils import setup_logger
 from itp_interface.rl.proof_tree import ProofSearchResult
 from itp_interface.rl.simple_proof_env import ProofEnv, ProofAction
@@ -95,60 +96,25 @@ class _Get_All_Lemmas:
         except:
             logger.exception(f"Exception occurred while getting all lemmas in file: {path}")
 
-def eval_dataset_once(
-    model: Model, 
-    proof_attempts_done: bool, 
-    skip_files_in_checkpoint: bool, 
-    track_time: bool,
+@ray.remote
+def discover_lemmas_in_benchmark(
+    skip_files_in_checkpoint: bool,
     eval_benchmark: EvalBenchmark, 
     dataset: EvalDataset, 
     eval_checkpoint_info: EvalRunCheckpointInfoActor,
     eval_settings: EvalSettings,
-    env_settings: EnvSettings,
     eval_proof_results: EvalProofResultsActor,
-    time_budget_tracker: typing.Dict[str, typing.Dict[str, float]],
-    attempt_idx: int,
-    logger: logging.Logger):
-    if proof_attempts_done:
-        return True
-    any_proof_attempted = False
+    logfile: str):
+    log_id = str(uuid.uuid4())
+    logger = setup_logger(f"discover_lemmas_in_benchmark_{log_id}", logfile)
     for file in dataset.files:
         path = os.path.join(dataset.project, file.path)
-        if track_time and path not in time_budget_tracker:
-            if len(file.max_time_limits_in_secs) > 0:
-                time_budget_tracker[path] = copy.deepcopy(file.max_time_limits_in_secs)
-            else:
-                time_budget_tracker[path] = {}
-        proof_dump_file_name = os.path.join(eval_settings.proof_dump_dir, f"{path.replace('/', '_')}.txt")
         theorem_maps : typing.Dict[str, typing.Dict[str, ProofSearchResult]] = ray.get(eval_proof_results.get_theorem_map.remote())
         if skip_files_in_checkpoint and path in theorem_maps:
             logger.info(f"Skipping the file: {path} as it was already attempted before.")
-            # The proof result for this file is already in the checkpoint
-            if path in theorem_maps:
-                # The proof result for this file is already in the proof results
-                # So we just log the proof result
-                for lemma_name, proof_res_chkpt in theorem_maps[path].items():
-                    logger.info(f"Dumping proof search result:\n{proof_res_chkpt}")
-                    logger.info(f"Prover for lemma: {lemma_name} in file {path} completed.")
-                continue
-        if not os.path.exists(proof_dump_file_name):
-            with open(proof_dump_file_name, "w") as f:
-                f.write(f"File: {path}\n")
-                f.write(f"Dataset:\n {dataset.to_json(indent=4)}\n")
-                f.write(f"Evaluation Settings:\n {eval_settings.to_json(indent=4)}\n")
+            continue
         ray.get(eval_checkpoint_info.add_path_to_maps.remote(path))
         ray.get(eval_proof_results.add_path_to_maps.remote(path))
-        proof_exec_callback = ProofExecutorCallback(
-            project_folder=dataset.project,
-            file_path=path,
-            language=eval_benchmark.language,
-            use_hammer=eval_settings.use_hammer,
-            timeout_in_secs=eval_settings.timeout_in_secs,
-            use_human_readable_proof_context=eval_settings.use_human_readable_proof_context,
-            suppress_error_log=True,
-            always_use_retrieval=eval_settings.always_use_useful_theorem_retrieval,
-            logger=logger,
-            setup_cmds=eval_benchmark.setup_cmds)
         get_all_lemmas_proof_exec_callback = ProofExecutorCallback(
             project_folder=dataset.project,
             file_path=path,
@@ -180,14 +146,22 @@ def eval_dataset_once(
             file.theorems.sort() # sort to ensure one order when no theorems are specified
         elif isinstance(file.theorems, list):
             logger.info(f"Discovered {len(lemmas_to_prove)} lemmas in file: {path}")
-            if proof_exec_callback.language == ProofAction.Language.LEAN4:
+            if get_all_lemmas_proof_exec_callback.language == ProofAction.Language.LEAN4:
                 logger.info("Converting theorems to fully qualified names for Lean 4.")
-                lemmas_to_prove = [get_theorem_name_resembling_lean4(lemma) for lemma in lemmas_to_prove]
+                actual_theorem_name = [get_theorem_name_resembling_lean4(path, lemma, use_cache=True) for lemma in file.theorems]
+                for _lemma in actual_theorem_name:
+                    logger.info(f"Converted lemma: {_lemma}")
+                for _lemma in lemmas_to_prove:
+                    logger.info(f"Discovered lemma: {_lemma}")
+            else:
+                actual_theorem_name = file.theorems
             if not dataset.negation:
                 # Check all theorems which can be proved
-                intersection = set(file.theorems).intersection(lemmas_to_prove)
+                intersection = set(actual_theorem_name).intersection(lemmas_to_prove)
+                for _lemma in intersection:
+                    logger.info(f"Intersection lemma: {_lemma}")
                 # Arrange them in the order of the file.theorems
-                file.theorems = [x for x in file.theorems if x in intersection]
+                file.theorems = [x for x in actual_theorem_name if x in intersection]
             else:
                 logger.info("Dataset is negation dataset. So, removing the theorems which are mentioned in the dataset.")
                 # Take the difference of the theorems which can be proved
@@ -207,6 +181,126 @@ def eval_dataset_once(
             random.seed(eval_settings.sample_seed)
             file.theorems = list(random.sample(file.theorems, sample_size))
             logger.info(f"Sampled lemmas to prove in file {path}: \n{file.theorems}")
+    return dataset
+
+def eval_dataset_once(
+    model: Model, 
+    proof_attempts_done: bool, 
+    skip_files_in_checkpoint: bool, 
+    track_time: bool,
+    eval_benchmark: EvalBenchmark, 
+    dataset: EvalDataset, 
+    eval_checkpoint_info: EvalRunCheckpointInfoActor,
+    eval_settings: EvalSettings,
+    env_settings: EnvSettings,
+    eval_proof_results: EvalProofResultsActor,
+    time_budget_tracker: typing.Dict[str, typing.Dict[str, float]],
+    attempt_idx: int,
+    logger: logging.Logger):
+    if proof_attempts_done:
+        return True
+    any_proof_attempted = False
+    for file in dataset.files:
+        path = os.path.join(dataset.project, file.path)
+        if track_time and path not in time_budget_tracker:
+            if len(file.max_time_limits_in_secs) > 0:
+                time_budget_tracker[path] = copy.deepcopy(file.max_time_limits_in_secs)
+            else:
+                time_budget_tracker[path] = {}
+        proof_dump_file_name = os.path.join(eval_settings.proof_dump_dir, f"{path.replace('/', '_')}.txt")
+        theorem_maps : typing.Dict[str, typing.Dict[str, ProofSearchResult]] = ray.get(eval_proof_results.get_theorem_map.remote())
+        if skip_files_in_checkpoint and path in theorem_maps:
+            logger.info(f"Skipping the file: {path} as it was already attempted before.")
+            # The proof result for this file is already in the proof results
+            # So we just log the proof result
+            for lemma_name, proof_res_chkpt in theorem_maps[path].items():
+                logger.info(f"Dumping proof search result:\n{proof_res_chkpt}")
+                logger.info(f"Prover for lemma: {lemma_name} in file {path} completed.")
+            continue
+        if not os.path.exists(proof_dump_file_name):
+            with open(proof_dump_file_name, "w") as f:
+                f.write(f"File: {path}\n")
+                f.write(f"Dataset:\n {dataset.to_json(indent=4)}\n")
+                f.write(f"Evaluation Settings:\n {eval_settings.to_json(indent=4)}\n")
+        ray.get(eval_checkpoint_info.add_path_to_maps.remote(path))
+        ray.get(eval_proof_results.add_path_to_maps.remote(path))
+        proof_exec_callback = ProofExecutorCallback(
+            project_folder=dataset.project,
+            file_path=path,
+            language=eval_benchmark.language,
+            use_hammer=eval_settings.use_hammer,
+            timeout_in_secs=eval_settings.timeout_in_secs,
+            use_human_readable_proof_context=eval_settings.use_human_readable_proof_context,
+            suppress_error_log=True,
+            always_use_retrieval=eval_settings.always_use_useful_theorem_retrieval,
+            logger=logger,
+            setup_cmds=eval_benchmark.setup_cmds)
+        # get_all_lemmas_proof_exec_callback = ProofExecutorCallback(
+        #     project_folder=dataset.project,
+        #     file_path=path,
+        #     language=eval_benchmark.language,
+        #     use_hammer=False, # We don't need hammer for this
+        #     timeout_in_secs=eval_settings.timeout_in_secs,
+        #     use_human_readable_proof_context=eval_settings.use_human_readable_proof_context,
+        #     suppress_error_log=True,
+        #     always_use_retrieval=False,
+        #     logger=logger,
+        #     setup_cmds=eval_benchmark.setup_cmds)
+        # manager = multiprocessing.Manager()
+        # return_dict = manager.dict()
+        # file_time_out = eval_settings.timeout_in_secs * eval_settings.max_proof_depth * 50
+        # logger.info(f"Getting all lemmas in file: {path} with timeout: {file_time_out} seconds")
+        # p = multiprocessing.Process(target=_Get_All_Lemmas(), args=(return_dict, path, get_all_lemmas_proof_exec_callback, logger))
+        # p.start()
+        # p.join(file_time_out)
+        # if p.is_alive():
+        #     p.kill()
+        #     p.join()
+        # p.close()
+        # if "lemmas" not in return_dict:
+        #     logger.info(f"Failed to get all lemmas in file: {path}, moving on to the next file.")
+        #     continue
+        # lemmas_to_prove = list(return_dict["lemmas"])
+        # if isinstance(file.theorems, str) and file.theorems == "*":
+        #     file.theorems = list(lemmas_to_prove)
+        #     file.theorems.sort() # sort to ensure one order when no theorems are specified
+        # elif isinstance(file.theorems, list):
+        #     logger.info(f"Discovered {len(lemmas_to_prove)} lemmas in file: {path}")
+        #     if proof_exec_callback.language == ProofAction.Language.LEAN4:
+        #         logger.info("Converting theorems to fully qualified names for Lean 4.")
+        #         actual_theorem_name = [get_theorem_name_resembling_lean4(path, lemma, use_cache=True) for lemma in file.theorems]
+        #         for _lemma in actual_theorem_name:
+        #             logger.info(f"Converted lemma: {_lemma}")
+        #         for _lemma in lemmas_to_prove:
+        #             logger.info(f"Discovered lemma: {_lemma}")
+        #     else:
+        #         actual_theorem_name = file.theorems
+        #     if not dataset.negation:
+        #         # Check all theorems which can be proved
+        #         intersection = set(actual_theorem_name).intersection(lemmas_to_prove)
+        #         for _lemma in intersection:
+        #             logger.info(f"Intersection lemma: {_lemma}")
+        #         # Arrange them in the order of the file.theorems
+        #         file.theorems = [x for x in actual_theorem_name if x in intersection]
+        #     else:
+        #         logger.info("Dataset is negation dataset. So, removing the theorems which are mentioned in the dataset.")
+        #         # Take the difference of the theorems which can be proved
+        #         difference = set(lemmas_to_prove).difference(file.theorems)
+        #         for lemma in difference:
+        #             logger.info(f"Lemma: {lemma} is not in the dataset.")
+        #         difference = list(difference)
+        #         difference.sort()
+        #         file.theorems = difference
+        # else:
+        #     raise ValueError(f"Invalid theorems: {file.theorems}")
+        # logger.info(f"Discovered {len(file.theorems)} lemmas to prove in {path}")
+        # logger.info(f"Lemmas to prove in file {path}: \n{file.theorems}")
+        # if eval_settings.sample < 1.0:
+        #     sample_size = math.ceil(len(file.theorems) * eval_settings.sample)
+        #     logger.info(f"Sampling {sample_size} lemmas from {len(file.theorems)} lemmas in file {path}")
+        #     random.seed(eval_settings.sample_seed)
+        #     file.theorems = list(random.sample(file.theorems, sample_size))
+        #     logger.info(f"Sampled lemmas to prove in file {path}: \n{file.theorems}")
         for lemma_name in file.theorems:
             no_proof_res = ProofSearchResult(
                 None, 
@@ -282,7 +376,18 @@ def eval_dataset_once(
                             dot = algo.visualize_search(start_node, show=False, mark_paths=proof_paths)
                             lemma_file_name = slugify(lemma_name, allow_unicode=False)
                             tree_dump_folder = os.path.join(eval_settings.proof_dump_dir, "proof_trees", lemma_file_name)
-                            os.makedirs(tree_dump_folder, exist_ok=True)
+                            try:
+                                # if lemma_file_name can be a valid file name
+                                os.makedirs(tree_dump_folder, exist_ok=True)
+                            except:
+                                logger.exception(f"Failed to create the proof tree dump folder for lemma: {lemma_name} in file {path}")
+                                lemma_name_hash = hash(lemma_name)
+                                lemma_file_name = lemma_name_hash
+                                tree_dump_folder = os.path.join(eval_settings.proof_dump_dir, "proof_trees", lemma_file_name)
+                                os.makedirs(tree_dump_folder, exist_ok=True)
+                                logger.info("\nUsing hash of lemma name:" +
+                                    f"\n {lemma_name} to create the folder for dumping the proof tree in file {file.path}" +
+                                    f"\n The hash is: {lemma_name_hash}")
                             time_stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
                             tree_dump_path = os.path.join(tree_dump_folder, f"{lemma_file_name}_{time_stamp}")
                             dot.render(tree_dump_path, format='svg', quiet=True)
@@ -377,7 +482,7 @@ def eval_dataset_once(
     proof_attempts_done = not any_proof_attempted
     return proof_attempts_done
 
-@ray.remote
+@ray.remote(max_retries=4)
 def eval_dataset_multiple_attempts(
     model_path: str,
     is_seq2seq: bool,
@@ -460,6 +565,40 @@ def eval_dataset(env_settings: EnvSettings, eval_benchmark: EvalBenchmark, datas
     os.environ["PYTHONPATH"] = f"{root_dir}:{os.environ.get('PYTHONPATH', '')}"
     eval_checkpoint_info_actor = EvalRunCheckpointInfoActor.remote(eval_checkpoint_info)
     eval_proof_results_actor = EvalProofResultsActor.remote(eval_proof_results)
+    # First discover all the lemmas that has to be proved
+    for i, dataset in enumerate(dataset_chunks):
+        logdir = eval_checkpoint_info.logging_dirs[-1]
+        logfile = os.path.join(logdir, f"discover_lemmas_in_benchmark_{i}.log")
+        remotes.append(discover_lemmas_in_benchmark.remote(
+            skip_files_in_checkpoint,
+            eval_benchmark,
+            dataset,
+            eval_checkpoint_info_actor,
+            eval_settings,
+            eval_proof_results_actor,
+            logfile))
+    discovered_dataset_chunks : typing.List[EvalDataset] = ray.get(remotes)
+    # No negation datasets are allowed now as we have already discovered the lemmas
+    new_dataset_chunks = [EvalDataset(project=dataset.project, files=[], negation=False) for _ in range(max_model_parallelism)]
+    # Redistribute the lemmas to the dataset chunks
+    new_dataset_chunk_idx = 0
+    new_dataset_chunk_path = [{} for _ in range(max_model_parallelism)]
+    for i in range(len(discovered_dataset_chunks)):
+        for file in discovered_dataset_chunks[i].files:
+            assert isinstance(file.theorems, list), f"Invalid theorems: {file.theorems}"
+            for thm in file.theorems:
+                if file.path not in new_dataset_chunk_path[new_dataset_chunk_idx]:
+                    new_file = EvalFile(file.path, [thm], 
+                        file.max_retry_attempts_limits, 
+                        file.max_time_limits_in_secs)
+                    new_dataset_chunks[new_dataset_chunk_idx].files.append(new_file)
+                    new_dataset_chunk_path[new_dataset_chunk_idx][file.path] = len(new_dataset_chunks[new_dataset_chunk_idx].files) - 1
+                else:
+                    new_file_idx = new_dataset_chunk_path[new_dataset_chunk_idx][file.path]
+                    new_dataset_chunks[new_dataset_chunk_idx].files[new_file_idx].theorems.append(thm)
+                new_dataset_chunk_idx = (new_dataset_chunk_idx + 1) % max_model_parallelism
+    dataset_chunks = new_dataset_chunks
+
     for i, dataset in enumerate(dataset_chunks):
         gpu_id = gpus[i] if i < len(gpus) else None
         if gpu_id is not None:
@@ -573,4 +712,15 @@ def main(cfg):
 
 if __name__ == "__main__":
     # RayUtils.init_ray(num_of_cpus=20, object_store_memory_in_gb=50, memory_in_gb=1)
+    # Start the ray cluster
+    os.environ["PYTHONPATH"] = f"{root_dir}:{os.environ.get('PYTHONPATH', '')}"
+    ray.init(
+        num_cpus=8, 
+        object_store_memory=75*2**30, 
+        _memory=75*2**30, 
+        logging_level=logging.ERROR, 
+        ignore_reinit_error=False, 
+        log_to_driver=False, 
+        configure_logging=False,
+        _system_config={"metrics_report_interval_ms": 10**8})
     main()

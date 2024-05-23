@@ -22,6 +22,8 @@ def get_qed_for_language(language: ProofAction.Language):
         return "Qed."
     elif language == ProofAction.Language.LEAN:
         return "end"
+    elif language == ProofAction.Language.LEAN4:
+        return ""
     else:
         raise ValueError(f"Language {language} not supported")
 
@@ -47,7 +49,7 @@ class LlmProofActionGenerator(ProofActionGenerator):
         state : ProofState = state_info.proof_state
         done : bool = state_info.done
         if done:
-            return [ProofAction(ProofAction.ActionType.EXIT, state.language)]
+            return [(-100.0, ProofAction(ProofAction.ActionType.EXIT, state.language))]
         elif len(state.training_data_format.start_goals) == 0: # No more goals to prove
                 qed = get_qed_for_language(state.language)
                 return [(-100.0, ProofAction(ProofAction.ActionType.RUN_TACTIC, state.language, tactics=[qed]))]
