@@ -317,8 +317,8 @@ class ProofSearchDriver:
         self.logger = logger if logger is not None else logging.getLogger(__name__)
         self.width = width
         self.proof_search_heuristic = proof_search_heuristic
-        # don go beyond 0.75 * os.cpu_count()
-        max_parallelism = int(0.5 * os.cpu_count())
+        # don go beyond 0.6 * os.cpu_count()
+        max_parallelism = int(0.6 * os.cpu_count())
         self.env_count = max(min(8 * self.width, max_parallelism), 1)   # We need more environments to run in parallel without waiting
         self.tracer = tracer if tracer is not None else ProofPathTracer(False, "", "", TrainingDataMetadataFormat(), 1)
         self.search_policy = search_policy
