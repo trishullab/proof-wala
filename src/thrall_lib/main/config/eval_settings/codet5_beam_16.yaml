@@ -1,7 +1,8 @@
 name: codet5_beam_16
 use_hammer: False
 # model_name: .log/run_training/new_model/thrall-codet5-small-compcert-2048/best-model-20240228-072825
-model_name: <user>/models/thrall-codet5-small-coq-lean-4-2048/checkpoint-72500
+# model_name: <user>/models/thrall-codet5-small-coq-lean-4-2048/checkpoint-72500
+model_name: <user>/models/thrall-codet5-small-coq-lean-4-2048/checkpoint-140000
 is_seq2seq: True
 max_proof_depth: 50
 max_seq_length: 2048

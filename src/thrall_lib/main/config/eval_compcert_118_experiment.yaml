@@ -2,11 +2,13 @@
 defaults:
   - benchmark: compcert_subset_118
   # - benchmark: simple_test
-  - eval_settings: codet5_beam_16
+  - eval_settings: codet5_beam_32
   - env_settings: bm25_retrieval
   - override hydra/job_logging: 'disabled'
 
 log_dir: <user>/data/CompCert/proof_logs
+eval_settings:
+  model_name: <user>/models/thrall-codet5-small-coq-lean-4-2048/checkpoint-140000/
 # eval_settings:
 #  use_hammer: AUTO
 #  timeout_in_secs: 200
