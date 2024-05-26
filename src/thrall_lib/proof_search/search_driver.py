@@ -135,6 +135,16 @@ class ProofSearchBranchGenerator(ABC):
         # Get all the environments for the start state
         return list(self.state_id_to_env_map[0]) if 0 in self.state_id_to_env_map else []
 
+    def add_new_envs_to_pool(self, count: int):
+        old_pool_size = self.envs.pool_size
+        self.envs.add_and_init_proof_envs(count)
+        for env_idx in range(old_pool_size, self.envs.pool_size):
+            self.env_to_state_map.append(0)
+            if 0 not in self.state_id_to_env_map:
+                self.state_id_to_env_map[0] = set()
+            self.state_id_to_env_map[0].add(env_idx)
+        pass
+
     def reset_envs(self, env_idxs: int, actions_till_states : typing.List[typing.List[ProofAction]], force_reset: bool = True):
         if force_reset:
             self.envs.reset(env_idxs)
@@ -208,14 +218,19 @@ class ProofSearchBranchGenerator(ABC):
                 actions_till_state : typing.List[ProofAction] = proof_tree.actions
                 free_envs = self.get_unused_envs()
                 diff = len(actions_scores) - len(env_idxs)
-                if len(free_envs) == 0:
-                    self.reset_envs([env_idx], [actions_till_state], force_reset=True)
-                    env_idxs.append(env_idx)
-                else:
-                    to_reset = free_envs[:diff] # We already have sufficient free envs so no need to reset all
-                    diff = len(to_reset)
-                    self.reset_envs(to_reset, [actions_till_state for _ in range(diff)], force_reset=False)
-                    env_idxs.extend(to_reset)
+                if len(free_envs) < diff:
+                    self.add_new_envs_to_pool(diff - len(free_envs))
+                    free_envs = self.get_unused_envs()
+                    self.reset_envs(free_envs, [actions_till_state for _ in range(diff)], force_reset=False)
+                    env_idxs.extend(free_envs)
+                # if len(free_envs) == 0:
+                #     self.reset_envs([env_idx], [actions_till_state], force_reset=True)
+                #     env_idxs.append(env_idx)
+                # else:
+                #     to_reset = free_envs[:diff] # We already have sufficient free envs so no need to reset all
+                #     diff = len(to_reset)
+                #     self.reset_envs(to_reset, [actions_till_state for _ in range(diff)], force_reset=False)
+                #     env_idxs.extend(to_reset)
             assert len(env_idxs) > 0, f"No environments found for state {state_str}"
 
             actions_to_run = []
