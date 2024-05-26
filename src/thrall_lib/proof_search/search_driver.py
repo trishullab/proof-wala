@@ -222,7 +222,7 @@ class ProofSearchBranchGenerator(ABC):
                     self.add_new_envs_to_pool(diff - len(free_envs))
                     free_envs = self.get_unused_envs()
                     self.reset_envs(free_envs, [actions_till_state for _ in range(diff)], force_reset=False)
-                    env_idxs.extend(free_envs)
+                env_idxs.extend(free_envs)
                 # if len(free_envs) == 0:
                 #     self.reset_envs([env_idx], [actions_till_state], force_reset=True)
                 #     env_idxs.append(env_idx)
@@ -333,7 +333,7 @@ class ProofSearchDriver:
         self.width = width
         self.proof_search_heuristic = proof_search_heuristic
         # don go beyond 0.6 * os.cpu_count()
-        max_parallelism = int(0.25 * os.cpu_count())
+        max_parallelism = int(0.1 * os.cpu_count())
         self.env_count = max(min(8 * self.width, max_parallelism), 1)   # We need more environments to run in parallel without waiting
         self.tracer = tracer if tracer is not None else ProofPathTracer(False, "", "", TrainingDataMetadataFormat(), 1)
         self.search_policy = search_policy

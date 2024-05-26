@@ -519,13 +519,14 @@ def eval_dataset(env_settings: EnvSettings, eval_benchmark: EvalBenchmark, datas
     new_dataset_chunk_idx = 0
     new_dataset_chunk_path = [{} for _ in range(max_model_parallelism)]
     seed = eval_settings.sample_seed
+    random.seed(seed)
     for i in range(len(discovered_dataset_chunks)):
         files = list(discovered_dataset_chunks[i].files)
-        random.shuffle(files, lambda: seed)
+        random.shuffle(files)
         for file in files:
             assert isinstance(file.theorems, list), f"Invalid theorems: {file.theorems}"
             thm_lst = list(file.theorems)
-            random.shuffle(thm_lst, lambda: seed)
+            random.shuffle(thm_lst)
             for thm in thm_lst:
                 if file.path not in new_dataset_chunk_path[new_dataset_chunk_idx]:
                     new_file = EvalFile(file.path, [thm], 
