@@ -98,7 +98,7 @@ class BeamSearch(SearchAlgorithm):
             current_level.sort(key=lambda x: x[0])  # Sort by heuristic value
             current_level = current_level[:self.beam_width]  # Keep only the top beam_width nodes
             beam_nodes = set([n for _, n in current_level])
-            
+            nodes_part_of_tree = []
             if build_tree:
                 # Go over the tree_map and add the children to the current node
                 for parent, child, edge in new_tree_nodes:
@@ -111,6 +111,7 @@ class BeamSearch(SearchAlgorithm):
                             parent.add_child(child, edge)
                             tree_nodes[child] = child
                             explored.add(child)
+                            nodes_part_of_tree.append(child)
                         else:
                             child_idx = None
                             try:
@@ -123,6 +124,7 @@ class BeamSearch(SearchAlgorithm):
                                 existing_child.score = min(existing_child.score, child.score)
                                 existing_child.cummulative_score = min(existing_child.cummulative_score, parent_cummulative + edge.score)
                                 parent.add_child(existing_child, edge)
+                                nodes_part_of_tree.append(existing_child)
                             elif edge != parent.edges[child_idx]:
                                 if edge not in parent.edges[child_idx].equivalent_edges:
                                     parent.edges[child_idx].add_equivalent_edge(edge)
@@ -130,6 +132,7 @@ class BeamSearch(SearchAlgorithm):
                                     existing_child.distance_from_root = min(existing_child.distance_from_root, parent_distance + 1)
                                     existing_child.score = min(existing_child.score, child.score)
                                     existing_child.cummulative_score = min(existing_child.cummulative_score, parent_cummulative + edge.score)
+                current_level = [(node.cummulative_score, node) for node in nodes_part_of_tree]
     
         pool.close()
         pool.join()
