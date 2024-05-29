@@ -87,6 +87,10 @@ class ProofActionGenerator(ABC):
         pass
     
     @abstractmethod
+    def get_proof_end_for_language(self, language: ProofAction.Language) -> ProofAction:
+        pass
+
+    @abstractmethod
     def generate_actions(self, state_info: ProofStateInfo, k: int = None) -> typing.List[typing.Tuple[float, ProofAction]]:
         pass
 
@@ -187,6 +191,48 @@ class ProofSearchBranchGenerator(ABC):
             logger.info("Search timed out, returning without generating more nodes")
         return timedout
 
+
+    def _update_state_to_env_map(self, next_state, done, info, env_idxs, idx, actions, node, actions_to_run, state, state_idx):
+        state_name = convert_state_to_string(next_state)
+        action_str = '\n'.join(actions[idx].kwargs['tactics']) if actions[idx].kwargs['tactics'] is not None else str(actions[idx])
+        self.logger.info(f"Action: {action_str}, Done: {done}, Progress: {info.progress}, Error: {info.error_message}")
+        new_state_id = None
+        if not done and (state_name, action_str) not in self.state_action_map:
+            self.state_action_map.add((state_name, action_str))
+            on_proof_path = state_name in self.original_proofs_state_names
+            additional_info = {
+                'done': done,
+                'progress': info.progress,
+                'error_message': info.error_message,
+                'distance_from_root': node.distance_from_root + 1,
+                'score': actions_to_run[idx][1],
+                'on_proof_path': on_proof_path
+            }
+            training_data_format = TrainingDataFormat(
+                goal_description=next_state.training_data_format.goal_description,
+                start_goals=state.training_data_format.start_goals,
+                proof_steps=actions[idx].kwargs['tactics'],
+                end_goals=next_state.training_data_format.start_goals,
+                addition_state_info=additional_info,
+                file_path=self.file_path,
+                project_id=self.project_id,
+                theorem_name=self.theorem_name
+            )
+            self.tracer.trace(training_data_format)
+        if state_name not in self.state_to_state_id_map:
+            new_state_id = len(self.state_to_state_id_map)
+            self.state_to_state_id_map[state_name] = new_state_id
+        else:
+            new_state_id = self.state_to_state_id_map[state_name]
+        self.env_to_state_map[env_idxs[idx]] = new_state_id
+        # Remove the env_idx from the old state id
+        if env_idxs[idx] in self.state_id_to_env_map[state_idx]:
+            self.state_id_to_env_map[state_idx].remove(env_idxs[idx])
+        if new_state_id not in self.state_id_to_env_map:
+            self.state_id_to_env_map[new_state_id] = set()
+        self.state_id_to_env_map[new_state_id].add(env_idxs[idx])
+        return new_state_id, state_name
+
     def __call__(self, node: Node, timeout_in_secs: float) -> typing.Tuple[typing.List[Node], typing.List[Edge]]:
         # Call the proof action generator to generate actions for each environment
         if node.other_data is None or timeout_in_secs <= 0:
@@ -223,14 +269,6 @@ class ProofSearchBranchGenerator(ABC):
                     free_envs = self.get_unused_envs()
                     self.reset_envs(free_envs, [actions_till_state for _ in range(diff)], force_reset=False)
                 env_idxs.extend(free_envs)
-                # if len(free_envs) == 0:
-                #     self.reset_envs([env_idx], [actions_till_state], force_reset=True)
-                #     env_idxs.append(env_idx)
-                # else:
-                #     to_reset = free_envs[:diff] # We already have sufficient free envs so no need to reset all
-                #     diff = len(to_reset)
-                #     self.reset_envs(to_reset, [actions_till_state for _ in range(diff)], force_reset=False)
-                #     env_idxs.extend(to_reset)
             assert len(env_idxs) > 0, f"No environments found for state {state_str}"
 
             actions_to_run = []
@@ -252,49 +290,62 @@ class ProofSearchBranchGenerator(ABC):
                 else:
                     raise ValueError(f"Step tuple must contain 4 or 6 elements, but contains {len(result)} = {result}")
                 proof_state_info = ProofStateInfo(next_state, done, info, env_idxs[idx])
-                state_name = convert_state_to_string(next_state)
-                action_str = '\n'.join(actions[idx].kwargs['tactics']) if actions[idx].kwargs['tactics'] is not None else str(actions[idx])
-                self.logger.info(f"Action: {action_str}, Done: {done}, Progress: {info.progress}, Error: {info.error_message}")
-                new_state_id = None
-                if not done and (state_name, action_str) not in self.state_action_map:
-                    self.state_action_map.add((state_name, action_str))
-                    on_proof_path = state_name in self.original_proofs_state_names
-                    additional_info = {
-                        'done': done,
-                        'progress': info.progress,
-                        'error_message': info.error_message,
-                        'distance_from_root': node.distance_from_root + 1,
-                        'score': actions_to_run[idx][1],
-                        'on_proof_path': on_proof_path
-                    }
-                    training_data_format = TrainingDataFormat(
-                        goal_description=next_state.training_data_format.goal_description,
-                        start_goals=state.training_data_format.start_goals,
-                        proof_steps=actions[idx].kwargs['tactics'],
-                        end_goals=next_state.training_data_format.start_goals,
-                        addition_state_info=additional_info,
-                        file_path=self.file_path,
-                        project_id=self.project_id,
-                        theorem_name=self.theorem_name
-                    )
-                    self.tracer.trace(training_data_format)
-                if state_name not in self.state_to_state_id_map:
-                    new_state_id = len(self.state_to_state_id_map)
-                    self.state_to_state_id_map[state_name] = new_state_id
-                else:
-                    new_state_id = self.state_to_state_id_map[state_name]
-                self.env_to_state_map[env_idxs[idx]] = new_state_id
-                # Remove the env_idx from the old state id
-                if env_idxs[idx] in self.state_id_to_env_map[state_idx]:
-                    self.state_id_to_env_map[state_idx].remove(env_idxs[idx])
-                if new_state_id not in self.state_id_to_env_map:
-                    self.state_id_to_env_map[new_state_id] = set()
-                self.state_id_to_env_map[new_state_id].add(env_idxs[idx])
-                if len(next_state.training_data_format.start_goals) == 0:
+                new_state_id, state_name = self._update_state_to_env_map(next_state, done, info, env_idxs, idx, actions, node, actions_to_run, state, state_idx)
+                # state_name = convert_state_to_string(next_state)
+                # action_str = '\n'.join(actions[idx].kwargs['tactics']) if actions[idx].kwargs['tactics'] is not None else str(actions[idx])
+                # self.logger.info(f"Action: {action_str}, Done: {done}, Progress: {info.progress}, Error: {info.error_message}")
+                # new_state_id = None
+                # if not done and (state_name, action_str) not in self.state_action_map:
+                #     self.state_action_map.add((state_name, action_str))
+                #     on_proof_path = state_name in self.original_proofs_state_names
+                #     additional_info = {
+                #         'done': done,
+                #         'progress': info.progress,
+                #         'error_message': info.error_message,
+                #         'distance_from_root': node.distance_from_root + 1,
+                #         'score': actions_to_run[idx][1],
+                #         'on_proof_path': on_proof_path
+                #     }
+                #     training_data_format = TrainingDataFormat(
+                #         goal_description=next_state.training_data_format.goal_description,
+                #         start_goals=state.training_data_format.start_goals,
+                #         proof_steps=actions[idx].kwargs['tactics'],
+                #         end_goals=next_state.training_data_format.start_goals,
+                #         addition_state_info=additional_info,
+                #         file_path=self.file_path,
+                #         project_id=self.project_id,
+                #         theorem_name=self.theorem_name
+                #     )
+                #     self.tracer.trace(training_data_format)
+                # if state_name not in self.state_to_state_id_map:
+                #     new_state_id = len(self.state_to_state_id_map)
+                #     self.state_to_state_id_map[state_name] = new_state_id
+                # else:
+                #     new_state_id = self.state_to_state_id_map[state_name]
+                # self.env_to_state_map[env_idxs[idx]] = new_state_id
+                # # Remove the env_idx from the old state id
+                # if env_idxs[idx] in self.state_id_to_env_map[state_idx]:
+                #     self.state_id_to_env_map[state_idx].remove(env_idxs[idx])
+                # if new_state_id not in self.state_id_to_env_map:
+                #     self.state_id_to_env_map[new_state_id] = set()
+                # self.state_id_to_env_map[new_state_id].add(env_idxs[idx])
+                if len(next_state.training_data_format.start_goals) == 0 and not done:
                     # We found a very good action so we should signal the search to stop, regardless of the search heuristic
                     _temp_list = list(actions_to_run[idx])
                     _temp_list[1] = -100
                     actions_to_run[idx] = tuple(_temp_list)
+                    # Found a proof, something like Qed
+                    qed_tactic = self.proof_action_generator.get_proof_end_for_language(next_state.language)
+                    result = self.envs.step([qed_tactic], [env_idxs[idx]])[0]
+                    if len(result) == 6:
+                        _, _, next_next_state, _, done, info  = result
+                    elif len(result) == 4: # This is because of bug in itp_interface which returns 4 elements when proof is done
+                        next_next_state, _, done, info = result
+                    actions[idx].kwargs['tactics'].extend(qed_tactic.kwargs['tactics'])
+                    proof_state_info = ProofStateInfo(next_next_state, done, info, env_idxs[idx])
+                    new_state_id, state_name = self._update_state_to_env_map(next_next_state, done, info, env_idxs, idx, [qed_tactic], node, [(env_idxs[idx], -100, qed_tactic)], next_state, new_state_id)
+                    next_state = next_next_state
+
                 # TODO: Don't add the node if the action failed and the search policy is to discard failed nodes
                 if (info.progress != ProgressState.FAILED and info.progress != ProgressState.STATE_UNCHANGED) or \
                     self.search_policy != SearchPolicy.DISCARD_FAILED_NODES:

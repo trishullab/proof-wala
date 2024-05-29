@@ -44,7 +44,11 @@ class LlmProofActionGenerator(ProofActionGenerator):
         self.logger = logger if logger else logging.getLogger(__name__)
         self._generation_args["num_return_sequences"] = self.width
         pass
-        
+
+    def get_proof_end_for_language(self, language: ProofAction.Language) -> ProofAction:
+        qed = get_qed_for_language(language)
+        return ProofAction(ProofAction.ActionType.RUN_TACTIC, language, tactics=[qed])
+
     def generate_actions(self, state_info: ProofStateInfo, k: int = None) -> typing.List[typing.Tuple[float, ProofAction]]:
         state : ProofState = state_info.proof_state
         done : bool = state_info.done

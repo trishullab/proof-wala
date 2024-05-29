@@ -133,6 +133,7 @@ class BeamSearch(SearchAlgorithm):
                                     existing_child.score = min(existing_child.score, child.score)
                                     existing_child.cummulative_score = min(existing_child.cummulative_score, parent_cummulative + edge.score)
                 current_level = [(node.cummulative_score, node) for node in nodes_part_of_tree]
+                current_level.sort(key=lambda x: x[0])
     
         pool.close()
         pool.join()
