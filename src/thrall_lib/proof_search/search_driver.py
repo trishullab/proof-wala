@@ -265,9 +265,18 @@ class ProofSearchBranchGenerator(ABC):
                 free_envs = self.get_unused_envs()
                 diff = len(actions_scores) - len(env_idxs)
                 if len(free_envs) < diff:
+                    self.logger.info(f"Adding {diff - len(free_envs)} new environments to the pool")
+                    _t_start = time.time()
                     self.add_new_envs_to_pool(diff - len(free_envs))
+                    _t_end = time.time()
+                    self.logger.info(f"Added {diff - len(free_envs)} new environments in {_t_end - _t_start} seconds")
                     free_envs = self.get_unused_envs()
-                    self.reset_envs(free_envs, [actions_till_state for _ in range(diff)], force_reset=False)
+                free_envs = free_envs[:diff]
+                self.logger.info(f"Resetting {len(free_envs)} environments")
+                _t_start = time.time()
+                self.reset_envs(free_envs, [actions_till_state for _ in range(len(free_envs))], force_reset=False)
+                _t_end = time.time()
+                self.logger.info(f"Reset {len(free_envs)} environments in {_t_end - _t_start} seconds")
                 env_idxs.extend(free_envs)
             assert len(env_idxs) > 0, f"No environments found for state {state_str}"
 
@@ -384,7 +393,7 @@ class ProofSearchDriver:
         self.width = width
         self.proof_search_heuristic = proof_search_heuristic
         # don go beyond 0.6 * os.cpu_count()
-        max_parallelism = int(0.1 * os.cpu_count())
+        max_parallelism = int(0.2 * os.cpu_count())
         self.env_count = max(min(8 * self.width, max_parallelism), 1)   # We need more environments to run in parallel without waiting
         self.tracer = tracer if tracer is not None else ProofPathTracer(False, "", "", TrainingDataMetadataFormat(), 1)
         self.search_policy = search_policy
