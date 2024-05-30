@@ -149,7 +149,7 @@ class ProofSearchBranchGenerator(ABC):
             self.state_id_to_env_map[0].add(env_idx)
         pass
 
-    def reset_envs(self, env_idxs: int, actions_till_states : typing.List[typing.List[ProofAction]], force_reset: bool = True):
+    def reset_envs(self, env_idxs: typing.List[int], actions_till_states : typing.List[typing.List[ProofAction]], force_reset: bool = True) -> typing.Set[int]:
         if force_reset:
             self.envs.reset(env_idxs)
         for env_idx in env_idxs:
@@ -170,10 +170,27 @@ class ProofSearchBranchGenerator(ABC):
                     env_idxs_zipped.append([])
                 env_idxs_zipped[__idx].append(assigned_env)
                 actions_zipped[__idx].append(action)
+        erred_envs = set()
         for actions_flat, env_idxs_flat in zip(actions_zipped, env_idxs_zipped):
             self.envs.step(actions_flat, env_idxs_flat)
-        env_states = self.envs.get_state(env_idxs)
+            new_erred_envs = self.envs.get_errd_envs()
+            erred_envs.update(new_erred_envs)
+        if len(erred_envs) > 0:
+            # Remove the envs from the state id to env map
+            for env_idx in erred_envs:
+                env_state_idx = self.env_to_state_map[env_idx]
+                if env_idx in self.state_id_to_env_map[env_state_idx]:
+                    self.state_id_to_env_map[env_state_idx].remove(env_idx)
+                self.env_to_state_map[env_idx] = None
+        safe_env_idxs = [env_idx for env_idx in env_idxs if env_idx not in erred_envs]
+        safe_env_states = self.envs.get_state(safe_env_idxs)
+        env_states = [None for _ in range(len(env_idxs))]
+        for idx, env_idx in enumerate(safe_env_idxs):
+            actual_env_idx = env_idxs.index(env_idx)
+            env_states[actual_env_idx] = safe_env_states[idx]
         for env_state, env_idx in zip(env_states, env_idxs):
+            if env_state is None:
+                continue # This means that the environment failed and we should ignore it
             env_state_str = convert_state_to_string(env_state)
             if env_state_str not in self.state_to_state_id_map:
                 new_env_state_idx = len(self.state_to_state_id_map)
@@ -184,6 +201,7 @@ class ProofSearchBranchGenerator(ABC):
             if new_env_state_idx not in self.state_id_to_env_map:
                 self.state_id_to_env_map[new_env_state_idx] = set()
             self.state_id_to_env_map[new_env_state_idx].add(env_idx)
+        return erred_envs
 
     def reclaim_envs(self, env_idxs: typing.List[int], language: ProofAction.Language):
         if len(env_idxs) > 0 and language == ProofAction.Language.COQ:
@@ -286,7 +304,9 @@ class ProofSearchBranchGenerator(ABC):
                 free_envs = free_envs[:diff]
                 self.logger.info(f"Resetting {len(free_envs)} environments")
                 _t_start = time.time()
-                self.reset_envs(free_envs, [actions_till_state for _ in range(len(free_envs))], force_reset=False)
+                erred_envs = self.reset_envs(free_envs, [actions_till_state for _ in range(len(free_envs))], force_reset=False)
+                # Remove the erred envs from the free envs
+                free_envs = [env_idx for env_idx in free_envs if env_idx not in erred_envs]
                 _t_end = time.time()
                 self.logger.info(f"Reset {len(free_envs)} environments in {_t_end - _t_start} seconds")
                 env_idxs.extend(free_envs)
