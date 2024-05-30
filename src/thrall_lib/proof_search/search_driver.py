@@ -186,7 +186,7 @@ class ProofSearchBranchGenerator(ABC):
             self.state_id_to_env_map[new_env_state_idx].add(env_idx)
 
     def reclaim_envs(self, env_idxs: typing.List[int], language: ProofAction.Language):
-        if language == ProofAction.Language.COQ:
+        if len(env_idxs) > 0 and language == ProofAction.Language.COQ:
             action_per_env = []
             for env_idx in env_idxs:
                 env_state_idx = self.env_to_state_map[env_idx]
@@ -194,7 +194,7 @@ class ProofSearchBranchGenerator(ABC):
                 action_per_env.append(backtrack_actions)
             self.logger.info(f"Reclaiming {len(env_idxs)} environments")
             _t_start = time.time()
-            self.envs.step(action_per_env, env_idxs)
+            self.reset_envs(env_idxs, action_per_env, force_reset=False)
             _t_end = time.time()
             self.logger.info(f"Reclaimed {len(env_idxs)} environments in {_t_end - _t_start} seconds")
 
