@@ -135,10 +135,10 @@ class ProofSearchBranchGenerator(ABC):
         self.search_policy = search_policy
         pass
 
-    def get_unused_envs(self):
+    def get_unused_envs(self) -> typing.List[int]:
         # Get all the environments for the start state
         return list(self.state_id_to_env_map[0]) if 0 in self.state_id_to_env_map else []
-
+    
     def add_new_envs_to_pool(self, count: int):
         old_pool_size = self.envs.pool_size
         self.envs.add_and_init_proof_envs(count)
@@ -185,12 +185,24 @@ class ProofSearchBranchGenerator(ABC):
                 self.state_id_to_env_map[new_env_state_idx] = set()
             self.state_id_to_env_map[new_env_state_idx].add(env_idx)
 
+    def reclaim_envs(self, env_idxs: typing.List[int], language: ProofAction.Language):
+        if language == ProofAction.Language.COQ:
+            action_per_env = []
+            for env_idx in env_idxs:
+                env_state_idx = self.env_to_state_map[env_idx]
+                backtrack_actions = [ProofAction(ProofAction.ActionType.BACKTRACK, language) for _ in range(env_state_idx)]
+                action_per_env.append(backtrack_actions)
+            self.logger.info(f"Reclaiming {len(env_idxs)} environments")
+            _t_start = time.time()
+            self.envs.step(action_per_env, env_idxs)
+            _t_end = time.time()
+            self.logger.info(f"Reclaimed {len(env_idxs)} environments in {_t_end - _t_start} seconds")
+
     def _check_if_within_timeout(self, start_time: float, timeout_in_secs: float, logger: logging.Logger) -> bool:
         timedout = time.time() - start_time >= timeout_in_secs
         if timedout:
             logger.info("Search timed out, returning without generating more nodes")
         return timedout
-
 
     def _update_state_to_env_map(self, next_state, done, info, env_idxs, idx, actions, node, actions_to_run, state, state_idx):
         state_name = convert_state_to_string(next_state)
@@ -291,6 +303,7 @@ class ProofSearchBranchGenerator(ABC):
             results = self.envs.step(actions, env_idxs)
             action_end_time = time.time()
             self.logger.info(f"Finished executing {len(actions)} actions parallely in {action_end_time - action_start_time} seconds.")
+            failed_envs = []
             for idx, result in enumerate(results):
                 if len(result) == 6:
                     _, _, next_state, _, done, info  = result
@@ -300,44 +313,6 @@ class ProofSearchBranchGenerator(ABC):
                     raise ValueError(f"Step tuple must contain 4 or 6 elements, but contains {len(result)} = {result}")
                 proof_state_info = ProofStateInfo(next_state, done, info, env_idxs[idx])
                 new_state_id, state_name = self._update_state_to_env_map(next_state, done, info, env_idxs, idx, actions, node, actions_to_run, state, state_idx)
-                # state_name = convert_state_to_string(next_state)
-                # action_str = '\n'.join(actions[idx].kwargs['tactics']) if actions[idx].kwargs['tactics'] is not None else str(actions[idx])
-                # self.logger.info(f"Action: {action_str}, Done: {done}, Progress: {info.progress}, Error: {info.error_message}")
-                # new_state_id = None
-                # if not done and (state_name, action_str) not in self.state_action_map:
-                #     self.state_action_map.add((state_name, action_str))
-                #     on_proof_path = state_name in self.original_proofs_state_names
-                #     additional_info = {
-                #         'done': done,
-                #         'progress': info.progress,
-                #         'error_message': info.error_message,
-                #         'distance_from_root': node.distance_from_root + 1,
-                #         'score': actions_to_run[idx][1],
-                #         'on_proof_path': on_proof_path
-                #     }
-                #     training_data_format = TrainingDataFormat(
-                #         goal_description=next_state.training_data_format.goal_description,
-                #         start_goals=state.training_data_format.start_goals,
-                #         proof_steps=actions[idx].kwargs['tactics'],
-                #         end_goals=next_state.training_data_format.start_goals,
-                #         addition_state_info=additional_info,
-                #         file_path=self.file_path,
-                #         project_id=self.project_id,
-                #         theorem_name=self.theorem_name
-                #     )
-                #     self.tracer.trace(training_data_format)
-                # if state_name not in self.state_to_state_id_map:
-                #     new_state_id = len(self.state_to_state_id_map)
-                #     self.state_to_state_id_map[state_name] = new_state_id
-                # else:
-                #     new_state_id = self.state_to_state_id_map[state_name]
-                # self.env_to_state_map[env_idxs[idx]] = new_state_id
-                # # Remove the env_idx from the old state id
-                # if env_idxs[idx] in self.state_id_to_env_map[state_idx]:
-                #     self.state_id_to_env_map[state_idx].remove(env_idxs[idx])
-                # if new_state_id not in self.state_id_to_env_map:
-                #     self.state_id_to_env_map[new_state_id] = set()
-                # self.state_id_to_env_map[new_state_id].add(env_idxs[idx])
                 if len(next_state.training_data_format.start_goals) == 0 and not done:
                     # We found a very good action so we should signal the search to stop, regardless of the search heuristic
                     _temp_list = list(actions_to_run[idx])
@@ -352,7 +327,7 @@ class ProofSearchBranchGenerator(ABC):
                         next_next_state, _, done, info = result
                     actions[idx].kwargs['tactics'].extend(qed_tactic.kwargs['tactics'])
                     proof_state_info = ProofStateInfo(next_next_state, done, info, env_idxs[idx])
-                    new_state_id, state_name = self._update_state_to_env_map(next_next_state, done, info, env_idxs, idx, [qed_tactic], node, [(env_idxs[idx], -100, qed_tactic)], next_state, new_state_id)
+                    new_state_id, state_name = self._update_state_to_env_map(next_next_state, done, info, [env_idxs[idx]], 0, [qed_tactic], node, [(env_idxs[idx], -100, qed_tactic)], next_state, new_state_id)
                     next_state = next_next_state
 
                 # TODO: Don't add the node if the action failed and the search policy is to discard failed nodes
@@ -360,6 +335,9 @@ class ProofSearchBranchGenerator(ABC):
                     self.search_policy != SearchPolicy.DISCARD_FAILED_NODES:
                     edges.append(Edge('\n'.join(actions[idx].kwargs['tactics']), actions_to_run[idx][1], actions_to_run[idx][2]))
                     nodes.append(Node(state_name, actions_to_run[idx][1], proof_state_info))
+                else:
+                    failed_envs.append(env_idxs[idx])   
+            self.reclaim_envs(failed_envs, state.language)
             if self._check_if_within_timeout(node_gen_start_time, timeout_in_secs, self.logger):
                 return nodes, edges
         node_gen_end_time = time.time()
@@ -393,7 +371,7 @@ class ProofSearchDriver:
         self.width = width
         self.proof_search_heuristic = proof_search_heuristic
         # don go beyond 0.6 * os.cpu_count()
-        max_parallelism = int(0.2 * os.cpu_count())
+        max_parallelism = int(0.25 * os.cpu_count())
         self.env_count = max(min(8 * self.width, max_parallelism), 1)   # We need more environments to run in parallel without waiting
         self.tracer = tracer if tracer is not None else ProofPathTracer(False, "", "", TrainingDataMetadataFormat(), 1)
         self.search_policy = search_policy
