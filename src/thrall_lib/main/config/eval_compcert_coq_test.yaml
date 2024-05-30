@@ -9,6 +9,7 @@ defaults:
 log_dir: <user>/data/CompCert/proof_logs
 eval_settings:
   model_name: <user>/models/thrall-codet5-small-compcert-2048/checkpoint-98500/
+  checkpoint_dir: .log/checkpoints/codet5_beam_32_coq_only
 # eval_settings:
 #  use_hammer: AUTO
 #  timeout_in_secs: 200
