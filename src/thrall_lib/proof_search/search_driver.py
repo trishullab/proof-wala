@@ -172,6 +172,9 @@ class ProofSearchBranchGenerator(ABC):
                 actions_zipped[__idx].append(action)
         erred_envs = set()
         for actions_flat, env_idxs_flat in zip(actions_zipped, env_idxs_zipped):
+            env_idxs_flat_with_idx = [(_idx, env_idx) for _idx, env_idx in enumerate(env_idxs_flat) if env_idx not in erred_envs]
+            actions_flat = [actions_flat[_idx] for _idx, _ in env_idxs_flat_with_idx]
+            env_idxs_flat = [env_idx for _, env_idx in env_idxs_flat_with_idx]
             self.envs.step(actions_flat, env_idxs_flat)
             new_erred_envs = self.envs.get_errd_envs()
             erred_envs.update(new_erred_envs)
