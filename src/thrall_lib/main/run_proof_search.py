@@ -519,7 +519,7 @@ def eval_dataset(env_settings: EnvSettings, eval_benchmark: EvalBenchmark, datas
     new_dataset_chunk_idx = 0
     new_dataset_chunk_path = [{} for _ in range(max_model_parallelism)]
     seed = eval_settings.sample_seed
-    random.seed(seed)
+    # random.seed(seed)
     for i in range(len(discovered_dataset_chunks)):
         files = list(discovered_dataset_chunks[i].files)
         random.shuffle(files)
