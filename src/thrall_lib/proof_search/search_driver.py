@@ -182,7 +182,7 @@ class ProofSearchBranchGenerator(ABC):
             # Remove the envs from the state id to env map
             for env_idx in erred_envs:
                 env_state_idx = self.env_to_state_map[env_idx]
-                if env_idx in self.state_id_to_env_map[env_state_idx]:
+                if env_state_idx is not None and env_idx in self.state_id_to_env_map[env_state_idx]:
                     self.state_id_to_env_map[env_state_idx].remove(env_idx)
                 self.env_to_state_map[env_idx] = None
         safe_env_idxs = [env_idx for env_idx in env_idxs if env_idx not in erred_envs]
