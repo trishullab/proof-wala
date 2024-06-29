@@ -6,10 +6,10 @@ defaults:
   - env_settings: bm25_retrieval
   - override hydra/job_logging: 'disabled'
 
-log_dir: <user>/data/LeanDojo_Random/proof_logs
+log_dir: <root>/data/LeanDojo_Random/proof_logs
 eval_settings:
-  proof_dump_dir: <user>/data/LeanDojo_Random/proof_dumps
-  model_name: <user>/models/thrall-codet5-small-coq-lean-4-2048/checkpoint-140000/
+  proof_dump_dir: <root>/data/LeanDojo_Random/proof_dumps
+  model_name: <root>/models/thrall-codet5-small-coq-lean-4-2048/checkpoint-140000/
 # eval_settings:
 #  use_hammer: AUTO
 #  timeout_in_secs: 200

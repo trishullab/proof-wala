@@ -1,5 +1,5 @@
 name_or_path: Salesforce/codet5-small
-logging_dir: <user>/data/proofsteps/training_results/logs/model
+logging_dir: <root>/data/proofsteps/training_results/logs/model
 model_args:
   no_init_eval: True
   padding: True

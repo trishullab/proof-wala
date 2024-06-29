@@ -1,10 +1,10 @@
-training_data_dir: /mnt/sdd1/<user>/data/new_INT/train
+training_data_dir: /mnt/sdd1/<root>/data/new_INT/train
 training_meta_filename: local.meta.json
 training_data_log_dir: .log/run_training/logs/dataset_logs/INT
 training_dataset_type: TheoremProvingTrainingDataset
 training_data_formatter_type: BasicTrainingDataFormatterCallback
 training_dataset_args:   
-eval_data_dir: /mnt/sdd1/<user>/data/new_INT/test
+eval_data_dir: /mnt/sdd1/<root>/data/new_INT/test
 eval_meta_filename: local.meta.json
 eval_data_log_dir: .log/run_training/logs/dataset_logs/INT
 test_data_dir: 

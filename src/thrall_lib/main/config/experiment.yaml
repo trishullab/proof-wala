@@ -12,7 +12,7 @@ defaults:
 name: thrall-t5-small-2048-category-test # Can be any name will be used in logs
 experiment_type: 'Training' # Can be 'Training' or 'Inferencing'
 training_data_settings:
-  training_data_dir: <user>/data/proofsteps/category-theory/20240510-050006/test/
+  training_data_dir: <root>/data/proofsteps/category-theory/20240510-050006/test/
 training_settings:
   per_device_eval_batch_size: 1
   per_device_train_batch_size: 1
