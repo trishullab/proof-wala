@@ -11,10 +11,11 @@ if root_dir not in sys.path:
 import typing
 import logging
 import time
+import copy
 import numpy as np
 from itp_interface.rl.simple_proof_env import ProofState, ProofAction, ProofEnvInfo, ProgressState, ProofTree
 from thrall_lib.proof_search.search_driver import ProofActionGenerator, ProofStateInfo, ProofSearhHeuristic, Node, Edge
-from thrall_lib.llm_helpers.model import Model
+from thrall_lib.llm_helpers.model import GenerationResults, Model
 from thrall_lib.itp.codet5_training_data_formatter import CodeT5TrainingDataset, CoqGptResponse, CoqGptRequest
 
 def get_qed_for_language(language: ProofAction.Language):
@@ -45,6 +46,13 @@ class LlmProofActionGenerator(ProofActionGenerator):
         self._generation_args["num_return_sequences"] = self.width
         pass
 
+    def safe_response_parser(self, response: str) -> typing.List[str]:
+        try:
+            return self.response_parser(response)
+        except Exception as e:
+            self.logger.error(f"Error while parsing response:\n {e}\nResponse: \n{response}\n")
+            return []
+
     def get_proof_end_for_language(self, language: ProofAction.Language) -> ProofAction:
         qed = get_qed_for_language(language)
         return ProofAction(ProofAction.ActionType.RUN_TACTIC, language, tactics=[qed])
@@ -63,7 +71,28 @@ class LlmProofActionGenerator(ProofActionGenerator):
             problem = state.theorem_statement_with_name
             self.logger.info(f"Prompt for [{problem}]:\n{prompt}")
             start_time = time.time()
-            generation_results = self.model.generate(prompt, **self._generation_args)
+            num_of_sequences = self._generation_args.get("num_return_sequences", 1)
+            generation_args = copy.deepcopy(self._generation_args)
+            seq_generated = 0
+            cumm_generation_result = GenerationResults()
+            max_attempts = 7
+            while seq_generated < num_of_sequences and max_attempts > 0:
+                try:
+                    generation_results = self.model.generate(prompt, **generation_args)
+                    assert len(generation_results.results) == 1, "Only one prompt is used"
+                    seq_generated += len(generation_results.results[0].generated_text)
+                    if len(cumm_generation_result.results) == 0:
+                        cumm_generation_result.results.extend(generation_results.results)
+                    else:
+                        assert cumm_generation_result.results[0].input_text == generation_results.results[0].input_text
+                        cumm_generation_result.results[0].generated_text.extend(generation_results.results[0].generated_text)
+                        cumm_generation_result.results[0].neg_log_likelihood.extend(generation_results.results[0].neg_log_likelihood)
+                except Exception as e:
+                    # There can be CUDA OOM errors and other issues
+                    self.logger.error(f"Error while generating actions: {e}")
+                    generation_args["num_return_sequences"] = max(1, generation_args["num_return_sequences"] // 2)
+                max_attempts -= 1
+            generation_results = cumm_generation_result
             assert len(generation_results.results) == 1, "Only one prompt is used"
             result = generation_results[0]
             raw_outputs = result.generated_text
@@ -83,7 +112,8 @@ class LlmProofActionGenerator(ProofActionGenerator):
             arg_max_output = raw_outputs[np.argmin(neg_log_probabilties)]
             self.logger.info(f"Generated {len(raw_outputs)} distinct actions (actual output size={actual_output_size}) in {end_time - start_time} seconds")
             self.logger.info(f"Best generated action: {arg_max_output}")
-            tactics_list = [self.response_parser(output) for output in raw_outputs]
+            tactics_list = [self.safe_response_parser(output) for output in raw_outputs]
+            tactics_list = [tactics for tactics in tactics_list if len(tactics) > 0]
             actions = [(neg_log_prob, ProofAction(ProofAction.ActionType.RUN_TACTIC, state.language, tactics=tactics)) for neg_log_prob, tactics in zip(neg_log_probabilties, tactics_list)]
             return actions
 

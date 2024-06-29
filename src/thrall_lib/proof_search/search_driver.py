@@ -460,14 +460,21 @@ class ProofSearchDriver:
                 self.logger,
                 self.tracer,
                 original_proofs)
-            tree_node, found, time_taken = self.search_algorithm.search(
-                start_goal,
-                end_goal,
-                self.proof_search_heuristic, 
-                branch_generator, 
-                parallel_count=self.width,
-                timeout_in_secs=timeout_in_secs,
-                logger=self.logger)
+            temp_start_time = time.time()
+            try:
+                tree_node, found, time_taken = self.search_algorithm.search(
+                    start_goal,
+                    end_goal,
+                    self.proof_search_heuristic, 
+                    branch_generator, 
+                    parallel_count=self.width,
+                    timeout_in_secs=timeout_in_secs,
+                    logger=self.logger)
+            except Exception as e:
+                self.logger.error(f"Search failed with error: {e}")
+                tree_node = None
+                found = False
+                time_taken = time.time() - temp_start_time
             lemma_name = pool._get_attr('_lemma_name_with_stmt', [0])[0]
             full_path = env.dynamic_proof_executor_callback.file_path
             if found:
