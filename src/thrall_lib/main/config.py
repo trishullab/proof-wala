@@ -136,13 +136,13 @@ def recursive_replace_keywords(cfg, key_word: str, replace_word: str):
 
 
 def parse_config(cfg) -> Experiment:
-    if "USER" in os.environ:
-        user = os.environ["USER"]
+    if "ROOT" in os.environ:
+        root = os.environ["ROOT"]
     else:
-        user = None
-    if user is not None:
-        # Replace all the <user> placeholders in all the paths in all the setting
-        recursive_replace_keywords(cfg, "<user>", user)
+        root = None
+    if root is not None:
+        # Replace all the <root> placeholders in all the paths in all the setting
+        recursive_replace_keywords(cfg, "<root>", root)
     name = cfg["name"]
     experiment_type = ExperimentType(cfg["experiment_type"])
     model_settings : ModelSettings = ModelSettings.from_dict(cfg["model_settings"])

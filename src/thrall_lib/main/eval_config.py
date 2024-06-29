@@ -210,13 +210,13 @@ def recursive_replace_keywords(cfg, key_word: str, replace_word: str):
 
 
 def parse_config(cfg):
-    if "USER" in os.environ:
-        user = os.environ["USER"]
+    if "ROOT" in os.environ:
+        root = os.environ["ROOT"]
     else:
-        user = None
-    if user is not None:
-        # Replace all the <user> placeholders in all the paths in all the setting
-        recursive_replace_keywords(cfg, "<user>", user)
+        root = None
+    if root is not None:
+        # Replace all the <root> placeholders in all the paths in all the setting
+        recursive_replace_keywords(cfg, "<root>", root)
     env_settings_cfg = cfg["env_settings"]
     env_settings = EnvSettings(
         name=env_settings_cfg["name"],
