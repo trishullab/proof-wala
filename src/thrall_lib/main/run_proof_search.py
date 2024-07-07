@@ -273,6 +273,8 @@ def eval_dataset_once(
                 padding=eval_settings.padding
                 return_full_text=eval_settings.return_full_text
                 compute_probabilities=eval_settings.compute_probabilities
+                # Get theorem_maps again because the previous attempt can be overwriiten
+                theorem_maps: typing.Dict[str, typing.Dict[str, ProofSearchResult]] = ray.get(eval_proof_results.get_theorem_map.remote())
                 proof_res_chkpt = theorem_maps.get(path, {}).get(lemma_name, None)
                 max_retry_attempts = file.max_retry_attempts_limits.get(lemma_name, eval_settings.proof_retries)
                 if proof_res_chkpt is None or (not proof_res_chkpt.proof_found and proof_res_chkpt.additional_info["attempt_idx"] < max_retry_attempts - 1):
@@ -340,6 +342,8 @@ def eval_dataset_once(
 
                     should_retry = True
                     max_retry = 4 # This retry is only when for some mysterious reason the llama service goes down
+                    if proof_res_chkpt is not None:
+                        attempt_idx = proof_res_chkpt.additional_info["attempt_idx"]
                     logger.info(f"Attempt {attempt_idx + 1} for proving lemma: {lemma_name} in file {path}")
                     while should_retry and max_retry > 0:
                         # Run the prover with a timeout
