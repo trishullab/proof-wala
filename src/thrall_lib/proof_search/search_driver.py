@@ -155,8 +155,9 @@ class ProofSearchBranchGenerator(ABC):
         for env_idx in env_idxs:
             env_state_idx = self.env_to_state_map[env_idx]
             assert env_state_idx in self.state_id_to_env_map, f"Env state idx {env_state_idx} not found in the state id to env map"
-            assert env_idx in self.state_id_to_env_map[env_state_idx], f"Env idx {env_idx} not found in the state id to env map for state {env_state_idx}"
-            self.state_id_to_env_map[env_state_idx].remove(env_idx)
+            # assert env_idx in self.state_id_to_env_map[env_state_idx], f"Env idx {env_idx} not found in the state id to env map for state {env_state_idx}"
+            if env_idx in self.state_id_to_env_map[env_state_idx]:
+                self.state_id_to_env_map[env_state_idx].remove(env_idx)
         new_env_state_idx = None
         # Remove the env_idx from the old state id
         actions_zipped : typing.List[typing.List[ProofAction]]= []
