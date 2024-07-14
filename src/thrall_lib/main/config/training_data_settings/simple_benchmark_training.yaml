@@ -1,9 +1,12 @@
 training_data_dir: .log/train
 training_meta_filename: local.meta.json
 training_data_log_dir: .log/run_training/logs/dataset_logs
-training_dataset_type: TheoremProvingTrainingDataset
-training_data_formatter_type: BasicTrainingDataFormatterCallback
-training_dataset_args:   
+training_dataset_type: CodeT5TrainingDataset
+training_data_formatter_type: CodeT5PromptTrainingDataFormatter
+training_dataset_args:
+  characters_per_token: 3.6
+  max_tokens: 2048
+  no_steps: True   
 eval_data_dir: 
 eval_meta_filename: 
 eval_data_log_dir: 

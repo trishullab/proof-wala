@@ -136,7 +136,7 @@ if __name__ == "__main__":
     training_data = TrainingData(data_folder, meta_filename)
     # Not removing system_prompt_file and conversation_prompt_file though not needed
     # as removing makes the function signature incompatable with the call-type in run_training.py
-    with CodeT5TrainingDataset(training_data, max_tokens=4096) as dataset:
+    with CodeT5TrainingDataset(training_data, max_tokens=4096, no_steps=True) as dataset:
         hf_dataset = dataset.get_hf_dataset()
         formatter = CodeT5PromptTrainingDataFormatter()
         formatted_dataset = formatter(hf_dataset)

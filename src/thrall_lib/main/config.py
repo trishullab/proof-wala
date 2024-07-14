@@ -22,6 +22,7 @@ class ExperimentType(Enum):
     Training = "Training"
     Inferencing = "Inferencing"
     Evaluation = "Evaluation"
+    TokenCount = "TokenCount"
 
     def __str__(self):
         return self.value
