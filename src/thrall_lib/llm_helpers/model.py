@@ -204,6 +204,42 @@ class Model(object):
                 temp_model = AutoModelForCausalLM.from_pretrained(self.name, **model_args)
         return temp_model
 
+    def get_tokenizer(self):
+        tokenizer_args = {k: v for k, v in self._kwargs.items() if k in
+                ["token", "pad_token", "eos_token", "bos_token", "unk_token", "mask_token", "additional_special_tokens", "max_length", "padding", "truncation", "cls_token", "sep_token", "mask_token", "padding_side"]
+        }
+        tokenizer : AutoTokenizer = AutoTokenizer.from_pretrained(self.name, **tokenizer_args)
+        if "llama-2" in self.name.lower():
+            if "pad_token" not in tokenizer_args:
+                tokenizer_args["pad_token"] = tokenizer.eos_token
+            if "padding_side" not in tokenizer_args:
+                tokenizer_args["padding_side"] = "left" # This is very import for the stop token logic
+            if "cls_token" not in tokenizer_args:
+                tokenizer_args["cls_token"] = tokenizer_args["pad_token"]
+            if "sep_token" not in tokenizer_args:
+                tokenizer_args["sep_token"] = tokenizer_args["pad_token"]
+            if "mask_token" not in tokenizer_args:
+                tokenizer_args["mask_token"] = tokenizer_args["pad_token"]
+        if "pad_token" in tokenizer_args:
+            tokenizer.pad_token = tokenizer_args["pad_token"]
+        if "eos_token" in tokenizer_args:
+            tokenizer.eos_token = tokenizer_args["eos_token"]
+        if "bos_token" in tokenizer_args:
+            tokenizer.bos_token = tokenizer_args["bos_token"]
+        if "unk_token" in tokenizer_args:
+            tokenizer.unk_token = tokenizer_args["unk_token"]
+        if "additional_special_tokens" in tokenizer_args:
+            tokenizer.additional_special_tokens = tokenizer_args["additional_special_tokens"]
+        if "cls_token" in tokenizer_args:
+            tokenizer.cls_token = tokenizer_args["cls_token"]
+        if "sep_token" in tokenizer_args:
+            tokenizer.sep_token = tokenizer_args["sep_token"]
+        if "mask_token" in tokenizer_args:
+            tokenizer.mask_token = tokenizer_args["mask_token"]
+        if "padding_side" in tokenizer_args:
+            tokenizer.padding_side = tokenizer_args["padding_side"]
+        return tokenizer, tokenizer_args
+
     def load(self):
         if self._is_loaded:
             return
@@ -229,39 +265,7 @@ class Model(object):
                 task_type="CAUSAL_LM",
             )
             self._kwargs["lora_config"] = lora_config
-        tokenizer_args = {k: v for k, v in self._kwargs.items() if k in
-                ["token", "pad_token", "eos_token", "bos_token", "unk_token", "mask_token", "additional_special_tokens", "max_length", "padding", "truncation", "cls_token", "sep_token", "mask_token", "padding_side"]
-        }
-        self._tokenizer : AutoTokenizer = AutoTokenizer.from_pretrained(self.name, **tokenizer_args)
-        if "llama-2" in self.name.lower():
-            if "pad_token" not in tokenizer_args:
-                tokenizer_args["pad_token"] = self._tokenizer.eos_token
-            if "padding_side" not in tokenizer_args:
-                tokenizer_args["padding_side"] = "left" # This is very import for the stop token logic
-            if "cls_token" not in tokenizer_args:
-                tokenizer_args["cls_token"] = tokenizer_args["pad_token"]
-            if "sep_token" not in tokenizer_args:
-                tokenizer_args["sep_token"] = tokenizer_args["pad_token"]
-            if "mask_token" not in tokenizer_args:
-                tokenizer_args["mask_token"] = tokenizer_args["pad_token"]
-        if "pad_token" in tokenizer_args:
-            self._tokenizer.pad_token = tokenizer_args["pad_token"]
-        if "eos_token" in tokenizer_args:
-            self._tokenizer.eos_token = tokenizer_args["eos_token"]
-        if "bos_token" in tokenizer_args:
-            self._tokenizer.bos_token = tokenizer_args["bos_token"]
-        if "unk_token" in tokenizer_args:
-            self._tokenizer.unk_token = tokenizer_args["unk_token"]
-        if "additional_special_tokens" in tokenizer_args:
-            self._tokenizer.additional_special_tokens = tokenizer_args["additional_special_tokens"]
-        if "cls_token" in tokenizer_args:
-            self._tokenizer.cls_token = tokenizer_args["cls_token"]
-        if "sep_token" in tokenizer_args:
-            self._tokenizer.sep_token = tokenizer_args["sep_token"]
-        if "mask_token" in tokenizer_args:
-            self._tokenizer.mask_token = tokenizer_args["mask_token"]
-        if "padding_side" in tokenizer_args:
-            self._tokenizer.padding_side = tokenizer_args["padding_side"]
+        self._tokenizer, tokenizer_args = self.get_tokenizer()
         if self._should_load_model:
             if quantization_config is None:
                 self._model : typing.Union[AutoModelForSeq2SeqLM, AutoModelForCausalLM] = self.cuda_context.try_get_gpu(self._model_init())
@@ -290,6 +294,16 @@ class Model(object):
     def is_sequence_2_sequence(self):
         return self._is_seq2seq
 
+    def tokenize(self, tokenizer: AutoTokenizer, inputs: typing.List[str], kwargs: dict = None):
+        kwargs = kwargs if kwargs is not None else self._kwargs
+        tokenizer_args = {k: v for k, v in kwargs.items() if k in 
+                ["max_length", "padding", "truncation"]}
+        tokenized_input = tokenizer(
+            inputs, 
+            return_tensors="pt",
+            **tokenizer_args)
+        return tokenized_input
+
     def generate(self, inputs: typing.Union[typing.List[str], str], **kwargs) -> GenerationResults:
         assert self._is_loaded, "Model or tokenizer is not loaded"
         assert self._model is not None, "Model is not loaded"
@@ -305,12 +319,7 @@ class Model(object):
             assert isinstance(auto_regressive_sequence_search, AutoRegressiveSequenceSearch), "Please provide a valid auto_regressive_sequence_search"
         else:
             auto_regressive_sequence_search = AutoRegressiveSequenceSearch.NucleusSampling
-        tokenizer_args = {k: v for k, v in kwargs.items() if k in 
-        ["max_length", "padding", "truncation"]}
-        tokenized_input = self._tokenizer(
-            inputs, 
-            return_tensors="pt",
-            **tokenizer_args)
+        tokenized_input = self.tokenize(self._tokenizer, inputs, kwargs)
         input_ids=self.cuda_context.try_get_gpu(tokenized_input['input_ids'])
         attention_mask=self.cuda_context.try_get_gpu(tokenized_input['attention_mask'])
         max_input_length = input_ids.shape[-1]

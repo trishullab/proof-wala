@@ -9,15 +9,13 @@ defaults:
   - override hydra/job_logging: 'disabled'
 
 # name: thrall-Llama-2-7b-hf-simple-1024-001-001 # Can be any name will be used in logs
-name: thrall-t5-small-2048-category-test # Can be any name will be used in logs
+name: thrall-t5-small-2048-simple-test # Can be any name will be used in logs
 experiment_type: 'Training' # Can be 'Training' or 'Inferencing'
-training_data_settings:
-  training_data_dir: <root>/data/proofsteps/category-theory/20240510-050006/test/
 training_settings:
   per_device_eval_batch_size: 1
   per_device_train_batch_size: 1
   eval_steps: 50
-  num_train_epochs: 100
+  num_train_epochs: 3
 # name: thrall-codet5-small-simple-128-001-001
 
 # Run experiments using the following command:

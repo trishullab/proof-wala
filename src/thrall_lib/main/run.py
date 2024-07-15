@@ -9,8 +9,10 @@ import os
 os.environ["HYDRA_FULL_ERROR"] = "1"
 import ray
 import hydra
+from ray.runtime_env import RuntimeEnv
 from thrall_lib.main.config import ExperimentType, parse_config
 from thrall_lib.main.run_training import train_experiment
+from thrall_lib.main.run_token_count import count_tokens
 
 @hydra.main(config_path="config", config_name="experiment", version_base="1.2")
 def main(cfg):
@@ -21,12 +23,20 @@ def main(cfg):
     experiment = parse_config(cfg)
     if experiment.expertiment_type == ExperimentType.Training:
         train_experiment(experiment)
+    elif experiment.expertiment_type == ExperimentType.TokenCount:
+        os.environ["COMET_MODE"] = "DISABLED"
+        count_tokens(experiment)
     else:
         raise Exception(f"Invalid experiment type: {experiment.expertiment_type}")
     pass
 
 if __name__ == "__main__":
     # Start the ray cluster
+    os.environ["PYTHONPATH"] = f"{root_dir}:{os.environ.get('PYTHONPATH', '')}"
+    environ = os.environ.copy()
+    runtime_env = RuntimeEnv(
+        env_vars=environ
+    )
     ray.init(
         num_cpus=10, 
         object_store_memory=50*2**30, 
@@ -35,5 +45,6 @@ if __name__ == "__main__":
         ignore_reinit_error=False, 
         log_to_driver=False, 
         configure_logging=False,
-        _system_config={"metrics_report_interval_ms": 10**8})
+        _system_config={"metrics_report_interval_ms": 10**8},
+        runtime_env=runtime_env)
     main()
