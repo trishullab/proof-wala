@@ -627,21 +627,25 @@ class Model(object):
             trainer.evaluate()
         # Change the model name and save it
         # load the best model
-        if self.training_args.do_train:
-            os.makedirs(self.training_args.output_dir, exist_ok=True)
-            new_model_name = os.path.join(self.training_args.output_dir, f"best-model-{time_str}")
-            if os.path.exists(new_model_name):
-                shutil.move(new_model_name, f"{new_model_name}-before-{time_str}")
-            os.makedirs(new_model_name, exist_ok=True)
-        if self.training_args.load_best_model_at_end and trainer.state.best_model_checkpoint is not None and self.training_args.do_train:
-            # Copy the best model to a new model
-            best_model_path = trainer.state.best_model_checkpoint
-            # Recursively copy the best model
-            self.code_logger.info(f"Copying the best model from {best_model_path} to {new_model_name}")
-            shutil.copytree(best_model_path, new_model_name, dirs_exist_ok=True)    
-        else:
+        try:
+            if self.training_args.do_train:
+                os.makedirs(self.training_args.output_dir, exist_ok=True)
+                new_model_name = os.path.join(self.training_args.output_dir, f"best-model-{time_str}")
+                if os.path.exists(new_model_name):
+                    shutil.move(new_model_name, f"{new_model_name}-before-{time_str}")
+                os.makedirs(new_model_name, exist_ok=True)
+            if self.training_args.load_best_model_at_end and trainer.state.best_model_checkpoint is not None and self.training_args.do_train:
+                # Copy the best model to a new model
+                best_model_path = trainer.state.best_model_checkpoint
+                # Recursively copy the best model
+                self.code_logger.info(f"Copying the best model from {best_model_path} to {new_model_name}")
+                shutil.copytree(best_model_path, new_model_name, dirs_exist_ok=True)    
+            else:
+                best_model_path = None
+        except Exception as e:
+            self.code_logger.error(f"Error in copying the best model: {e}")
             best_model_path = None
-        if best_model_path is None and self.training_args.do_train:
+        if self.training_args.do_train:
             trainer.args.output_dir = new_model_name
             self.code_logger.info(f"Saving the model to {new_model_name}")
             trainer.save_model()
