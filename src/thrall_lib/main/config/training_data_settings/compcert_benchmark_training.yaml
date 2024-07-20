@@ -1,6 +1,6 @@
 training_data_dir: <root>/data/proofsteps/CompCert/20240510-053859/train/
 training_meta_filename: local.meta.json
-training_data_log_dir: .log/run_training/logs/dataset_logs
+training_data_log_dir: <root>/data/proofsteps/training_results/logs/dataset_logs
 training_dataset_type: CodeT5TrainingDataset
 training_data_formatter_type: CodeT5PromptTrainingDataFormatter
 training_dataset_args:
