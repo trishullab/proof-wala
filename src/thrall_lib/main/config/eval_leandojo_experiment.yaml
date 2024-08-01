@@ -9,7 +9,13 @@ defaults:
 log_dir: <root>/data/LeanDojo_Random/proof_logs
 eval_settings:
   proof_dump_dir: <root>/data/LeanDojo_Random/proof_dumps
-  model_name: <root>/models/thrall-codet5-small-coq-lean-4-2048/checkpoint-140000/
+  model_name: <root>/models/thrall-codet5-small-mathlib-2048/checkpoint-157500
+  checkpoint_dir: .log/checkpoints/codet5_beam_32/thrall-codet5-small-mathlib-2048/checkpoint-157500
+  proof_retries: 5
+  # width: 32
+  # proof_retries: 10
+  # search_params:
+  #   beam_width: 32
 # eval_settings:
 #  use_hammer: AUTO
 #  timeout_in_secs: 200
