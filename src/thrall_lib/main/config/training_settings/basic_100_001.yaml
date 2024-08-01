@@ -38,5 +38,5 @@ training_args:
   greater_is_better: True
   optim: adamw_torch
   group_by_length: True # helps in saving memory
-  #  resume_from_checkpoint: None
+  # resume_from_checkpoint: 
   gradient_checkpointing: True
