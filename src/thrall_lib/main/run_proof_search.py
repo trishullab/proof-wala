@@ -421,7 +421,48 @@ def eval_dataset_once(
     proof_attempts_done = not any_proof_attempted
     return proof_attempts_done
 
+
 @ray.remote(max_retries=4)
+def eval_dataset_once_with_retries(
+    time_budget_tracker: typing.Dict[str, typing.Dict[str, float]],
+    attempt_idx: int,
+    model_path: str,
+    is_seq2seq: bool,
+    proof_attempts_done: bool, 
+    skip_files_in_checkpoint: bool, 
+    track_time: bool,
+    eval_benchmark: EvalBenchmark, 
+    dataset: EvalDataset, 
+    eval_checkpoint_info: EvalRunCheckpointInfoActor,
+    eval_settings: EvalSettings,
+    env_settings: EnvSettings,
+    eval_proof_results: EvalProofResultsActor,
+    log_dir: str,
+    device_id: typing.Optional[int] = None):
+    # time_budget_tracker = {}
+    if device_id is not None:
+        os.environ["CUDA_VISIBLE_DEVICES"] = str(device_id)
+    model = Model(model_path, is_seq2seq=is_seq2seq, use_lora=False)
+    model.__enter__()
+    logfile = os.path.join(log_dir, f"eval_dataset_multiple_attempts.log")
+    logger = setup_logger("eval_dataset_multiple_attempts", logfile)
+    logger.info(f"Restarting evaluation for dataset: {dataset.project}")
+    return eval_dataset_once(
+        model,
+        proof_attempts_done,
+        skip_files_in_checkpoint,
+        track_time,
+        eval_benchmark,
+        dataset,
+        eval_checkpoint_info,
+        eval_settings,
+        env_settings,
+        eval_proof_results,
+        time_budget_tracker,
+        attempt_idx,
+        logger)
+
+@ray.remote
 def eval_dataset_multiple_attempts(
     model_path: str,
     is_seq2seq: bool,
@@ -437,10 +478,10 @@ def eval_dataset_multiple_attempts(
     log_dir: str,
     device_id: typing.Optional[int] = None):
     time_budget_tracker = {}
-    if device_id is not None:
-        os.environ["CUDA_VISIBLE_DEVICES"] = str(device_id)
-    model = Model(model_path, is_seq2seq=is_seq2seq, use_lora=False)
-    model.__enter__()
+    # if device_id is not None:
+    #     os.environ["CUDA_VISIBLE_DEVICES"] = str(device_id)
+    # model = Model(model_path, is_seq2seq=is_seq2seq, use_lora=False)
+    # model.__enter__()
     logfile = os.path.join(log_dir, f"eval_dataset_multiple_attempts.log")
     logger = setup_logger("eval_dataset_multiple_attempts", logfile)
     logger.info(f"Starting evaluation for dataset: {dataset.project}")
@@ -448,20 +489,23 @@ def eval_dataset_multiple_attempts(
         logger.info(f"File in dataset: {file.path}")
         logger.info(f"Theorems in file: {file.theorems}")
     for attempt_idx in range(eval_settings.proof_retries):
-        proof_attempts_done = eval_dataset_once(
-            model,
-            proof_attempts_done,
-            skip_files_in_checkpoint,
+        proof_attempts_done_remote = eval_dataset_once_with_retries.remote(
+            time_budget_tracker,
+            attempt_idx,
+            model_path,
+            is_seq2seq,
+            proof_attempts_done, 
+            skip_files_in_checkpoint, 
             track_time,
-            eval_benchmark,
-            dataset,
+            eval_benchmark, 
+            dataset, 
             eval_checkpoint_info,
             eval_settings,
             env_settings,
             eval_proof_results,
-            time_budget_tracker,
-            attempt_idx,
-            logger)
+            log_dir,
+            device_id)
+        proof_attempts_done = ray.get(proof_attempts_done_remote)
         if proof_attempts_done:
             break
 
