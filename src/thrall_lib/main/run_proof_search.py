@@ -422,7 +422,7 @@ def eval_dataset_once(
     return proof_attempts_done
 
 
-@ray.remote(max_retries=4)
+@ray.remote(max_retries=100)
 def eval_dataset_once_with_retries(
     time_budget_tracker: typing.Dict[str, typing.Dict[str, float]],
     attempt_idx: int,
