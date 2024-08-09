@@ -621,7 +621,12 @@ class Model(object):
                     # Eat the exception
                     no_checkpoint = True
                 if no_checkpoint:
-                    trainer.train()
+                    try:
+                        trainer.train()
+                    except Exception as e:
+                        self.code_logger.error(f"Error in training: {e}")
+                        self.code_logger.exception(e)
+                        self.code_logger.error("Trying to save the model")
         if self.training_args.do_eval and eval_dataset is not None:
             self.code_logger.info("Running evaluation after training")
             trainer.evaluate()

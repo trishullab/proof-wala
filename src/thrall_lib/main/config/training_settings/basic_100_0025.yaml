@@ -1,6 +1,6 @@
 train_eval_split: False
 train_percentage: 1.0
-eval_percentage:  0.05
+eval_percentage:  0.025
 test_percentage: 1.0
 training_args: 
   output_dir: <root>/data/proofsteps/training_results/models
