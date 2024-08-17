@@ -1,0 +1,15 @@
+training_data_dir: <root>/data/proofsteps/combined-lean4-coq-without-induction/train
+training_meta_filename: local.meta.json
+training_data_log_dir: <root>/data/proofsteps/training_results/logs
+training_dataset_type: CodeT5TrainingDataset
+training_data_formatter_type: CodeT5PromptTrainingDataFormatter
+training_dataset_args:
+  characters_per_token: 3.6
+  max_tokens: 2048
+  no_steps: True
+eval_data_dir: <root>/data/proofsteps/combined-lean4-coq-without-induction/eval
+eval_meta_filename: local.meta.json
+eval_data_log_dir: <root>/data/proofsteps/training_results/logs
+test_data_dir: <root>/data/proofsteps/combined-lean4-coq-without-induction/test
+test_meta_filename: local.meta.json
+test_data_log_dir: <root>/data/proofsteps/training_results/logs
