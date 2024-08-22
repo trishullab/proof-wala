@@ -134,8 +134,15 @@ class EvalRunCheckpointInfo(object):
 
     def add_theorem_to_maps(self, path: str, theorem: str, success: bool):
         self.theorem_maps[path][theorem] = success
-        with open(self.checkpoint_file, "w") as f:
+        # First create a temporary copy of the checkpoint file
+        # This is to avoid memory issues when writing to the file
+        checkpoint_file = self.checkpoint_file + ".tmp"
+        with open(checkpoint_file, "w") as f:
             f.write(self.to_json(indent=4))
+        # Then move the temporary file to the original checkpoint file
+        os.rename(checkpoint_file, self.checkpoint_file)
+        # with open(self.checkpoint_file, "w") as f:
+        #     f.write(self.to_json(indent=4))
     
 @dataclass_json
 @dataclass
@@ -149,8 +156,15 @@ class EvalProofResults(object):
     
     def add_theorem_to_maps(self, path: str, theorem: str, proof_result: ProofSearchResult):
         self.theorem_map[path][theorem] = proof_result
-        with open(self.path, "w") as f:
+        # First create a temporary copy of the proof results file
+        # This is to avoid memory issues when writing to the file
+        proof_results_file = self.path + ".tmp"
+        with open(proof_results_file, "w") as f:
             f.write(self.to_json(indent=4))
+        # Then move the temporary file to the original proof results file
+        os.rename(proof_results_file, self.path)
+        # with open(self.path, "w") as f:
+        #     f.write(self.to_json(indent=4))
 
 @ray.remote
 class EvalProofResultsActor(object):

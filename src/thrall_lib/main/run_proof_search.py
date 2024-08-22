@@ -708,9 +708,9 @@ if __name__ == "__main__":
         num_cpus=8, 
         object_store_memory=75*2**30, 
         _memory=75*2**30, 
-        logging_level=logging.ERROR, 
+        logging_level=logging.CRITICAL, 
         ignore_reinit_error=False, 
         log_to_driver=False, 
         configure_logging=False,
-        _system_config={"metrics_report_interval_ms": 10**8})
+        _system_config={"metrics_report_interval_ms": 3*10**8})
     main()
