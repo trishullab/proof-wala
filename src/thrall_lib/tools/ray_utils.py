@@ -21,9 +21,11 @@ def clean_ray_logs(logger: logging.Logger = None):
                                 # Delete the log file if it is older than 30 minutes
                                 if time.time() - os.path.getmtime(log_file_path) > 30 * 60:
                                     file_size = os.path.getsize(log_file_path)
-                                    os.remove(log_file_path)
-                                    logger.info(f"Deleted log file {log_file_path} of size {file_size} bytes")
-                                    size_cleaned += file_size
+                                    try:
+                                        os.remove(log_file_path)
+                                        size_cleaned += file_size
+                                    except Exception as e:
+                                        pass
         logger.info(f"Cleaned up {size_cleaned/1024/1024} MB of Ray logs")
 
 if __name__ == "__main__":

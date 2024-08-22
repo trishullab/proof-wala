@@ -347,6 +347,8 @@ def eval_dataset_once(
                     max_retry = 4 # This retry is only when for some mysterious reason the llama service goes down
                     if proof_res_chkpt is not None:
                         attempt_idx = proof_res_chkpt.additional_info["attempt_idx"]
+                        logger.info(f"Previous attempt for proving lemma: {lemma_name} in file {path} was: {attempt_idx}")
+                        logger.info(f"Previous proof search result:\n{proof_res_chkpt}")
                     logger.info(f"Attempt {attempt_idx + 1} for proving lemma: {lemma_name} in file {path}")
                     while should_retry and max_retry > 0:
                         # Run the prover with a timeout
