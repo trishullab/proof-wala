@@ -22,6 +22,7 @@ import uuid
 import random
 multiprocessing.set_start_method('spawn', force=True)
 from datetime import datetime
+from thrall_lib.tools.ray_utils import clean_ray_logs
 from thrall_lib.llm_helpers.model import Model
 from thrall_lib.proof_search.search_driver import ProofSearchDriver
 from thrall_lib.proof_search.llm_tactic_generator import CodeT5PromptFormatter, CodeT5ResponseParser, LlmProofActionGenerator
@@ -182,6 +183,7 @@ def discover_lemmas_in_benchmark(
             random.seed(eval_settings.sample_seed)
             file.theorems = list(random.sample(file.theorems, sample_size))
             logger.info(f"Sampled lemmas to prove in file {path}: \n{file.theorems}")
+    clean_ray_logs(logger)
     return dataset
 
 def eval_dataset_once(
@@ -202,6 +204,7 @@ def eval_dataset_once(
         return True
     any_proof_attempted = False
     for file in dataset.files:
+        clean_ray_logs(logger)
         path = os.path.join(dataset.project, file.path)
         if track_time and path not in time_budget_tracker:
             if len(file.max_time_limits_in_secs) > 0:
