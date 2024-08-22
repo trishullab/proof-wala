@@ -15,17 +15,17 @@ def clean_ray_logs(logger: logging.Logger = None):
                 log_dir = os.path.join(user_ray_dir, f, 'logs')
                 if os.path.exists(log_dir):
                     for log_file in os.listdir(log_dir):
-                        if "worker-" in log_file:
-                            log_file_path = os.path.join(log_dir, log_file)
-                            if os.path.isfile(log_file_path):
-                                # Delete the log file if it is older than 30 minutes
-                                if time.time() - os.path.getmtime(log_file_path) > 30 * 60:
-                                    file_size = os.path.getsize(log_file_path)
-                                    try:
+                        try:
+                            if "worker-" in log_file:
+                                log_file_path = os.path.join(log_dir, log_file)
+                                if os.path.isfile(log_file_path):
+                                    # Delete the log file if it is older than 30 minutes
+                                    if time.time() - os.path.getmtime(log_file_path) > 30 * 60:
+                                        file_size = os.path.getsize(log_file_path)
                                         os.remove(log_file_path)
                                         size_cleaned += file_size
-                                    except Exception as e:
-                                        pass
+                        except Exception as e:
+                            pass
         logger.info(f"Cleaned up {size_cleaned/1024/1024} MB of Ray logs")
 
 if __name__ == "__main__":
