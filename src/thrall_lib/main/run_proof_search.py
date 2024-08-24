@@ -517,6 +517,7 @@ def eval_dataset_multiple_attempts(
 def eval_dataset(env_settings: EnvSettings, eval_benchmark: EvalBenchmark, dataset: EvalDataset, eval_settings: EvalSettings, eval_checkpoint_info: EvalRunCheckpointInfo, eval_proof_results: EvalProofResults, logger: logging.Logger = None):
     logger = logger if logger else logging.getLogger(__name__)
     skip_files_in_checkpoint = False if "SKIP_FILES_IN_CHECKPOINT" not in os.environ else bool(os.environ["SKIP_FILES_IN_CHECKPOINT"])
+    follow_seed = False if "FOLLOW_SEED" not in os.environ else bool(os.environ["FOLLOW_SEED"])
 
     if eval_settings.proof_retries > 1:
         assert eval_settings.temperature > 0.0, "Proof retries is only supported for temperature > 0.0"
@@ -571,8 +572,9 @@ def eval_dataset(env_settings: EnvSettings, eval_benchmark: EvalBenchmark, datas
     # Redistribute the lemmas to the dataset chunks
     new_dataset_chunk_idx = 0
     new_dataset_chunk_path = [{} for _ in range(max_model_parallelism)]
-    seed = eval_settings.sample_seed
-    # random.seed(seed)
+    if follow_seed:
+        seed = eval_settings.sample_seed
+        random.seed(seed)
     random.shuffle(discovered_dataset_chunks)
     for i in range(len(discovered_dataset_chunks)):
         files = list(discovered_dataset_chunks[i].files)
