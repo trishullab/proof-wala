@@ -653,7 +653,10 @@ class Model(object):
         if self.training_args.do_train:
             trainer.args.output_dir = new_model_name
             self.code_logger.info(f"Saving the model to {new_model_name}")
-            trainer.save_model()
+            final = os.path.join(self.training_args.output_dir, "final")
+            os.makedirs(final, exist_ok=True)
+            self.code_logger.info(f"Saving the final model to {final}")
+            trainer.save_model(output_dir=final)
         if self._should_use_comet:
             self._comet_experiment.end()
 
