@@ -10,21 +10,24 @@ import numpy as np
 import os
 from datetime import datetime
 from proof_wala.proof_search.search_driver import ProofActionGenerator, ProofSearhHeuristic, ProofSearchDriver, ProofStateInfo, ProofPathTracer
+from proof_wala.proof_search.llm_tactic_generator import get_qed_for_language
 from itp_interface.rl.simple_proof_env import ProofState, ProofAction, ProofEnv
 from itp_interface.rl.simpl_proof_env_pool import replicate_proof_env
 from itp_interface.tools.proof_exec_callback import ProofExecutorCallback
 from itp_interface.tools.training_data_format import TrainingDataMetadataFormat
-from itp_interface.tools.training_data import TrainingData
 from proof_wala.search.search import Node, SearchAlgorithm, Edge
 from proof_wala.search.best_first_search import BestFirstSearch
 from proof_wala.search.beam_search import BeamSearch
-os.environ["CUDA_VISIBLE_DEVICES"] = "5"
 
 class RandomCoqProofActionGenerator(ProofActionGenerator):
     def __init__(self, width: int = 4):
         super().__init__(width)
         pass
     
+    def get_proof_end_for_language(self, language: ProofAction.Language) -> ProofAction:
+        qed = get_qed_for_language(language)
+        return ProofAction(ProofAction.ActionType.RUN_TACTIC, language, tactics=[qed])
+
     def generate_actions(self, state_info: ProofStateInfo, k: int = None) -> typing.List[typing.Tuple[float, ProofAction]]:
         state : ProofState = state_info.proof_state
         done: bool = state_info.done

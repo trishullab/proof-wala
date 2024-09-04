@@ -2,7 +2,7 @@
 
 import os
 if __name__ == "__main__":
-    os.environ["CUDA_VISIBLE_DEVICES"] = "5"
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
     os.environ["TOKENIZERS_PARALLELISM"] = "false"
 import sys
 root_dir = f"{__file__.split('proof_wala')[0]}"
