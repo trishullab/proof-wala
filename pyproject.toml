@@ -18,7 +18,7 @@ requires = [
 ]
 build-backend = "hatchling.build"
 [project]
-name = "thrall_lib"
+name = "proof_wala"
 version = "0.0.2"
 authors = [
   { name="Amitayush Thakur", email="amitayush@utexas.edu" },
