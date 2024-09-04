@@ -30,7 +30,6 @@ class TrainingDatasetType(Enum):
     TheoremProvingTrainingDataset = "TheoremProvingTrainingDataset"
     CopraTrainingDataset = "CopraTrainingDataset"
     CodeT5TrainingDataset = "CodeT5TrainingDataset"
-    ProofModelTrainingDataset = "ProofModelTrainingDataset" 
 
     def __str__(self):
         return self.value
