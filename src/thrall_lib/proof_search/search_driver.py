@@ -6,9 +6,11 @@ if root_dir not in sys.path:
     sys.path.append(root_dir)
 import typing
 import logging
+import copy
 import os
 import time
 import enum
+import uuid
 from abc import ABC, abstractmethod
 from itp_interface.tools.training_data_format import TrainingDataFormat, TrainingDataMetadataFormat
 from itp_interface.tools.training_data import TrainingData
@@ -133,6 +135,7 @@ class ProofSearchBranchGenerator(ABC):
                 self.state_id_to_env_map[state_idx] = set()
             self.state_id_to_env_map[state_idx].add(env_idx)
         self.search_policy = search_policy
+        self.proof_id = os.path.join(str(uuid.uuid4()), self.project_id, self.theorem_name)
         pass
 
     def get_unused_envs(self) -> typing.List[int]:
@@ -231,28 +234,6 @@ class ProofSearchBranchGenerator(ABC):
         action_str = '\n'.join(actions[idx].kwargs['tactics']) if actions[idx].kwargs['tactics'] is not None else str(actions[idx])
         self.logger.info(f"Action: {action_str}, Done: {done}, Progress: {info.progress}, Error: {info.error_message}")
         new_state_id = None
-        if not done and (state_name, action_str) not in self.state_action_map:
-            self.state_action_map.add((state_name, action_str))
-            on_proof_path = state_name in self.original_proofs_state_names
-            additional_info = {
-                'done': done,
-                'progress': info.progress,
-                'error_message': info.error_message,
-                'distance_from_root': node.distance_from_root + 1,
-                'score': actions_to_run[idx][1],
-                'on_proof_path': on_proof_path
-            }
-            training_data_format = TrainingDataFormat(
-                goal_description=next_state.training_data_format.goal_description,
-                start_goals=state.training_data_format.start_goals,
-                proof_steps=actions[idx].kwargs['tactics'],
-                end_goals=next_state.training_data_format.start_goals,
-                addition_state_info=additional_info,
-                file_path=self.file_path,
-                project_id=self.project_id,
-                theorem_name=self.theorem_name
-            )
-            self.tracer.trace(training_data_format)
         if state_name not in self.state_to_state_id_map:
             new_state_id = len(self.state_to_state_id_map)
             self.state_to_state_id_map[state_name] = new_state_id
@@ -265,6 +246,31 @@ class ProofSearchBranchGenerator(ABC):
         if new_state_id not in self.state_id_to_env_map:
             self.state_id_to_env_map[new_state_id] = set()
         self.state_id_to_env_map[new_state_id].add(env_idxs[idx])
+        if (state_name, action_str) not in self.state_action_map and self.tracer.collect_traces:
+            self.state_action_map.add((state_name, action_str))
+            on_proof_path = state_name in self.original_proofs_state_names
+            additional_info = {
+                'done': done,
+                'progress': info.progress,
+                'error_message': info.error_message,
+                'distance_from_root': node.distance_from_root + 1,
+                'score': actions_to_run[idx][1],
+                'on_proof_path': on_proof_path,
+                'start_goal_id': state_idx,
+                'end_goal_id': new_state_id
+            }
+            training_data_format = TrainingDataFormat(
+                proof_id=self.proof_id,
+                goal_description=next_state.training_data_format.goal_description,
+                start_goals=state.training_data_format.start_goals,
+                proof_steps=copy.deepcopy(actions[idx].kwargs['tactics']),
+                end_goals=next_state.training_data_format.start_goals,
+                addition_state_info=additional_info,
+                file_path=self.file_path,
+                project_id=self.project_id,
+                theorem_name=self.theorem_name
+            )
+            self.tracer.trace(training_data_format)
         return new_state_id, state_name
 
     def __call__(self, node: Node, timeout_in_secs: float) -> typing.Tuple[typing.List[Node], typing.List[Edge]]:
