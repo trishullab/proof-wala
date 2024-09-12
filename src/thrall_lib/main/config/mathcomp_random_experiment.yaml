@@ -1,0 +1,18 @@
+defaults:
+  - model_settings: codet5_small_2048.yaml # Name of model settings file
+  - training_data_settings: mathcomp_random_benchmark_training.yaml # Name of training data settings file
+  - training_settings: basic_100_0025 # Name of training settings file
+  - override hydra/job_logging: 'disabled'
+
+name: ProofWala-codet5-small-mathcomp-2048 # Can be any name will be used in logs
+experiment_type: 'Training' # Can be 'Training' or 'Inferencing'
+
+training_settings:
+  training_args:
+    resume_from_checkpoint: False # Huggingface bug https://github.com/huggingface/transformers/pull/26739
+
+# Run experiments using the following command:
+# nohup torchrun --nproc-per-node 2 src/thrall_lib/main/run.py &
+# nohup torchrun --nproc-per-node 2 --master-port 31052  src/thrall_lib/main/run.py &
+# The default master port is 29500, but you can change it to any other port number when running multiple experiments on the same machine
+# nohup torchrun --nproc-per-node 2 src/thrall_lib/main/run.py model_settings=codet5_small_128 training_data_settings=simple_benchmark_training training_settings=basic_split_09_01 &
