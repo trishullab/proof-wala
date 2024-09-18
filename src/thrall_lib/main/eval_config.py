@@ -69,6 +69,7 @@ class EvalSettings(object):
     search_params: typing.Dict[str, typing.Any] = field(default_factory=lambda: {"width": 64, "max_new_tokens": 175, "temperature": 0.75, "do_sample": True, "top_k": 64, "padding": True, "return_full_text": False, "compute_probabilities": True})
     proof_search_heuristic: str = "NegLoglikelihoodMinimizingHeuristic"
     model_parallelism: int = 4
+    do_lemmas_discovery: bool = True
 
     def get_search_algo(self):
         if self.search_strategy == "BeamSearch":
@@ -267,7 +268,8 @@ def parse_config(cfg):
         search_strategy=eval_settings_cfg["search_strategy"],
         search_params=eval_settings_cfg["search_params"],
         proof_search_heuristic=eval_settings_cfg["proof_search_heuristic"],
-        model_parallelism=eval_settings_cfg["model_parallelism"]
+        model_parallelism=eval_settings_cfg["model_parallelism"],
+        do_lemmas_discovery=eval_settings_cfg["do_lemmas_discovery"] if "do_lemmas_discovery" in eval_settings_cfg else True
     )
     benchmark_cfg = cfg["benchmark"]
     datasets_cfg = benchmark_cfg["datasets"]
