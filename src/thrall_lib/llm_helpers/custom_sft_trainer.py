@@ -2,6 +2,7 @@
 
 import torch
 import torch.nn as nn
+import typing
 from logging import Logger
 from torch.utils.data import DataLoader, Dataset
 from typing import List, Union, Optional, Callable, Dict, Tuple
@@ -82,14 +83,14 @@ class GenerateEvalSFTTrainer(SFTTrainer):
         self.logger = logger if logger is not None else hf_trainer_logger
         pass
 
-    def get_eval_dataloader(self, eval_dataset: Dataset | None = None) -> DataLoader:
+    def get_eval_dataloader(self, eval_dataset: typing.Union[Dataset, None] = None) -> DataLoader:
         return None
 
     def evaluation_loop(self, 
             dataloader: DataLoader, 
             description: str, 
-            prediction_loss_only: bool | None = None, 
-            ignore_keys: List[str] | None = None, 
+            prediction_loss_only: typing.Union[bool, None] = None, 
+            ignore_keys: typing.Union[List[str], None] = None, 
             metric_key_prefix: str = "eval") -> EvalLoopOutput:
         """
         Prediction/evaluation loop, shared by `Trainer.evaluate()` and `Trainer.predict()`.
