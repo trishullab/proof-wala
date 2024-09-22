@@ -5,6 +5,7 @@ import logging
 import json
 import random
 import shutil
+import uuid
 from enum import Enum
 from dataclasses import dataclass, field
 from dataclasses_json import dataclass_json
@@ -157,9 +158,13 @@ class Model(object):
         self.name = name
         self.cuda_context = CudaContext.get_default_context()
         self.training_args = training_args
-        code_logger = logging.getLogger("ModelCode") if log_folder is None else setup_logger("ModelCode", f"{log_folder}/model_code.log")
+        gpu_id_local = os.environ.get("LOCAL_RANK", None)
+        gpu_id_global = os.environ.get("RANK", None)
+        gpu_id_unique = str(uuid.uuid4())
+        self.gpu_id = f"{gpu_id_local}-{gpu_id_global}-{gpu_id_unique}"
+        code_logger = logging.getLogger(f"ModelCode-{self.gpu_id}") if log_folder is None else setup_logger(f"ModelCode-{self.gpu_id}", f"{log_folder}/model_code-{self.gpu_id}.log")
         metric_format = '{"time": "%(asctime)s", "metrics": %(message)s}'
-        metric_logger = logging.getLogger("ModelMetrics") if log_folder is None else setup_logger("ModelMetrics", f"{log_folder}/model_metrics.jsonl", format=metric_format)
+        metric_logger = logging.getLogger(f"ModelMetrics-{self.gpu_id}") if log_folder is None else setup_logger(f"ModelMetrics-{self.gpu_id}", f"{log_folder}/model_metrics-{self.gpu_id}.jsonl", format=metric_format)
         self.code_logger = code_logger
         self.metric_logger = metric_logger
         self._is_loaded = False
