@@ -35,7 +35,7 @@ def train_experiment(experiment: Experiment, time_now: str = None):
     gpuid_global = os.environ.get("RANK", None)
     gpuid_unique = str(uuid.uuid4())
     gpuid = f"{gpuid_local}-{gpuid_global}-{gpuid_unique}"
-    training_data = TrainingData(experiment.training_data_settings.training_data_dir, experiment.training_data_settings.training_meta_filename, logger=setup_logger(f"TrainingData-{gpuid}", os.path.join(training_dataset_log_dir, "training_data-{gpuid}.log")))
+    training_data = TrainingData(experiment.training_data_settings.training_data_dir, experiment.training_data_settings.training_meta_filename, logger=setup_logger(f"TrainingData-{gpuid}", os.path.join(training_dataset_log_dir, f"training_data-{gpuid}.log")))
     training_dataset_type = experiment.training_data_settings.training_dataset_type.get_class()
     with training_dataset_type(training_data, **experiment.training_data_settings.training_dataset_args) as training_dataset:
         hf_training_dataset = training_dataset.get_hf_dataset()
@@ -50,7 +50,7 @@ def train_experiment(experiment: Experiment, time_now: str = None):
             hf_training_dataset = hf_training_dataset.shuffle(seed=experiment.training_settings.training_args.data_seed).select(range(int(len(hf_training_dataset) * experiment.training_settings.train_percentage)))
     # Load the eval data
     if should_load_eval:
-        eval_data = TrainingData(experiment.training_data_settings.eval_data_dir, experiment.training_data_settings.eval_meta_filename, logger=setup_logger("EvalData-{gpuid}", os.path.join(eval_dataset_log_dir, "eval_data-{gpuid}.log")))
+        eval_data = TrainingData(experiment.training_data_settings.eval_data_dir, experiment.training_data_settings.eval_meta_filename, logger=setup_logger("EvalData-{gpuid}", os.path.join(eval_dataset_log_dir, f"eval_data-{gpuid}.log")))
         with training_dataset_type(eval_data, **experiment.training_data_settings.training_dataset_args) as eval_dataset:
             hf_eval_dataset = eval_dataset.get_hf_dataset()
     else:
@@ -61,7 +61,7 @@ def train_experiment(experiment: Experiment, time_now: str = None):
             hf_eval_dataset = hf_eval_dataset.shuffle(seed=experiment.training_settings.training_args.data_seed).select(range(int(len(hf_eval_dataset) * experiment.training_settings.eval_percentage)))
     # Load the test data
     if should_load_test:
-        test_data = TrainingData(experiment.training_data_settings.test_data_dir, experiment.training_data_settings.test_meta_filename, logger=setup_logger("TestData-{gpuid}", os.path.join(test_dataset_log_dir, "test_data-{gpuid}.log")))
+        test_data = TrainingData(experiment.training_data_settings.test_data_dir, experiment.training_data_settings.test_meta_filename, logger=setup_logger("TestData-{gpuid}", os.path.join(test_dataset_log_dir, f"test_data-{gpuid}.log")))
         with training_dataset_type(test_data, **experiment.training_data_settings.training_dataset_args) as test_dataset:
             hf_test_dataset = test_dataset.get_hf_dataset()
     else:
