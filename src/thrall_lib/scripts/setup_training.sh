@@ -7,15 +7,15 @@ if [[ ! -d "imports/itp-interface" ]]; then
 fi
 pushd ./imports/itp-interface
 echo "Installing requirements for itp-interface..."
-python3 -m pip install -r tacc_requirements.txt
+python -m pip install -r tacc_requirements.txt
 echo "Building itp-interface..."
-python3 -m pip install --upgrade build
-python3 -m build
+python -m pip install --upgrade build
+python -m build
 echo "itp-interface built successfully!"
 popd
 echo "Installing itp-interface..."
-python3 -m pip install imports/itp-interface/dist/itp_interface-0.1.5-py3-none-any.whl --force-reinstall
+python -m pip install imports/itp-interface/dist/itp_interface-0.1.5-py3-none-any.whl --force-reinstall
 echo "itp-interface installed successfully!"
 echo "Installing thrall-lib requirements..."
-python3 -m pip install -r tacc_requirements.txt
+python -m pip install -r tacc_requirements.txt
 echo "thrall-lib requirements installed successfully!"
