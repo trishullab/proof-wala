@@ -6,6 +6,8 @@ import json
 import random
 import shutil
 import uuid
+import time
+import copy
 from enum import Enum
 from dataclasses import dataclass, field
 from dataclasses_json import dataclass_json
@@ -75,6 +77,11 @@ class LogMetricCallback(TrainerCallback):
     def __init__(self, model: "Model"):
         self.model = model
         self._idx = 0
+        self._last_log_time = time.time()
+        self._last_log_step = 0
+        self._steps_per_sec = 1e-6
+        self._exp_completion_time = 1e-6
+        self._alpha = 0.9
 
     def on_step_end(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
         # Check if we should run evaluation
@@ -86,8 +93,25 @@ class LogMetricCallback(TrainerCallback):
 
     def on_log(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
         if len(state.log_history) > 0:
+            time_now = time.time()
+            time_elapsed = time_now - self._last_log_time
+            steps_elapsed = state.global_step - self._last_log_step
+            steps_per_second = steps_elapsed / time_elapsed
+            expected_completion_time = state.max_steps / steps_per_second
+            if self._last_log_step == 0:
+                self._steps_per_sec = steps_per_second
+                self._exp_completion_time = expected_completion_time
+            else:
+                self._steps_per_sec = self._alpha * self._steps_per_sec + (1 - self._alpha) * steps_per_second
+                self._exp_completion_time = self._alpha * self._exp_completion_time + (1 - self._alpha) * expected_completion_time
+            self._last_log_time = time_now
+            self._last_log_step = state.global_step
             metrices = state.log_history[self._idx:]
-            for metrics in metrices:
+            for metrics in enumerate(metrices):
+                metrics = copy.deepcopy(metrics)
+                metrics["steps_per_sec"] = self._steps_per_sec
+                metrics["exp_completion_time_in_sec"] = self._exp_completion_time
+                metrics["exp_completion_time_in_hours"] = self._exp_completion_time / 3600
                 if self.model._should_use_comet:
                     self.model._comet_experiment.log_metrics(metrics, step=state.global_step, epoch=state.epoch)
                 metric_json = json.dumps(metrics)

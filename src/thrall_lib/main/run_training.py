@@ -55,8 +55,10 @@ def train_experiment(experiment: Experiment, time_now: str = None):
             with training_dataset_type(eval_data, **experiment.training_data_settings.training_dataset_args) as eval_dataset:
                 hf_eval_dataset = eval_dataset.get_hf_dataset()
         else:
+            for eval_settings in experiment.training_data_settings.evals:
+                os.makedirs(eval_settings.eval_data_log_dir, exist_ok=True) # Create the log directories
             eval_datasets = {
-                eval_settings.eval_name: TrainingData(eval_settings.eval_data_dir, eval_settings.eval_meta_filename, logger=setup_logger(f"EvalData-{eval_settings.eval_name}-{gpuid}", os.path.join(eval_dataset_log_dir, f"eval_data-{eval_settings.eval_name}-{gpuid}.log")))
+                eval_settings.eval_name: TrainingData(eval_settings.eval_data_dir, eval_settings.eval_meta_filename, logger=setup_logger(f"EvalData-{eval_settings.eval_name}-{gpuid}", os.path.join(eval_settings.eval_data_log_dir, f"eval_data-{eval_settings.eval_name}-{gpuid}.log")))
                 for eval_settings in experiment.training_data_settings.evals
             }
             hf_eval_datasets = {}

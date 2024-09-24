@@ -81,6 +81,9 @@ class GenerateEvalSFTTrainer(SFTTrainer):
         self.generate_callback = generate_callback
         self.generate_batch_size = self.args.eval_batch_size
         self.logger = logger if logger is not None else hf_trainer_logger
+        self._agg_metrics = {}
+        self._num_evals = 1 if type(eval_dataset) is not dict else len(eval_dataset)
+        self._metric_agg_idx = 0
         pass
 
     def get_eval_dataloader(self, eval_dataset: typing.Union[Dataset, None] = None) -> DataLoader:
@@ -207,12 +210,23 @@ class GenerateEvalSFTTrainer(SFTTrainer):
 
         # Prefix all keys with metric_key_prefix + '_'
         for key in list(metrics.keys()):
+            if self._num_evals > 1:
+                if self._metric_agg_idx == 0:
+                    self._agg_metrics[key] = metrics[key]
+                    self._agg_metrics["eval_count"] = 0
             if not key.startswith(f"{metric_key_prefix}_"):
                 metrics[f"{metric_key_prefix}_{key}"] = metrics.pop(key)
+                if self._num_evals > 1:
+                    if self._agg_metrics["eval_count"] == 0 and _eval_cnt == 0:
+                        self._agg_metrics["eval_count"] = 1e-6 # Avoid division by zero
+                    self._agg_metrics[key] = (self._agg_metrics[key] * self._agg_metrics["eval_count"] + metrics[f"{metric_key_prefix}_{key}"]) / (self._agg_metrics["eval_count"] + _eval_cnt)
+                    self._agg_metrics["eval_count"] += _eval_cnt
+                    metrics[f"eval_{key}"] = self._agg_metrics[key]
 
         all_labels = None
         all_preds = None
         num_samples = _eval_cnt
+        self._metric_agg_idx = (self._metric_agg_idx + 1) % self._num_evals
         return EvalLoopOutput(predictions=all_preds, label_ids=all_labels, metrics=metrics, num_samples=num_samples)
     
 if __name__ == "__main__":
