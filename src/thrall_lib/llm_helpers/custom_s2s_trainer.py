@@ -200,7 +200,7 @@ class GenerateEvalS2STrainer(Seq2SeqTrainer):
         for key in list(metrics.keys()):
             if self._num_evals > 1:
                 if self._metric_agg_idx == 0:
-                    self._agg_metrics[key] = metrics[key]
+                    self._agg_metrics[key] = 0
                     self._agg_metrics["eval_count"] = 0
             if not key.startswith(f"{metric_key_prefix}_"):
                 metrics[f"{metric_key_prefix}_{key}"] = metrics.pop(key)
@@ -210,6 +210,8 @@ class GenerateEvalS2STrainer(Seq2SeqTrainer):
                     self._agg_metrics[key] = (self._agg_metrics[key] * self._agg_metrics['eval_count'] + metrics[f"{metric_key_prefix}_{key}"]) / (self._agg_metrics['eval_count'] + _eval_cnt)
                     self._agg_metrics['eval_count'] += _eval_cnt
                     metrics[f"eval_{key}"] = self._agg_metrics[key]
+                    metrics[f"eval_{key}_count"] = _eval_cnt
+                    metrics[f"eval_{key}_agg_count"] = self._agg_metrics['eval_count']
 
         all_labels = None
         all_preds = None
