@@ -4,7 +4,7 @@ defaults:
   - training_settings: basic_100_0025 # Name of training settings file
   - override hydra/job_logging: 'disabled'
 
-name: ProofWala-codet5-small-multilingual-random-2048 # Can be any name will be used in logs
+name: ProofWala-codet5-small-multilingual-random-2048-test # Can be any name will be used in logs
 experiment_type: 'Training' # Can be 'Training' or 'Inferencing'
 
 training_settings:
