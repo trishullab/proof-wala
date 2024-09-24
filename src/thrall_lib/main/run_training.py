@@ -25,7 +25,7 @@ def train_experiment(experiment: Experiment, time_now: str = None):
     test_dataset_log_dir = os.path.join(experiment.training_data_settings.test_data_log_dir, time_now) if experiment.training_data_settings.test_data_log_dir is not None else None
     if test_dataset_log_dir is not None:
         os.makedirs(test_dataset_log_dir, exist_ok=True)
-    should_load_eval = experiment.training_data_settings.eval_data_dir is not None
+    should_load_eval = experiment.training_data_settings.eval_data_dir is not None or experiment.training_data_settings.evals is not None
     should_load_test = experiment.training_data_settings.test_data_dir is not None
     should_split_train_eval = experiment.training_settings.train_eval_split
     if should_split_train_eval:
@@ -50,15 +50,30 @@ def train_experiment(experiment: Experiment, time_now: str = None):
             hf_training_dataset = hf_training_dataset.shuffle(seed=experiment.training_settings.training_args.data_seed).select(range(int(len(hf_training_dataset) * experiment.training_settings.train_percentage)))
     # Load the eval data
     if should_load_eval:
-        eval_data = TrainingData(experiment.training_data_settings.eval_data_dir, experiment.training_data_settings.eval_meta_filename, logger=setup_logger("EvalData-{gpuid}", os.path.join(eval_dataset_log_dir, f"eval_data-{gpuid}.log")))
-        with training_dataset_type(eval_data, **experiment.training_data_settings.training_dataset_args) as eval_dataset:
-            hf_eval_dataset = eval_dataset.get_hf_dataset()
+        if experiment.training_data_settings.evals is None:
+            eval_data = TrainingData(experiment.training_data_settings.eval_data_dir, experiment.training_data_settings.eval_meta_filename, logger=setup_logger("EvalData-{gpuid}", os.path.join(eval_dataset_log_dir, f"eval_data-{gpuid}.log")))
+            with training_dataset_type(eval_data, **experiment.training_data_settings.training_dataset_args) as eval_dataset:
+                hf_eval_dataset = eval_dataset.get_hf_dataset()
+        else:
+            eval_datasets = {
+                eval_settings.eval_name: TrainingData(eval_settings.eval_data_dir, eval_settings.eval_meta_filename, logger=setup_logger(f"EvalData-{eval_settings.eval_name}-{gpuid}", os.path.join(eval_dataset_log_dir, f"eval_data-{eval_settings.eval_name}-{gpuid}.log")))
+                for eval_settings in experiment.training_data_settings.evals
+            }
+            hf_eval_datasets = {}
+            for eval_name, eval_data in eval_datasets.items():
+                with training_dataset_type(eval_data, **experiment.training_data_settings.training_dataset_args) as eval_dataset:
+                    hf_eval_datasets[eval_name] = eval_dataset.get_hf_dataset()
+            hf_eval_dataset = hf_eval_datasets
     else:
         hf_eval_dataset = hf_eval_dataset if should_split_train_eval else None
     if hf_eval_dataset is not None:
         if experiment.training_settings.eval_percentage < 1.0 and not should_split_train_eval:
             # Sample eval_percentage of the dataset
-            hf_eval_dataset = hf_eval_dataset.shuffle(seed=experiment.training_settings.training_args.data_seed).select(range(int(len(hf_eval_dataset) * experiment.training_settings.eval_percentage)))
+            if isinstance(hf_eval_dataset, dict):
+                for eval_name, eval_dataset in hf_eval_dataset.items():
+                    hf_eval_dataset[eval_name] = eval_dataset.shuffle(seed=experiment.training_settings.training_args.data_seed).select(range(int(len(eval_dataset) * experiment.training_settings.eval_percentage)))
+            else:
+                hf_eval_dataset = hf_eval_dataset.shuffle(seed=experiment.training_settings.training_args.data_seed).select(range(int(len(hf_eval_dataset) * experiment.training_settings.eval_percentage)))
     # Load the test data
     if should_load_test:
         test_data = TrainingData(experiment.training_data_settings.test_data_dir, experiment.training_data_settings.test_meta_filename, logger=setup_logger("TestData-{gpuid}", os.path.join(test_dataset_log_dir, f"test_data-{gpuid}.log")))

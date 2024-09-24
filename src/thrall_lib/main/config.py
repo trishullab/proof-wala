@@ -78,6 +78,14 @@ class ModelSettings(object):
 
 @dataclass_json
 @dataclass
+class EvalSettings(object):
+    eval_name: str
+    eval_data_dir: str
+    eval_meta_filename: str
+    eval_data_log_dir: str
+
+@dataclass_json
+@dataclass
 class TrainingDataSettings(object):
     training_data_dir: str
     training_meta_filename: str
@@ -91,6 +99,7 @@ class TrainingDataSettings(object):
     test_data_dir: typing.Optional[str] = None
     test_meta_filename: typing.Optional[str] = None
     test_data_log_dir: typing.Optional[str] = None
+    evals : typing.Optional[typing.List[EvalSettings]] = None
 
 @dataclass_json
 @dataclass

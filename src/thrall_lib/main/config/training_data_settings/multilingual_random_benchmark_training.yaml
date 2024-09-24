@@ -1,4 +1,4 @@
-training_data_dir: <root>/data/proofsteps/random/multi-lingual/train
+training_data_dir: <root>/data/proofsteps/random/multi-lingual/test
 training_meta_filename: local.meta.json
 training_data_log_dir: <root>/data/proofsteps/training_results/logs/random
 training_dataset_type: CodeT5TrainingDataset
@@ -7,9 +7,26 @@ training_dataset_args:
   characters_per_token: 3.6
   max_tokens: 2048
   no_steps: True
-eval_data_dir: <root>/data/proofsteps/random/multi-lingual/eval
-eval_meta_filename: local.meta.json
-eval_data_log_dir: <root>/data/proofsteps/training_results/logs/random
+evals:
+  - eval_name: math-comp
+    eval_data_dir: <root>/data/proofsteps/random/math-comp/eval
+    eval_meta_filename: local.meta.json
+    eval_data_log_dir: <root>/data/proofsteps/training_results/random/math-comp/logs/multilingual
+  - eval_name: GeoCoq
+    eval_data_dir: <root>/data/proofsteps/random/GeoCoq/eval
+    eval_meta_filename: local.meta.json
+    eval_data_log_dir: <root>/data/proofsteps/training_results/random/GeoCoq/logs/multilingual
+  - eval_name: leandojo
+    eval_data_dir: <root>/data/proofsteps/leandojo/random/eval/20240511-230108
+    eval_meta_filename: local.meta.json
+    eval_data_log_dir: <root>/data/proofsteps/training_results/random/leandojo/logs/multilingual
+  - eval_name: category-theory
+    eval_data_dir: <root>/data/proofsteps/random/category-theory/eval
+    eval_meta_filename: local.meta.json
+    eval_data_log_dir: <root>/data/proofsteps/training_results/random/category-theory/logs/multilingual
+eval_data_dir:
+eval_meta_filename:
+eval_data_log_dir:
 test_data_dir: <root>/data/proofsteps/random/multi-lingual/test
 test_meta_filename: local.meta.json
 test_data_log_dir: <root>/data/proofsteps/training_results/logs/random
