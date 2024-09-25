@@ -1,0 +1,42 @@
+train_eval_split: False
+train_percentage: 1.0
+eval_percentage:  0.1
+test_percentage: 1.0
+training_args: 
+  output_dir: <root>/data/proofsteps/training_results/models
+  overwrite_output_dir: False
+  do_train: True
+  do_eval: True
+  do_predict: False
+  evaluation_strategy: steps
+  # auto_find_batch_size: True
+  per_device_train_batch_size: 1
+  per_device_eval_batch_size: 1
+  gradient_accumulation_steps: 1
+  learning_rate: 2e-4
+  weight_decay: 0.001
+  max_grad_norm: 0.3 # Gradient clipping
+  num_train_epochs: 10
+  max_steps: -1
+  lr_scheduler_type: cosine
+  warmup_ratio: 0.03
+  warmup_steps: 0
+  logging_dir: <root>/data/proofsteps/training_results/logs/model
+  logging_strategy: steps
+  logging_steps: 1
+  logging_first_step: True
+  save_strategy: steps
+  save_steps: 500
+  save_total_limit: 10
+  # no_cuda: False
+  # use_cpu: False
+  seed: 42
+  data_seed: 42
+  eval_steps: 500
+  load_best_model_at_end: True
+  metric_for_best_model: exact_match
+  greater_is_better: True
+  optim: adamw_torch
+  group_by_length: True # helps in saving memory
+  #  resume_from_checkpoint: None
+  gradient_checkpointing: True
