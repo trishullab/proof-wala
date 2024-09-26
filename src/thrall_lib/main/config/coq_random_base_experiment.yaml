@@ -1,10 +1,10 @@
 defaults:
   - model_settings: codet5_base_2048.yaml # Name of model settings file
-  - training_data_settings: multilingual_random_benchmark_training.yaml # Name of training data settings file
-  - training_settings: basic_100_0025 # Name of training settings file
+  - training_data_settings: coq_benchmark_training_random.yaml # Name of training data settings file
+  - training_settings: basic_100_010 # Name of training settings file
   - override hydra/job_logging: 'disabled'
 
-name: ProofWala-codet5-base-multilingual-random-2048 # Can be any name will be used in logs
+name: ProofWala-codet5-base-coq-random-2048 # Can be any name will be used in logs
 experiment_type: 'Training' # Can be 'Training' or 'Inferencing'
 
 training_settings:
