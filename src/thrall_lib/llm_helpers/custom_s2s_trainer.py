@@ -198,13 +198,13 @@ class GenerateEvalS2STrainer(Seq2SeqTrainer):
 
         # Prefix all keys with metric_key_prefix + '_'
         for key in list(metrics.keys()):
-            if self._num_evals > 1:
+            if self._num_evals >= 1:
                 if self._metric_agg_idx == 0:
                     self._agg_metrics[key] = 0
                     self._agg_metrics["eval_count"] = 0
             if not key.startswith(f"{metric_key_prefix}_"):
                 metrics[f"{metric_key_prefix}_{key}"] = metrics.pop(key)
-                if self._num_evals > 1:
+                if self._num_evals >= 1:
                     if self._agg_metrics["eval_count"] == 0 and _eval_cnt == 0:
                         self._agg_metrics["eval_count"] = 1e-6 # Avoid division by zero
                     self._agg_metrics[key] = (self._agg_metrics[key] * self._agg_metrics['eval_count'] + metrics[f"{metric_key_prefix}_{key}"] * _eval_cnt) / (self._agg_metrics['eval_count'] + _eval_cnt)
