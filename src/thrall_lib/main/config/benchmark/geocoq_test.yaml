@@ -8,7 +8,7 @@ dfs_metadata_filename_for_retrieval: local.meta.json
 theorem_cnt: 89
 timeout_per_theorem_in_secs: 320
 setup_cmds:
-  - opam switch create GeoCoq 4.14.1
+  - opam env --switch=GeoCoq --set-switch
 datasets:
 - project: <root>/data/repos/GeoCoq
   files:

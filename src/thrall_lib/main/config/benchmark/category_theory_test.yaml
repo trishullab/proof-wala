@@ -1,0 +1,56 @@
+name: category_theory_test
+num_files: 14
+language: COQ
+few_shot_data_path_for_retrieval: null
+few_shot_metadata_filename_for_retrieval: null
+dfs_data_path_for_retrieval: null
+dfs_metadata_filename_for_retrieval: local.meta.json
+theorem_cnt: 14
+timeout_per_theorem_in_secs: 320
+setup_cmds:
+  - opam env --switch=category-theory --set-switch
+datasets:
+- project: <root>/data/repos/category-theory
+  files:
+  - path: Solver/Reify.v
+    theorems:
+    - test_lookup
+  - path: Theory/Functor.v
+    theorems:
+    - fun_strict_equiv_id_left
+  - path: Theory/Adjunction.v
+    theorems:
+    - left_adjoint_iso
+  - path: Instance/Fun/Cartesian.v
+    theorems:
+    - ump_product'
+  - path: Construction/Cayley.v
+    theorems:
+    - Cayley_Right
+  - path: Theory/Coq/Applicative/Proofs.v
+    theorems:
+    - pure_comp
+  - path: Construction/Free/Quiver.v
+    theorems:
+    - transport_quiver_cod
+  - path: Structure/Cartesian.v
+    theorems:
+    - split_first
+  - path: Construction/Comma.v
+    theorems:
+    - comma_proj_com_iso
+  - path: Tools/Abstraction.v
+    theorems:
+    - ccc_apply_pair
+  - path: Theory/Coq/List/Proofs.v
+    theorems:
+    - Permutation_Forall
+  - path: Theory/Morphisms.v
+    theorems:
+    - id_invol
+  - path: Structure/Terminal.v
+    theorems:
+    - one_comp
+  - path: Structure/Monoidal/Proofs.v
+    theorems:
+    - tensor_id_left_inj
