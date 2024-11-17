@@ -453,7 +453,8 @@ def eval_dataset_once_with_retries(
     model = Model(model_path, is_seq2seq=is_seq2seq, use_lora=False)
     model.__enter__()
     logfile = os.path.join(log_dir, f"eval_dataset_multiple_attempts.log")
-    logger = setup_logger("eval_dataset_multiple_attempts", logfile)
+    logger_id = str(uuid.uuid4())
+    logger = setup_logger(f"eval_dataset_multiple_attempts_{logger_id}", logfile)
     logger.info(f"Restarting evaluation for dataset: {dataset.project}")
     return eval_dataset_once(
         model,

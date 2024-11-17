@@ -482,7 +482,10 @@ class ProofSearchDriver:
                 tree_node = None
                 found = False
                 time_taken = time.time() - temp_start_time
-            lemma_name = pool._get_attr('_lemma_name_with_stmt', [0])[0]
+            try:
+                lemma_name = pool._get_attr('_lemma_name_with_stmt', [0])[0]
+            except:
+                lemma_name = theorem_name
             full_path = env.dynamic_proof_executor_callback.file_path
             if found:
                 last_state: ProofState = tree_node.other_data.proof_state

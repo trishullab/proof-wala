@@ -1,5 +1,5 @@
 (* Require Import CoqHammer.Hammer. *)
-
+Require Import Coq.Arith.Arith.
 (* Demo of proofs needing only simpl, reflexivity, auto, trivial, firstorder *)
 
 Theorem double_neg : forall P : Prop, P -> ~~P.
@@ -79,6 +79,13 @@ Proof.
     right; right; left; intros; destruct x; try rewrite H_true; try rewrite H_false; reflexivity.
     right; right; right; intros; destruct x; try rewrite H_true; try rewrite H_false; reflexivity.
     right; left; intros; destruct x; try rewrite H_true; try rewrite H_false; reflexivity.
+Qed.
+
+Theorem mod_4_arith: forall n : nat, n mod 4 = 2 -> n * n mod 4 = 0.
+Proof.
+    intros.
+    rewrite Nat.mul_mod; auto.
+    rewrite H. auto.
 Qed.
 
 (* Proof by GPT-4 *)
