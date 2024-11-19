@@ -1,4 +1,4 @@
-training_data_dir: <root>/data/proofsteps/random-big-test/multi-lingual/train
+training_data_dir: <root>/data/proofsteps/random-big-test/multilingual/train
 training_meta_filename: local.meta.json
 training_data_log_dir: <root>/data/proofsteps/training_results/logs/random-big-test
 training_dataset_type: CodeT5TrainingDataset
