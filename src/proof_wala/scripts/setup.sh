@@ -11,7 +11,9 @@ if [[ $conda_status == "None" ]] || [[ $conda_status == "base" ]]; then
     exit 1
 fi
 echo "Setting up ProofWala ..."
-./imports/itp-interface/src/itp_interface/scripts/setup.sh
+pushd ./imports/itp-interface
+./src/itp_interface/scripts/setup.sh
+popd
 ./src/proof_wala/scripts/update_imports.sh
 pip_loc="./.conda/bin/pip"
 $pip_loc install -r requirements.txt
