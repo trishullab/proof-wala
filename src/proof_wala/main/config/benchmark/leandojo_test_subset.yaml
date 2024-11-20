@@ -1,0 +1,18 @@
+name: leandojo-test-subset
+num_files: 1
+language: LEAN4
+few_shot_data_path_for_retrieval: null
+few_shot_metadata_filename_for_retrieval: null
+dfs_data_path_for_retrieval: null
+dfs_metadata_filename_for_retrieval: local.meta.json
+theorem_cnt: 1
+timeout_per_theorem_in_secs: 720
+datasets:
+- project: imports/itp-interface/src/data/test/Mathlib
+  files:
+  - path: temp.lean
+    theorems: "*"
+    # - Finset.fold_union_inter
+  # - path: .lake/packages/mathlib/Mathlib/Data/Finset/Fold.lean
+  #   theorems:
+  #   - Finset.fold_union_inter

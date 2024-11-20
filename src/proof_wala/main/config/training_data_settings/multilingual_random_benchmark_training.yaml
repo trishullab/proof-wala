@@ -1,0 +1,36 @@
+training_data_dir: <root>/data/proofsteps/random-big-test/multilingual/train
+training_meta_filename: local.meta.json
+training_data_log_dir: <root>/data/proofsteps/training_results/logs/random-big-test
+training_dataset_type: CodeT5TrainingDataset
+training_data_formatter_type: CodeT5PromptTrainingDataFormatter
+training_dataset_args:
+  characters_per_token: 3.6
+  max_tokens: 2048
+  no_steps: True
+evals:
+  - eval_name: math-comp
+    eval_data_dir: <root>/data/proofsteps/random-big-test/math-comp/eval
+    eval_meta_filename: local.meta.json
+    eval_data_log_dir: <root>/data/proofsteps/training_results/random-big-test/math-comp/logs/multilingual
+  - eval_name: GeoCoq
+    eval_data_dir: <root>/data/proofsteps/random-big-test/GeoCoq/eval
+    eval_meta_filename: local.meta.json
+    eval_data_log_dir: <root>/data/proofsteps/training_results/random-big-test/GeoCoq/logs/multilingual
+  - eval_name: leandojo
+    eval_data_dir: <root>/data/proofsteps/leandojo/random/eval/20240511-230108
+    eval_meta_filename: local.meta.json
+    eval_data_log_dir: <root>/data/proofsteps/training_results/random/leandojo/logs/multilingual
+  - eval_name: category-theory
+    eval_data_dir: <root>/data/proofsteps/random-big-test/category-theory/eval
+    eval_meta_filename: local.meta.json
+    eval_data_log_dir: <root>/data/proofsteps/training_results/random-big-test/category-theory/logs/multilingual
+  - eval_name: CompCert
+    eval_data_dir: <root>/data/proofsteps/CompCert/20240510-053859/test
+    eval_meta_filename: local.meta.json
+    eval_data_log_dir: <root>/data/proofsteps/training_results/random-big-test/CompCert/logs/multilingual
+eval_data_dir:
+eval_meta_filename:
+eval_data_log_dir:
+test_data_dir:
+test_meta_filename:
+test_data_log_dir:

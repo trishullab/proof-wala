@@ -24,3 +24,5 @@ datasets:
           - nat_add_zero
           - nat_add_succ
           - nat_succ_add
+          - finite_unary_functions
+          - mod_4_arith

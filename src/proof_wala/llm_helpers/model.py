@@ -5,6 +5,8 @@ import logging
 import json
 import random
 import shutil
+import uuid
+import time
 from enum import Enum
 from dataclasses import dataclass, field
 from dataclasses_json import dataclass_json
@@ -74,6 +76,11 @@ class LogMetricCallback(TrainerCallback):
     def __init__(self, model: "Model"):
         self.model = model
         self._idx = 0
+        self._last_log_time = time.time()
+        self._last_log_step = 0
+        self._steps_per_sec = 1e-6
+        self._exp_completion_time = 1e-6
+        self._alpha = 0.9
 
     def on_step_end(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
         # Check if we should run evaluation
@@ -85,8 +92,29 @@ class LogMetricCallback(TrainerCallback):
 
     def on_log(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
         if len(state.log_history) > 0:
+            time_now = time.time()
+            time_elapsed = time_now - self._last_log_time
+            steps_elapsed = state.global_step - self._last_log_step
+            if time_elapsed == 0:
+                time_elapsed = 1e-6
+            steps_per_second = steps_elapsed / time_elapsed
+            if steps_per_second == 0:
+                steps_per_second = 1 / time_elapsed # Pretend that we did 1 step
+            expected_completion_time = state.max_steps / steps_per_second
+            if self._last_log_step == 0:
+                self._steps_per_sec = steps_per_second
+                self._exp_completion_time = expected_completion_time
+            else:
+                self._steps_per_sec = self._alpha * self._steps_per_sec + (1 - self._alpha) * steps_per_second
+                self._exp_completion_time = self._alpha * self._exp_completion_time + (1 - self._alpha) * expected_completion_time
+            self._last_log_time = time_now
+            self._last_log_step = state.global_step
             metrices = state.log_history[self._idx:]
             for metrics in metrices:
+                metrics = dict(metrics)
+                metrics["steps_per_sec"] = self._steps_per_sec
+                metrics["exp_completion_time_in_sec"] = self._exp_completion_time
+                metrics["exp_completion_time_in_hours"] = self._exp_completion_time / 3600
                 if self.model._should_use_comet:
                     self.model._comet_experiment.log_metrics(metrics, step=state.global_step, epoch=state.epoch)
                 metric_json = json.dumps(metrics)
@@ -157,9 +185,13 @@ class Model(object):
         self.name = name
         self.cuda_context = CudaContext.get_default_context()
         self.training_args = training_args
-        code_logger = logging.getLogger("ModelCode") if log_folder is None else setup_logger("ModelCode", f"{log_folder}/model_code.log")
+        gpu_id_local = os.environ.get("LOCAL_RANK", None)
+        gpu_id_global = os.environ.get("RANK", None)
+        gpu_id_unique = str(uuid.uuid4())
+        self.gpu_id = f"{gpu_id_local}-{gpu_id_global}-{gpu_id_unique}"
+        code_logger = logging.getLogger(f"ModelCode-{self.gpu_id}") if log_folder is None else setup_logger(f"ModelCode-{self.gpu_id}", f"{log_folder}/model_code-{self.gpu_id}.log")
         metric_format = '{"time": "%(asctime)s", "metrics": %(message)s}'
-        metric_logger = logging.getLogger("ModelMetrics") if log_folder is None else setup_logger("ModelMetrics", f"{log_folder}/model_metrics.jsonl", format=metric_format)
+        metric_logger = logging.getLogger(f"ModelMetrics-{self.gpu_id}") if log_folder is None else setup_logger(f"ModelMetrics-{self.gpu_id}", f"{log_folder}/model_metrics-{self.gpu_id}.jsonl", format=metric_format)
         self.code_logger = code_logger
         self.metric_logger = metric_logger
         self._is_loaded = False
@@ -554,6 +586,7 @@ class Model(object):
             callbacks: typing.List[TrainerCallback] = None):
         assert self._is_loaded, "Model or tokenizer is not loaded"
         assert self.training_args is not None, "Please provide training arguments"
+        eval_dataset_is_dict = isinstance(eval_dataset, dict)
         if compute_metrics is None:
             compute_metrics = self._generative_compute_metrics()
             # paramless_compute_metrics = self._exact_match_metric_callback(eval_dataset, training_data_formatter_callback)
@@ -629,7 +662,12 @@ class Model(object):
                         self.code_logger.error("Trying to save the model")
         if self.training_args.do_eval and eval_dataset is not None:
             self.code_logger.info("Running evaluation after training")
-            trainer.evaluate()
+            if eval_dataset_is_dict:
+                for eval_dataset_name in eval_dataset:
+                    self.code_logger.info(f"Evaluating dataset: {eval_dataset_name}")
+                    trainer.evaluate(trainer.original_eval_dataset[eval_dataset_name], metric_key_prefix=f"eval_{eval_dataset_name}")
+            else:
+                trainer.evaluate(trainer.original_eval_dataset)
         # Change the model name and save it
         # load the best model
         try:

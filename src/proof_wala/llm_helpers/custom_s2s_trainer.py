@@ -2,6 +2,7 @@
 
 import torch
 import torch.nn as nn
+import typing
 from logging import Logger
 from torch.utils.data import DataLoader, Dataset
 from typing import List, Union, Optional, Callable, Dict, Tuple
@@ -72,16 +73,19 @@ class GenerateEvalS2STrainer(Seq2SeqTrainer):
         self.generate_callback = generate_callback
         self.generate_batch_size = self.args.eval_batch_size
         self.logger = logger if logger is not None else hf_trainer_logger
+        self._agg_metrics = {}
+        self._num_evals = 1 if type(eval_dataset) is not dict else len(eval_dataset)
+        self._metric_agg_idx = 0
         pass
 
-    def get_eval_dataloader(self, eval_dataset: Dataset | None = None) -> DataLoader:
+    def get_eval_dataloader(self, eval_dataset: typing.Union[Dataset, None] = None) -> DataLoader:
         return None
 
     def evaluation_loop(self, 
             dataloader: DataLoader, 
             description: str, 
-            prediction_loss_only: bool | None = None, 
-            ignore_keys: List[str] | None = None, 
+            prediction_loss_only: typing.Union[bool, None] = None, 
+            ignore_keys: typing.Union[List[str], None] = None, 
             metric_key_prefix: str = "eval") -> EvalLoopOutput:
         """
         Prediction/evaluation loop, shared by `Trainer.evaluate()` and `Trainer.predict()`.
@@ -194,10 +198,23 @@ class GenerateEvalS2STrainer(Seq2SeqTrainer):
 
         # Prefix all keys with metric_key_prefix + '_'
         for key in list(metrics.keys()):
+            if self._num_evals >= 1:
+                if self._metric_agg_idx == 0:
+                    self._agg_metrics[key] = 0
+                    self._agg_metrics["eval_count"] = 0
             if not key.startswith(f"{metric_key_prefix}_"):
                 metrics[f"{metric_key_prefix}_{key}"] = metrics.pop(key)
+                if self._num_evals >= 1:
+                    if self._agg_metrics["eval_count"] == 0 and _eval_cnt == 0:
+                        self._agg_metrics["eval_count"] = 1e-6 # Avoid division by zero
+                    self._agg_metrics[key] = (self._agg_metrics[key] * self._agg_metrics['eval_count'] + metrics[f"{metric_key_prefix}_{key}"] * _eval_cnt) / (self._agg_metrics['eval_count'] + _eval_cnt)
+                    self._agg_metrics['eval_count'] += _eval_cnt
+                    metrics[f"eval_{key}"] = self._agg_metrics[key]
+                    metrics[f"{metric_key_prefix}_count"] = _eval_cnt
+                    metrics[f"eval_agg_count"] = self._agg_metrics['eval_count']
 
         all_labels = None
         all_preds = None
         num_samples = _eval_cnt
+        self._metric_agg_idx = (self._metric_agg_idx + 1) % self._num_evals
         return EvalLoopOutput(predictions=all_preds, label_ids=all_labels, metrics=metrics, num_samples=num_samples)

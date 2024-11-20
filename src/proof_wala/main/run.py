@@ -9,6 +9,7 @@ import os
 os.environ["HYDRA_FULL_ERROR"] = "1"
 import ray
 import hydra
+import time
 from ray.runtime_env import RuntimeEnv
 from proof_wala.main.config import ExperimentType, parse_config
 from proof_wala.main.run_training import train_experiment
@@ -21,8 +22,9 @@ def main(cfg):
     print(f"Working directory: {os.getcwd()}")
     print(f"Config: {cfg}")
     experiment = parse_config(cfg)
+    time_now = time.strftime("%Y%m%d-%H%M%S")
     if experiment.expertiment_type == ExperimentType.Training:
-        train_experiment(experiment)
+        train_experiment(experiment, time_now)
     elif experiment.expertiment_type == ExperimentType.TokenCount:
         os.environ["COMET_MODE"] = "DISABLED"
         count_tokens(experiment)

@@ -109,80 +109,83 @@ def discover_lemmas_in_benchmark(
     logfile: str):
     log_id = str(uuid.uuid4())
     logger = setup_logger(f"discover_lemmas_in_benchmark_{log_id}", logfile)
-    for file in dataset.files:
-        path = os.path.join(dataset.project, file.path)
-        theorem_maps : typing.Dict[str, typing.Dict[str, ProofSearchResult]] = ray.get(eval_proof_results.get_theorem_map.remote())
-        if skip_files_in_checkpoint and path in theorem_maps:
-            logger.info(f"Skipping the file: {path} as it was already attempted before.")
-            continue
-        ray.get(eval_checkpoint_info.add_path_to_maps.remote(path))
-        ray.get(eval_proof_results.add_path_to_maps.remote(path))
-        get_all_lemmas_proof_exec_callback = ProofExecutorCallback(
-            project_folder=dataset.project,
-            file_path=path,
-            language=eval_benchmark.language,
-            use_hammer=False, # We don't need hammer for this
-            timeout_in_secs=eval_settings.timeout_in_secs,
-            use_human_readable_proof_context=eval_settings.use_human_readable_proof_context,
-            suppress_error_log=True,
-            always_use_retrieval=False,
-            logger=logger,
-            setup_cmds=eval_benchmark.setup_cmds)
-        manager = multiprocessing.Manager()
-        return_dict = manager.dict()
-        file_time_out = eval_settings.timeout_in_secs * eval_settings.max_proof_depth * 50
-        logger.info(f"Getting all lemmas in file: {path} with timeout: {file_time_out} seconds")
-        p = multiprocessing.Process(target=_Get_All_Lemmas(), args=(return_dict, path, get_all_lemmas_proof_exec_callback, logger))
-        p.start()
-        p.join(file_time_out)
-        if p.is_alive():
-            p.kill()
-            p.join()
-        p.close()
-        if "lemmas" not in return_dict:
-            logger.info(f"Failed to get all lemmas in file: {path}, moving on to the next file.")
-            continue
-        lemmas_to_prove = list(return_dict["lemmas"])
-        if isinstance(file.theorems, str) and file.theorems == "*":
-            file.theorems = list(lemmas_to_prove)
-            file.theorems.sort() # sort to ensure one order when no theorems are specified
-        elif isinstance(file.theorems, list):
-            logger.info(f"Discovered {len(lemmas_to_prove)} lemmas in file: {path}")
-            if get_all_lemmas_proof_exec_callback.language == ProofAction.Language.LEAN4:
-                logger.info("Converting theorems to fully qualified names for Lean 4.")
-                actual_theorem_name = [get_theorem_name_resembling_lean4(path, lemma, use_cache=True) for lemma in file.theorems]
-                for _lemma in actual_theorem_name:
-                    logger.info(f"Converted lemma: {_lemma}")
-                for _lemma in lemmas_to_prove:
-                    logger.info(f"Discovered lemma: {_lemma}")
+    if eval_settings.do_lemmas_discovery:
+        for file in dataset.files:
+            path = os.path.join(dataset.project, file.path)
+            theorem_maps : typing.Dict[str, typing.Dict[str, ProofSearchResult]] = ray.get(eval_proof_results.get_theorem_map.remote())
+            if skip_files_in_checkpoint and path in theorem_maps:
+                logger.info(f"Skipping the file: {path} as it was already attempted before.")
+                continue
+            ray.get(eval_checkpoint_info.add_path_to_maps.remote(path))
+            ray.get(eval_proof_results.add_path_to_maps.remote(path))
+            get_all_lemmas_proof_exec_callback = ProofExecutorCallback(
+                project_folder=dataset.project,
+                file_path=path,
+                language=eval_benchmark.language,
+                use_hammer=False, # We don't need hammer for this
+                timeout_in_secs=eval_settings.timeout_in_secs,
+                use_human_readable_proof_context=eval_settings.use_human_readable_proof_context,
+                suppress_error_log=True,
+                always_use_retrieval=False,
+                logger=logger,
+                setup_cmds=eval_benchmark.setup_cmds)
+            manager = multiprocessing.Manager()
+            return_dict = manager.dict()
+            file_time_out = eval_settings.timeout_in_secs * eval_settings.max_proof_depth * 50
+            logger.info(f"Getting all lemmas in file: {path} with timeout: {file_time_out} seconds")
+            p = multiprocessing.Process(target=_Get_All_Lemmas(), args=(return_dict, path, get_all_lemmas_proof_exec_callback, logger))
+            p.start()
+            p.join(file_time_out)
+            if p.is_alive():
+                p.kill()
+                p.join()
+            p.close()
+            if "lemmas" not in return_dict:
+                logger.info(f"Failed to get all lemmas in file: {path}, moving on to the next file.")
+                continue
+            lemmas_to_prove = list(return_dict["lemmas"])
+            if isinstance(file.theorems, str) and file.theorems == "*":
+                file.theorems = list(lemmas_to_prove)
+                file.theorems.sort() # sort to ensure one order when no theorems are specified
+            elif isinstance(file.theorems, list):
+                logger.info(f"Discovered {len(lemmas_to_prove)} lemmas in file: {path}")
+                if get_all_lemmas_proof_exec_callback.language == ProofAction.Language.LEAN4:
+                    logger.info("Converting theorems to fully qualified names for Lean 4.")
+                    actual_theorem_name = [get_theorem_name_resembling_lean4(path, lemma, use_cache=True) for lemma in file.theorems]
+                    for _lemma in actual_theorem_name:
+                        logger.info(f"Converted lemma: {_lemma}")
+                    for _lemma in lemmas_to_prove:
+                        logger.info(f"Discovered lemma: {_lemma}")
+                else:
+                    actual_theorem_name = file.theorems
+                if not dataset.negation:
+                    # Check all theorems which can be proved
+                    intersection = set(actual_theorem_name).intersection(lemmas_to_prove)
+                    for _lemma in intersection:
+                        logger.info(f"Intersection lemma: {_lemma}")
+                    # Arrange them in the order of the file.theorems
+                    file.theorems = [x for x in actual_theorem_name if x in intersection]
+                else:
+                    logger.info("Dataset is negation dataset. So, removing the theorems which are mentioned in the dataset.")
+                    # Take the difference of the theorems which can be proved
+                    difference = set(lemmas_to_prove).difference(file.theorems)
+                    for lemma in difference:
+                        logger.info(f"Lemma: {lemma} is not in the dataset.")
+                    difference = list(difference)
+                    difference.sort()
+                    file.theorems = difference
             else:
-                actual_theorem_name = file.theorems
-            if not dataset.negation:
-                # Check all theorems which can be proved
-                intersection = set(actual_theorem_name).intersection(lemmas_to_prove)
-                for _lemma in intersection:
-                    logger.info(f"Intersection lemma: {_lemma}")
-                # Arrange them in the order of the file.theorems
-                file.theorems = [x for x in actual_theorem_name if x in intersection]
-            else:
-                logger.info("Dataset is negation dataset. So, removing the theorems which are mentioned in the dataset.")
-                # Take the difference of the theorems which can be proved
-                difference = set(lemmas_to_prove).difference(file.theorems)
-                for lemma in difference:
-                    logger.info(f"Lemma: {lemma} is not in the dataset.")
-                difference = list(difference)
-                difference.sort()
-                file.theorems = difference
-        else:
-            raise ValueError(f"Invalid theorems: {file.theorems}")
-        logger.info(f"Discovered {len(file.theorems)} lemmas to prove in {path}")
-        logger.info(f"Lemmas to prove in file {path}: \n{file.theorems}")
-        if eval_settings.sample < 1.0:
-            sample_size = math.ceil(len(file.theorems) * eval_settings.sample)
-            logger.info(f"Sampling {sample_size} lemmas from {len(file.theorems)} lemmas in file {path}")
-            random.seed(eval_settings.sample_seed)
-            file.theorems = list(random.sample(file.theorems, sample_size))
-            logger.info(f"Sampled lemmas to prove in file {path}: \n{file.theorems}")
+                raise ValueError(f"Invalid theorems: {file.theorems}")
+            logger.info(f"Discovered {len(file.theorems)} lemmas to prove in {path}")
+            logger.info(f"Lemmas to prove in file {path}: \n{file.theorems}")
+            if eval_settings.sample < 1.0:
+                sample_size = math.ceil(len(file.theorems) * eval_settings.sample)
+                logger.info(f"Sampling {sample_size} lemmas from {len(file.theorems)} lemmas in file {path}")
+                random.seed(eval_settings.sample_seed)
+                file.theorems = list(random.sample(file.theorems, sample_size))
+                logger.info(f"Sampled lemmas to prove in file {path}: \n{file.theorems}")
+    else:
+        logger.info("Skipping lemmas discovery")
     clean_ray_logs(logger)
     return dataset
 
@@ -450,7 +453,8 @@ def eval_dataset_once_with_retries(
     model = Model(model_path, is_seq2seq=is_seq2seq, use_lora=False)
     model.__enter__()
     logfile = os.path.join(log_dir, f"eval_dataset_multiple_attempts.log")
-    logger = setup_logger("eval_dataset_multiple_attempts", logfile)
+    logger_id = str(uuid.uuid4())
+    logger = setup_logger(f"eval_dataset_multiple_attempts_{logger_id}", logfile)
     logger.info(f"Restarting evaluation for dataset: {dataset.project}")
     return eval_dataset_once(
         model,

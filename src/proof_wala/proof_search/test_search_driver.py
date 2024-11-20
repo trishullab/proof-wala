@@ -23,6 +23,9 @@ class RandomCoqProofActionGenerator(ProofActionGenerator):
     def __init__(self, width: int = 4):
         super().__init__(width)
         pass
+
+    def get_proof_end_for_language(self, language: ProofAction.Language) -> ProofAction:
+        return ProofAction(ProofAction.ActionType.RUN_TACTIC, ProofAction.Language.COQ, tactics=['Qed.'])
     
     def get_proof_end_for_language(self, language: ProofAction.Language) -> ProofAction:
         qed = get_qed_for_language(language)
@@ -176,7 +179,7 @@ if __name__ == '__main__':
                 proof_search_heuristic=ProofFoundHeuristic(),
                 action_generator=RandomCoqProofActionGenerator(width),
                 search_width=width,
-                attempt_count=5,
+                attempt_count=2,
                 timeout_in_secs=60,
                 trace_settings=tracer,
                 extract_original_proof=True)
