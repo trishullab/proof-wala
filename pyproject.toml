@@ -14,14 +14,15 @@ requires = [
     "trl==0.7.7",
     "parglare==0.16.1",
     "pydantic==1.10.13",
-    "graphviz==0.17"
+    "graphviz==0.17",
+    "openai==0.27.8"
 ]
 build-backend = "hatchling.build"
 [project]
 name = "proof_wala"
 version = "0.0.2"
 authors = [
-  { name="Amitayush Thakur", email="amitayush@utexas.edu" },
+  { name="anon", email="anon@anon.edu" },
 ]
 description = "Python library for training LLMs with Interactive Theorem Proving data."
 readme = "README.md"
