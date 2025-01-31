@@ -7,7 +7,7 @@ if [[ ! -d "imports/itp-interface" ]]; then
 fi
 pushd ./imports/itp-interface
 echo "Installing requirements for itp-interface..."
-python -m pip install -r tacc_requirements.txt
+python -m pip install -r # Anonymized this because it can reveal compute cluster used for training
 echo "Building itp-interface..."
 python -m pip install --upgrade build
 python -m build
@@ -17,5 +17,5 @@ echo "Installing itp-interface..."
 python -m pip install imports/itp-interface/dist/itp_interface-0.1.5-py3-none-any.whl --force-reinstall
 echo "itp-interface installed successfully!"
 echo "Installing thrall-lib requirements..."
-python -m pip install -r tacc_requirements.txt
+python -m pip install -r # Anonymized this because it can reveal compute cluster used for training
 echo "thrall-lib requirements installed successfully!"
