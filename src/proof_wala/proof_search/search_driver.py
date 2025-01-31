@@ -42,8 +42,11 @@ class ProofPathTracer:
     max_parallelism: int
 
     def reset_training_data(self, logger: logging.Logger = None):
+        time_str = time.strftime("%Y%m%d-%H%M%S")
+        trace_folder = os.path.join(self.folder, time_str)
+        os.makedirs(trace_folder, exist_ok=True)
         self.training_data = TrainingData(
-            self.folder, 
+            trace_folder,
             self.training_meta_filename, 
             self.training_metadata, 
             self.max_parallelism, 
@@ -100,7 +103,7 @@ class ProofSearchBranchGenerator(ABC):
     def __init__(self, 
         width: int,
         envs : ProofEnvPool,
-        env_to_state_map: typing.List[int],
+        env_to_state_map: typing.List[typing.Optional[int]],
         state_to_id_map: typing.Dict[str, int], 
         proof_action_generator: ProofActionGenerator,
         theorem_name: str,
@@ -131,9 +134,10 @@ class ProofSearchBranchGenerator(ABC):
             for state in proof:
                 self.original_proofs_state_names.add(convert_state_to_string(state))
         for env_idx, state_idx in enumerate(env_to_state_map):
-            if state_idx not in self.state_id_to_env_map:
+            if state_idx is not None and state_idx not in self.state_id_to_env_map:
                 self.state_id_to_env_map[state_idx] = set()
-            self.state_id_to_env_map[state_idx].add(env_idx)
+            if state_idx is not None:
+                self.state_id_to_env_map[state_idx].add(env_idx)
         self.search_policy = search_policy
         self.proof_id = os.path.join(str(uuid.uuid4()), self.project_id, self.theorem_name)
         pass
@@ -143,6 +147,8 @@ class ProofSearchBranchGenerator(ABC):
         return list(self.state_id_to_env_map[0]) if 0 in self.state_id_to_env_map else []
     
     def add_new_envs_to_pool(self, count: int):
+        if count <= 0:
+            return
         old_pool_size = self.envs.pool_size
         self.envs.add_and_init_proof_envs(count)
         for env_idx in range(old_pool_size, self.envs.pool_size):
@@ -154,7 +160,8 @@ class ProofSearchBranchGenerator(ABC):
 
     def reset_envs(self, env_idxs: typing.List[int], actions_till_states : typing.List[typing.List[ProofAction]], force_reset: bool = True) -> typing.Set[int]:
         if force_reset:
-            self.envs.reset(env_idxs)
+            if len(env_idxs) > 0:
+                self.envs.reset(env_idxs)
         for env_idx in env_idxs:
             env_state_idx = self.env_to_state_map[env_idx]
             assert env_state_idx in self.state_id_to_env_map, f"Env state idx {env_state_idx} not found in the state id to env map"
@@ -175,11 +182,13 @@ class ProofSearchBranchGenerator(ABC):
                 env_idxs_zipped[__idx].append(assigned_env)
                 actions_zipped[__idx].append(action)
         erred_envs = set()
+        erred_envs.update(self.envs.get_errd_envs())
         for actions_flat, env_idxs_flat in zip(actions_zipped, env_idxs_zipped):
             env_idxs_flat_with_idx = [(_idx, env_idx) for _idx, env_idx in enumerate(env_idxs_flat) if env_idx not in erred_envs]
             actions_flat = [actions_flat[_idx] for _idx, _ in env_idxs_flat_with_idx]
             env_idxs_flat = [env_idx for _, env_idx in env_idxs_flat_with_idx]
-            self.envs.step(actions_flat, env_idxs_flat)
+            if len(env_idxs_flat) > 0:
+                self.envs.step(actions_flat, env_idxs_flat)
             new_erred_envs = self.envs.get_errd_envs()
             erred_envs.update(new_erred_envs)
         if len(erred_envs) > 0:
@@ -190,7 +199,10 @@ class ProofSearchBranchGenerator(ABC):
                     self.state_id_to_env_map[env_state_idx].remove(env_idx)
                 self.env_to_state_map[env_idx] = None
         safe_env_idxs = [env_idx for env_idx in env_idxs if env_idx not in erred_envs]
-        safe_env_states = self.envs.get_state(safe_env_idxs)
+        if len(safe_env_idxs) > 0:
+            safe_env_states = self.envs.get_state(safe_env_idxs)
+        else:
+            safe_env_states = []
         env_states = [None for _ in range(len(env_idxs))]
         for idx, env_idx in enumerate(safe_env_idxs):
             actual_env_idx = env_idxs.index(env_idx)
@@ -230,9 +242,9 @@ class ProofSearchBranchGenerator(ABC):
         return timedout
 
     def _update_state_to_env_map(self, next_state, done, info, env_idxs, idx, actions, node, actions_to_run, state, state_idx):
-        state_name = convert_state_to_string(next_state)
+        state_name = convert_state_to_string(next_state) if next_state is not None else 'Tactic failed/timed out'
         action_str = '\n'.join(actions[idx].kwargs['tactics']) if actions[idx].kwargs['tactics'] is not None else str(actions[idx])
-        self.logger.info(f"Action: {action_str}, Done: {done}, Progress: {info.progress}, Error: {info.error_message}")
+        self.logger.info(f"Action: {action_str}, Done: {done}, Progress: {info.progress if info is not None else None}, Error: {info.error_message if info is not None else ('Tactic failed/timed out' if next_state is None else None)}")
         new_state_id = None
         if state_name not in self.state_to_state_id_map:
             new_state_id = len(self.state_to_state_id_map)
@@ -251,8 +263,8 @@ class ProofSearchBranchGenerator(ABC):
             on_proof_path = state_name in self.original_proofs_state_names
             additional_info = {
                 'done': done,
-                'progress': info.progress,
-                'error_message': info.error_message,
+                'progress': info.progress if info is not None else None,
+                'error_message': info.error_message if info is not None else ('Tactic failed/timed out' if next_state is None else None),
                 'distance_from_root': node.distance_from_root + 1,
                 'score': actions_to_run[idx][1],
                 'on_proof_path': on_proof_path,
@@ -261,10 +273,10 @@ class ProofSearchBranchGenerator(ABC):
             }
             training_data_format = TrainingDataFormat(
                 proof_id=self.proof_id,
-                goal_description=next_state.training_data_format.goal_description,
+                goal_description=next_state.training_data_format.goal_description if next_state is not None else 'Tactic failed/timed out',
                 start_goals=state.training_data_format.start_goals,
                 proof_steps=copy.deepcopy(actions[idx].kwargs['tactics']),
-                end_goals=next_state.training_data_format.start_goals,
+                end_goals=next_state.training_data_format.start_goals if next_state is not None else state.training_data_format.start_goals,
                 addition_state_info=additional_info,
                 file_path=self.file_path,
                 project_id=self.project_id,
@@ -330,7 +342,10 @@ class ProofSearchBranchGenerator(ABC):
             env_idxs = [env_idx for env_idx, _, _ in actions_to_run]
             actions = [action for _, _, action in actions_to_run]
             action_start_time = time.time()
-            results = self.envs.step(actions, env_idxs)
+            if len(env_idxs) > 0:
+                results = self.envs.step(actions, env_idxs)
+            else:
+                results = []
             action_end_time = time.time()
             self.logger.info(f"Finished executing {len(actions)} actions parallely in {action_end_time - action_start_time} seconds.")
             failed_envs = []
@@ -343,7 +358,7 @@ class ProofSearchBranchGenerator(ABC):
                     raise ValueError(f"Step tuple must contain 4 or 6 elements, but contains {len(result)} = {result}")
                 proof_state_info = ProofStateInfo(next_state, done, info, env_idxs[idx])
                 new_state_id, state_name = self._update_state_to_env_map(next_state, done, info, env_idxs, idx, actions, node, actions_to_run, state, state_idx)
-                if len(next_state.training_data_format.start_goals) == 0 and not done:
+                if next_state is not None and len(next_state.training_data_format.start_goals) == 0 and not done:
                     # We found a very good action so we should signal the search to stop, regardless of the search heuristic
                     _temp_list = list(actions_to_run[idx])
                     _temp_list[1] = -100
@@ -361,7 +376,7 @@ class ProofSearchBranchGenerator(ABC):
                     next_state = next_next_state
 
                 # TODO: Don't add the node if the action failed and the search policy is to discard failed nodes
-                if (info.progress != ProgressState.FAILED and info.progress != ProgressState.STATE_UNCHANGED) or \
+                if (info is not None and info.progress != ProgressState.FAILED and info.progress != ProgressState.STATE_UNCHANGED) or \
                     self.search_policy != SearchPolicy.DISCARD_FAILED_NODES:
                     edges.append(Edge('\n'.join(actions[idx].kwargs['tactics']), actions_to_run[idx][1], actions_to_run[idx][2]))
                     nodes.append(Node(state_name, actions_to_run[idx][1], proof_state_info))
@@ -401,7 +416,7 @@ class ProofSearchDriver:
         self.width = width
         self.proof_search_heuristic = proof_search_heuristic
         # don go beyond 0.6 * os.cpu_count()
-        max_parallelism = int(0.25 * os.cpu_count())
+        max_parallelism = int(0.15625 * os.cpu_count())
         self.env_count = max(min(8 * self.width, max_parallelism), 1)   # We need more environments to run in parallel without waiting
         self.tracer = tracer if tracer is not None else ProofPathTracer(False, "", "", TrainingDataMetadataFormat(), 1)
         self.search_policy = search_policy
@@ -441,86 +456,154 @@ class ProofSearchDriver:
                             original_proof.append(tdf)
             original_proofs = [original_proof]
 
-        pool = ProofEnvPool(self.env_count, proof_env=env, logger=self.logger)
-        with pool:
-            start_state = pool.get_state([0])[0]
-            start_state_info = ProofStateInfo(start_state, False, None, 0)
-            env_to_state_map = [0 for _ in range(self.env_count)]
-            start_state_str = convert_state_to_string(start_state)
-            state_to_id_map = {start_state_str: 0}
-            # the lower the score the better
-            start_goal = Node(start_state_str, 100, start_state_info)
-            language : ProofAction.Language = pool._get_attr('language', [0])[0]
-            end_goal = Node(end_state_string(language), -100)
-            theorem_name = env.lemma_name
-            file_path = env.dynamic_proof_executor_callback.file_path
-            project_id = env.dynamic_proof_executor_callback.project_folder 
-            branch_generator = ProofSearchBranchGenerator(
-                self.width, 
-                pool, 
-                env_to_state_map, 
-                state_to_id_map, 
-                self.proof_action_generator, 
-                theorem_name,
-                file_path,
-                project_id,
-                self.logger,
-                self.tracer,
-                original_proofs)
-            temp_start_time = time.time()
-            try:
-                tree_node, found, time_taken = self.search_algorithm.search(
-                    start_goal,
-                    end_goal,
-                    self.proof_search_heuristic, 
-                    branch_generator, 
-                    parallel_count=self.width,
-                    timeout_in_secs=timeout_in_secs,
-                    logger=self.logger)
-            except Exception as e:
-                self.logger.error(f"Search failed with error: {e}")
-                tree_node = None
-                found = False
-                time_taken = time.time() - temp_start_time
-            try:
-                lemma_name = pool._get_attr('_lemma_name_with_stmt', [0])[0]
-            except:
-                lemma_name = theorem_name
-            full_path = env.dynamic_proof_executor_callback.file_path
-            if found:
-                last_state: ProofState = tree_node.other_data.proof_state
-                proof_tree: ProofTree = last_state.proof_tree
-                actions_till_state: typing.List[ProofAction] = proof_tree.tactics
-                proof_steps = [TrainingDataFormat(proof_steps=tactic.proof_steps) for _, tactic in actions_till_state]
-                proof_search_res = ProofSearchResult(
-                            full_path,
-                            True, 
-                            lemma_name,
-                            proof_steps, 
-                            time_taken, 
-                            -1, 
-                            possible_failed_paths=-1, 
-                            num_of_backtracks=-1, 
-                            is_timeout=False, 
-                            is_inference_exhausted=False, 
-                            longest_success_path=-1,
-                            additional_info=additional_info,
-                            language=language)
-            else:
+        pool = ProofEnvPool(self.env_count, proof_env=env, logger=self.logger, timeout=timeout_in_secs, max_parallel_envs=self.env_count)
+        start_goal = None
+        tree_node = None
+        proof_search_res = None
+        full_path = env.dynamic_proof_executor_callback.file_path
+        language = env.language
+        found = False
+        got_exception = False
+        theorem_name = env.lemma_name
+        lemma_name = theorem_name
+        try:
+            pool.__enter__()
+            erred_envs = pool.get_errd_envs()
+            stable_envs = [env_idx for env_idx in range(self.env_count) if env_idx not in erred_envs]
+            if len(stable_envs) == 0:
+                self.logger.error("All environments failed to initialize, returning None")
                 proof_search_res = ProofSearchResult(
                     full_path, 
                     False, 
-                    lemma_name, 
+                    env.lemma_name, 
                     [], 
-                    time_taken, 
+                    10**6, 
                     -1, 
                     possible_failed_paths=-1, 
                     num_of_backtracks=-1, 
-                    is_timeout=time_taken >= timeout_in_secs, 
+                    is_timeout=True, 
                     is_inference_exhausted=False, 
                     longest_success_path=-1,
                     additional_info=additional_info,
                     language=language)
+            else:
+                start_state = pool.get_state([stable_envs[0]])[0]
+                start_state_info = ProofStateInfo(start_state, False, None, 0)
+                env_to_state_map = [0 if idx in stable_envs else None for idx in range(self.env_count)]
+                start_state_str = convert_state_to_string(start_state)
+                state_to_id_map = {start_state_str: stable_envs[0]}
+                # the lower the score the better
+                start_goal = Node(start_state_str, 100, start_state_info)
+                language : ProofAction.Language = pool._get_attr('language', [stable_envs[0]])[0]
+                end_goal = Node(end_state_string(language), -100)
+                file_path = env.dynamic_proof_executor_callback.file_path
+                project_id = env.dynamic_proof_executor_callback.project_folder 
+                branch_generator = ProofSearchBranchGenerator(
+                    self.width, 
+                    pool, 
+                    env_to_state_map, 
+                    state_to_id_map, 
+                    self.proof_action_generator, 
+                    theorem_name,
+                    file_path,
+                    project_id,
+                    self.logger,
+                    self.tracer,
+                    original_proofs)
+                temp_start_time = time.time()
+                try:
+                    tree_node, found, time_taken = self.search_algorithm.search(
+                        start_goal,
+                        end_goal,
+                        self.proof_search_heuristic, 
+                        branch_generator, 
+                        parallel_count=self.width,
+                        timeout_in_secs=timeout_in_secs,
+                        logger=self.logger)
+                except Exception as e:
+                    got_exception = True
+                    tree_node = None
+                    found = False
+                    time_taken = time.time() - temp_start_time
+                    self.logger.error(f"Search failed with error: {e}")
+                    proof_search_res = ProofSearchResult(
+                        full_path, 
+                        False, 
+                        lemma_name, 
+                        [], 
+                        time_taken, 
+                        -1, 
+                        possible_failed_paths=-1, 
+                        num_of_backtracks=-1, 
+                        is_timeout=time_taken >= timeout_in_secs, 
+                        is_inference_exhausted=False, 
+                        longest_success_path=-1,
+                        additional_info=additional_info,
+                        language=language)
+                    self.logger.warning(f"Going to dump the proof search result")
+                    if dump_file_name is not None:
+                        opening_mode = 'a' if os.path.exists(dump_file_name) else 'w'
+                        with open(dump_file_name, opening_mode) as f:
+                            if opening_mode == 'a':
+                                f.write("\n\n")
+                            f.write(str(proof_search_res))
+                    self.logger.warning(f"Returning the proof search result")
+                    return start_goal, tree_node, proof_search_res
+
+                if found and not got_exception:
+                    erred_envs = pool.get_errd_envs()
+                    stable_envs = [env_idx for env_idx in range(self.env_count) if env_idx not in erred_envs]
+                    try:
+                        lemma_name = pool._get_attr('_lemma_name_with_stmt', [stable_envs[0]])[0]
+                    except Exception as e:
+                        lemma_name = theorem_name
+                else:
+                    lemma_name = theorem_name
+                if not got_exception:
+                    pool.__exit__(None, None, None)
+                # full_path = env.dynamic_proof_executor_callback.file_path
+        except Exception as e:
+            self.logger.error(f"Proof search failed with error: {e}")
+        if found:
+            last_state: ProofState = tree_node.other_data.proof_state
+            proof_tree: ProofTree = last_state.proof_tree
+            actions_till_state: typing.List[ProofAction] = proof_tree.tactics
+            proof_steps = [TrainingDataFormat(proof_steps=tactic.proof_steps) for _, tactic in actions_till_state]
+            proof_search_res = ProofSearchResult(
+                        full_path,
+                        True, 
+                        lemma_name,
+                        proof_steps, 
+                        time_taken, 
+                        -1, 
+                        possible_failed_paths=-1, 
+                        num_of_backtracks=-1, 
+                        is_timeout=False, 
+                        is_inference_exhausted=False, 
+                        longest_success_path=-1,
+                        additional_info=additional_info,
+                        language=language)
+        elif proof_search_res is None:
+            proof_search_res = ProofSearchResult(
+                full_path, 
+                False, 
+                lemma_name, 
+                [], 
+                time_taken, 
+                -1, 
+                possible_failed_paths=-1, 
+                num_of_backtracks=-1, 
+                is_timeout=time_taken >= timeout_in_secs, 
+                is_inference_exhausted=False, 
+                longest_success_path=-1,
+                additional_info=additional_info,
+                language=language)
+
+        if got_exception:
+            self.logger.error("Got exception while searching for proof")
+        else:
+            self.logger.info("Did not get exception while searching for proof")
+
         if dump_file_name is not None:
             opening_mode = 'a' if os.path.exists(dump_file_name) else 'w'
             with open(dump_file_name, opening_mode) as f:

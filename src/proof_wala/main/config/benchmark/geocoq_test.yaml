@@ -1,221 +1,791 @@
 name: geocoq_test
-num_files: 59
+num_files: 136
 language: COQ
 few_shot_data_path_for_retrieval: null
 few_shot_metadata_filename_for_retrieval: null
 dfs_data_path_for_retrieval: null
 dfs_metadata_filename_for_retrieval: local.meta.json
-theorem_cnt: 89
+theorem_cnt: 505
 timeout_per_theorem_in_secs: 320
 setup_cmds:
   - opam env --switch=GeoCoq --set-switch
 datasets:
 - project: <root>/data/repos/GeoCoq
   files:
-  - path: theories/Main/Tarski_dev/Ch15_pyth_rel.v
-    theorems:
-    - opp_same_square
-  - path: theories/Main/Tarski_dev/Ch12_parallel_inter_dec.v
-    theorems:
-    - l12_20
-    - par_trans
-    - l12_21
-  - path: theories/Algebraic/Counter_models/nD/counter_model_euclid.v
-    theorems:
-    - inner_pasch
-  - path: theories/Main/Highschool/orientation.v
-    theorems:
-    - symmetry_preserves_bet
-  - path: theories/Main/Tarski_dev/Ch14_order.v
-    theorems:
-    - pos_null_neg
-  - path: theories/Main/Meta_theory/Models/tarski_to_hilbert.v
-    theorems:
-    - axiom_cong_5'
   - path: theories/Main/Meta_theory/Models/hilbert_to_tarski.v
     theorems:
-    - line_on_plane'
-    - bet_disjoint
-    - same_side_prime__plane
-  - path: theories/Main/Highschool/sesamath_exercises.v
+    - OS2__TS
+    - betH_expand
+    - strong_pasch
+    - bet_identity
+    - isosceles_congaH
+    - out2_out1
+    - betH_outH2__betH
+    - pars__para
+    - same_side_not_incid
+    - bet_colH
+    - same_side_comm
+    - line_col
+    - congaH_commr
+    - congH_refl
+    - cong_trans
+    - outH_trivial
+    - colH_trans
+    - outH_dec
+    - H_euclidean_to_T_euclidean
+    - other_point_exists
+    - point3_online_exists
+  - path: theories/Algebraic/Counter_models/Planar/counter_model_bet_inner_transitivity.v
     theorems:
-    - sesamath_4ieme_G2_ex45
-  - path: theories/Main/Tarski_dev/Ch03_bet.v
+    - continuity
+    - point_equality_decidability
+    - proclus
+  - path: theories/Main/Meta_theory/Continuity/elementary_continuity_props.v
     theorems:
-    - outer_transitivity_between
+    - triangle_inequality1
+    - euclid_22_aux
+    - one_point_line_circle__two_points_line_circle
+  - path: theories/Main/Annexes/suma.v
+    theorems:
+    - sams_lea2_suma2__lea456
+    - sams_lea_lta789_suma2__lta456
+    - sams_lea2_suma2__lea
+    - bet_suppa__suma
+    - trisuma_distincts
+    - col2_suma__col
+    - suma_suppa2__suma
+    - suma_assoc
+    - col_trisuma__bet
+    - acute_per_suma__nbet
+    - os2__sams
+    - bet__sams
+    - conga2_sams__sams
+    - sams_chara
+    - ts__suma_1
+  - path: theories/Coinc/CongR.v
+    theorems:
+    - CTcong_comm
+    - CTcong_pseudo_refl
+    - eq_le2__eq2
+  - path: theories/Main/Elements_statements/Book_1.v
+    theorems:
+    - prop_46
+    - prop_2
+    - prop_30
+    - prop_28_2
+    - prop_8
+    - prop_3
+    - prop_21_2
+    - prop_29_1
+    - prop_32_2
+    - prop_20
+    - prop_31
+    - prop_5_2
+  - path: theories/Main/Annexes/project.v
+    theorems:
+    - cong_conga3_cong3
+    - project_to_projp
+    - projp_project_to_perp
+    - projp_preserves_bet
+    - projp_is_project
+  - path: theories/Algebraic/Counter_models/nD/counter_model_bet_symmetry.v
+    theorems:
+    - segment_construction
+  - path: theories/Main/Annexes/coplanar.v
+    theorems:
+    - ncoplanar_perm_11
+    - reflect__coplanar
+    - coplanar_perm_11
+    - ncoplanar_perm_10
+    - coplanar_perm_9
+    - ncop__ncols
+    - ncoplanar_perm_13
+    - ncoplanar_perm_17
+    - ncoplanar_perm_4
+    - midpoint__coplanar
+    - ts__coplanar
+  - path: theories/Coinc/CoincR.v
+    theorems:
+    - CoappDup
+    - memCPAuxOK
+    - interp_CP
+  - path: theories/Main/Annexes/saccheri.v
+    theorems:
+    - t22_14__oah
+    - sac__pars1234
+    - t22_14__bet_aux
+    - mid2_sac__lam6521
+    - t22_7__cong
+    - sac__par1234
+  - path: theories/Algebraic/Counter_models/nD/counter_model_cong_identity.v
+    theorems:
+    - continuity
+    - five_segment
+    - euclid
+    - cong_pseudo_reflexivity
+  - path: theories/Main/Highschool/orientation.v
+    theorems:
+    - per_preserves_bet
+    - proj3_col
+    - cong_le_le
+    - proj_par
+    - midpoint_col
+  - path: theories/Main/Meta_theory/Models/tarski_to_euclid.v
+    theorems:
+    - Euclid_follows_from_Tarski_euclidean
+    - InCirc_not_OnCirc
+    - nCol_not_Col
+  - path: theories/Main/Meta_theory/Continuity/grad.v
+    theorems:
+    - grad_neq__neq12
+    - gradexp_le__reach
+    - grad_sum
   - path: theories/Algebraic/POF_to_Tarski.v
     theorems:
+    - cong_eq
+    - bet_betS
+    - ratioP_aux
+    - ratio_cp'_aux_2
+    - dot_ge0
+    - betS_ratio
+    - ratio_bet'
+    - addrBBB
+    - bet_axx
+    - betEP'
+    - ratiop0
+    - bet_symmetry
+    - extension_eq
+    - quad_eq0
+    - row2_eq0
+    - eq_div_scale
     - betS_sym
     - ratioNN
     - betE_xax
-  - path: theories/Main/Meta_theory/Parallel_postulates/par_trans_NID.v
+  - path: theories/Algebraic/Counter_models/Planar/counter_model_lower_dim.v
     theorems:
-    - playfair__playfair_quater
+    - continuity
+    - bet_symmetry
+  - path: theories/Main/Meta_theory/Models/tarski_to_hilbert.v
+    theorems:
+    - incident_col
+    - incidentp_eqp
+    - cop_plane_aux
+    - col_incident
+    - eqp_incidentp
+    - incidentp_Proper
+    - Hilbert_2D_follows_from_Tarski_2D
+  - path: theories/Main/Annexes/circles.v
+    theorems:
+    - bet_chord__diam_or_ncol
+    - bet_incs2__incs
+    - onc__inc
+    - outcs__outc
+    - diam_uniqueness
+  - path: theories/Elements/OriginalProofs/lemma_congruencetransitive.v
+    theorems:
+    - lemma_congruencetransitive
+  - path: theories/Main/Annexes/quadrilaterals_inter_dec.v
+    theorems:
+    - perp_rmb
+    - plg_par
+    - plg_cong_2
+    - plgs_mid
+    - parallelogram_to_plg
+    - plg_not_comm_1
+    - perp3__perp
+    - degenerated_rect_eq
+    - plg_mid
+    - plg_per_rect4
+    - cop_perp3__rect
+  - path: theories/Main/Highschool/SegmTrisect.v
+    theorems:
+    - SegmTrisectSecondThirdUniqueness
+  - path: theories/Algebraic/Counter_models/nD/counter_model_euclid.v
+    theorems:
+    - cauchy_schwartz'
+    - cong_abdc
+    - E_in_disk_aux
+    - dist_lt1
+    - cauchy_schwartz_eq'
+    - a'nD_eq0
+    - bc_neq_nD
+    - cong'_cdab
+    - five_segment_holds_aux2
+    - norm_point_subr_gt0
+    - segment_addition
+    - triangle_ineq
+    - seg_aux7
+    - bet_symmetry_vector
+    - c'nD_in_unit_disk
+    - i1'_in_unit_disk
+    - dist_eq1
+    - cong_identity_holds
+    - segment_construction_holds_aux
+    - i_neq_i1
+    - Rcf_to_GI_PED
+    - omd_i1i1
+  - path: theories/Main/Tarski_dev/Ch14_sum.v
+    theorems:
+    - sum_cong
+    - opp0
+    - cong_sum
+    - sum4_equiv
+    - proj_pars
+    - grid_not_par
+    - diff_uniquenessA
+    - sum_stable
+    - change_grid_sum
+    - double_not_null_not_nul
+    - pj_trivial
+    - sum_diff
+  - path: theories/Elements/OriginalProofs/lemma_ray.v
+    theorems:
+    - lemma_ray
   - path: theories/Main/Tarski_dev/Ch11_angles.v
     theorems:
-    - l11_53
-    - tsp_dec
+    - l11_19
+    - l11_61
+    - triangle_strict_reverse_inequality
+    - not_and_lta
+    - conga_dec
+    - l11_61_bis
+    - triangle_strict_inequality_2
+    - l11_62_unicity
+    - gta_distincts
+    - col_orth_at__orth_at
+    - conga_obtuse__obtuse
+    - l11_21_a
+    - suppa2__conga123
+    - inangle_one_side2
+    - conga_preserves_in_angle
     - l11_46
-    - l11_22b
-    - l11_62_existence_bis
-    - cong2_conga_cong
-    - lta_trans
-    - l11_63_existence
-  - path: theories/Main/Tactics/CoincR_for_concy.v
+    - l11_60_bis
+    - angle_partition
+    - cong2_conga_obtuse__cong_conga2
+    - lea_line
+    - conga_sym
+    - obtuse_chara
+    - conga_preserves_lta
+    - symmetry_preserves_conga
+    - in_angle_reverse
+    - out2__conga
+    - cong2_per2__cong
+    - l11_3
+    - l11_31_2
+    - cong_lt_per2__lt
+  - path: theories/Main/Meta_theory/Models/tarski_to_beeson.v
     theorems:
-    - collect_wds_for_concy
+    - inner_pasch_B
+    - ColB_Col
+    - five_segment_B
+  - path: theories/Main/Tarski_dev/Ch12_parallel.v
+    theorems:
+    - par_strict_par
+    - col_perp2_ncol__col
+    - not_par_strict_id
+    - Par_strict_cases
+    - Par_perm
+    - par_strict_not_col_2
+    - par_strict_right_comm
+  - path: theories/Main/Tarski_dev/Ch13_5_Pappus_Pascal.v
+    theorems:
+    - l13_10
+    - l13_10_aux2
+    - lcos2_lcos
+  - path: theories/Main/Annexes/half_angles.v
+    theorems:
+    - halfa_chara2
+    - out_preserves_halfa
+    - ghalfa_right_comm
+    - ghalfa_exists
+    - cop_halfa_perp__os
+    - acute_ghalfa2_sams_suma2__ghalfa456
+  - path: theories/Algebraic/Counter_models/nD/bet_identity.v
+    theorems:
+    - g2_5
+    - g2_11
+    - g2_1
+  - path: theories/Main/Tarski_dev/Ch02_cong.v
+    theorems:
+    - not_cong_3421
+    - cong_4312
+    - cong_reflexivity
+    - distinct
+  - path: theories/Main/Annexes/quadrilaterals.v
+    theorems:
+    - Square_not_triv
+    - Rhombus_Rectangle_Square
+    - Square_Rectangle
+    - Square_not_triv_3
+    - Square_not_triv_2
+    - bet_cong_bet
+    - sym_par
+    - bet_half_bet
+    - mid_plg_1
+  - path: theories/Main/Tarski_dev/Ch10_line_reflexivity.v
+    theorems:
+    - midpoint_preserves_per
+    - l10_2_existence_spec
+    - is_image_is_image_spec
+    - ex_sym
+    - l10_4_spec
+    - image_in_gen_is_image
+    - is_image_spec_col_cong
+  - path: theories/Main/Highschool/incenter.v
+    theorems:
+    - incenter_permut312
+  - path: theories/Main/Tactics/CoincR_for_cop.v
+    theorems:
+    - ss_ok_empty_for_cop
+  - path: theories/Main/Highschool/triangles.v
+    theorems:
+    - equilateral_strict_swap_3
+    - equilateral_strict_swap_2
+    - equilateral_isosceles_1
+    - isosceles_sym
+    - equilateral_swap_2
+    - equilateral_strict_swap_5
+    - equilateral_strict__not_col
+  - path: theories/Main/Annexes/sums.v
+    theorems:
+    - sums_assoc_2
+    - sums_diff_1
+    - le2_sums2__le34
+  - path: theories/Main/Annexes/tangency.v
+    theorems:
+    - TangentCC_Col
+    - interccat__neq
+    - tangent_construction
+  - path: theories/Main/Tarski_dev/Ch16_coordinates_with_functions.v
+    theorems:
+    - signed_area_AAB
+    - characterization_of_collinearity_F
+    - put_neg_in_goal
+    - twice_signed_area_AAB
+    - SubF
+    - twice_signed_area_ABA
+    - characterization_of_perpendicularity_F
+    - AM_lower_dim
+    - signed_area_sum
+    - signed_area_ABA
+    - characterization_of_equality_F
+    - OF
+  - path: theories/Main/Tarski_dev/Ch06_out_lines.v
+    theorems:
+    - bet2_le2__le1346
+    - l6_11_existence
+    - bet_out
+    - out_bet__out
+    - bet2_le2__le2356
+    - l6_4_2
+  - path: theories/Main/Tarski_dev/Ch12_parallel_inter_dec.v
+    theorems:
+    - parallel_uniqueness
+    - l12_23
+    - not_par_one_not_par
+    - par_dec
+    - l12_20_bis
+  - path: theories/Algebraic/coplanarity.v
+    theorems:
+    - Cop_3412
+    - Cop_3214
+    - Cop_4213
+    - Copl_4312
+    - Copl_3142
+    - Cop_2413
+    - Copl_1324
+    - Cop_1243
+    - Cop_4123
+    - Copl_1432
+    - Copl_2134
+    - Copl_1342
+  - path: theories/Main/Tarski_dev/Ch10_line_reflexivity_2.v
+    theorems:
+    - cong_cop_mid_perp__col
+    - ex_perp_cop
+    - image_gen_preserves_inter
+    - image_preserves_midpoint
+  - path: theories/Elements/OriginalProofs/proposition_37.v
+    theorems:
+    - proposition_37
+  - path: theories/Main/Tarski_dev/Ch15_lengths.v
+    theorems:
+    - thales
+    - l15_7
+    - sign_dec
+    - length_id_2
+    - cong2_lea__le
+    - signeq__prod_pos
+    - image_preserves_out
+    - pythagoras_obtuse_or_per
+  - path: theories/Main/Tarski_dev/Ch13_3_angles.v
+    theorems:
+    - anga_col_out
+    - ang_distincts
+    - not_conga_is_anga
+    - anga_acute
+    - is_null_ang_out
+    - is_ang_distinct
+    - is_anga_conga_is_anga
+    - null_ang
+    - anga_distinct
+    - not_null_not_col
+    - all_eqaa
+  - path: theories/Main/Meta_theory/Continuity/archimedes.v
+    theorems:
+    - t22_23_aux
+    - t22_18_aux2
+    - t22_18_aux1
+  - path: theories/Main/Tarski_dev/Ch03_bet.v
+    theorems:
+    - bet_neq23__neq
+  - path: theories/Main/Tarski_dev/Ch13_4_cos.v
+    theorems:
+    - lcos_eq_refl
+    - lcos2_comm
+    - lcos3_lg_anga
+    - lcos_eq_sym
+    - is_null_anga_dec
+    - lcos2_exists
+    - null_lcos
+    - l13_6
+    - obtuse_not_acute
+  - path: theories/Elements/OriginalProofs/proposition_44.v
+    theorems:
+    - proposition_44
+  - path: theories/Main/Tarski_dev/Ch16_coordinates.v
+    theorems:
+    - bet_betCood_aux
+    - exists_grid
+    - cong_3_2_cong_4
+    - square_distance_formula
+    - characterization_of_congruence
+    - coordinates_of_point
+  - path: theories/Algebraic/Counter_models/Planar/counter_model_cong_pseudo_reflexivity.v
+    theorems:
+    - point_equality_decidability
+  - path: theories/Elements/OriginalProofs/proposition_07.v
+    theorems:
+    - proposition_07
+  - path: theories/Elements/OriginalProofs/lemma_21helper.v
+    theorems:
+    - lemma_21helper
+  - path: theories/Algebraic/tcp_ndc.v
+    theorems:
+    - tcp_os_mab_mmac_b_ssa
+    - tcp_os_b_ssa_mab_mac
+    - tcp_os_b_sa_mmab_mac
+    - tcp_ncol_inplane_2_4
+  - path: theories/Main/Highschool/bisector.v
+    theorems:
+    - bisector_foot_out_out
+  - path: theories/Main/Meta_theory/Continuity/completeness.v
+    theorems:
+    - extension_reverse_bet
+    - col2_diff_inj_line__diff
+  - path: theories/Algebraic/Counter_models/counter_model_bet_identity.v
+    theorems:
+    - segment_construction
+    - not_between_identity
+    - cong_aux_4
+    - euclid
+  - path: theories/Algebraic/Counter_models/Planar/counter_model_bet_symmetry.v
+    theorems:
+    - cong_inner_transitivity
+  - path: theories/Main/Tarski_dev/Ch09_plane.v
+    theorems:
+    - os_out_os
+    - osp_transitivity
+    - cop_out__osp
+    - l9_17
+    - two_sides_not_col
+    - ex_ncol_cop2
+    - mid_preserves_col
+    - cop3_osp__osp
+    - ts2__ex_bet2
+    - invert_two_sides
+    - cop__one_or_two_sides
+    - one_side_reflexivity
+    - bet_cop2__cop
+    - cop_osp__ex_cop2
+  - path: theories/Algebraic/Counter_models/nD/counter_model_cong_inner_transitivity.v
+    theorems:
+    - euclid
+    - cong_identity
+  - path: theories/Algebraic/Counter_models/Planar/counter_model_upper_dim.v
+    theorems:
+    - lower_dim
+  - path: theories/Main/Highschool/gravityCenter.v
+    theorems:
+    - intersection_two_medians_exist_unique
+    - is_gravity_center_third
+  - path: theories/Main/Highschool/sesamath_exercises.v
+    theorems:
+    - sesamath_4ieme_G2_ex42
+    - sesamath_4ieme_G2_ex45
+    - sesamath_4ieme_G2_ex44_1
+    - sesamath_4ieme_G2_ex37
+    - sesamath_4ieme_G2_ex40
   - path: theories/Main/Tarski_dev/Ch13_1.v
     theorems:
     - perp2_preserves_bet23
-    - col_cop_perp2__pars_bis
-  - path: theories/Main/Annexes/coplanar.v
+    - triangle_mid_par
+  - path: theories/Coinc/Utils/arity.v
     theorems:
-    - coplanar_perm_21
-    - plgs__coplanar
-    - coplanar_perm_13
-    - ncoplanar_perm_11
-  - path: theories/Algebraic/coplanarity.v
+    - InNth
+    - InCPOK
+    - listInd
+    - consTailCPOK
+    - circPermNIdAux
+    - CPLRec
+    - lastCPIn
+    - consHeadCP
+  - path: theories/Main/Meta_theory/Parallel_postulates/thales_converse_postulate_thales_existence.v
     theorems:
-    - Copl_1342
+    - thales_converse_postulate__thales_existence
+  - path: theories/Main/Annexes/vectors.v
+    theorems:
+    - one_side_col_out
+    - same_dir_id
+    - sum_sym
+    - plg_plg_bet
+    - is_to_ise
+  - path: theories/Algebraic/Counter_models/nD/counter_model_upper_dim.v
+    theorems:
+    - oP
+  - path: theories/Elements/OriginalProofs/lemma_linereflectionisometry.v
+    theorems:
+    - lemma_linereflectionisometry
+  - path: theories/Main/Tarski_dev/Ch14_order.v
+    theorems:
+    - pos_inv_pos
   - path: theories/Main/Meta_theory/Models/gupta_inspired_to_tarski.v
     theorems:
-    - g2_15
-  - path: theories/Main/Annexes/saccheri.v
+    - g2_5
+  - path: theories/Main/Meta_theory/Models/tarski_to_gupta_inspired.v
     theorems:
-    - t22_8__lt5612
-    - sac__conga
-    - lt_os_per2__lta
-  - path: theories/Main/Tarski_dev/Ch13_3_angles.v
+    - inner_pasch'
+  - path: theories/Main/Meta_theory/Models/tarski_to_coinc_theory_for_concyclic.v
     theorems:
-    - anga_is_ang
-    - is_null_all
-  - path: theories/Elements/OriginalProofs/lemma_pointreflectionisometry.v
+    - not_col_perm_1
+    - concy_3
+  - path: theories/Main/Annexes/Tagged_predicates.v
     theorems:
-    - lemma_pointreflectionisometry
-  - path: theories/Main/Tarski_dev/Ch10_line_reflexivity.v
+    - Mid_tagged_Mid
+  - path: theories/Main/Meta_theory/Parallel_postulates/TCP_tarski.v
     theorems:
-    - l10_6_existence
-  - path: theories/Elements/OriginalProofs/proposition_26B.v
+    - impossible_case_4_2
+    - impossible_two_sides_not_col
+  - path: theories/Algebraic/Counter_models/nD/counter_model_lower_dim.v
     theorems:
-    - proposition_26B
-  - path: theories/Main/Annexes/circles.v
+    - lower_dim
+  - path: theories/Main/Tarski_dev/Ch08_orthogonality.v
     theorems:
-    - cong2_onc3__eq
-  - path: theories/Main/Tarski_dev/Ch15_lengths.v
+    - perp_cong
+    - perp_in_perp
+    - l8_14_2_1b_bis
+    - per_dec
+    - perp_col2
+    - perp_in_col_perp_in
+    - l8_3
+    - per_perp_in
+  - path: theories/Elements/OriginalProofs/proposition_30.v
     theorems:
-    - lea_out_lea
+    - proposition_30
+    - parnotmeet
+  - path: theories/Main/Meta_theory/Parallel_postulates/rah_rectangle_principle.v
+    theorems:
+    - rah__rectangle_principle
+  - path: theories/Elements/OriginalProofs/lemma_collinearitypreserved.v
+    theorems:
+    - lemma_collinearitypreserved
+  - path: theories/Elements/OriginalProofs/proposition_43.v
+    theorems:
+    - proposition_43
+  - path: theories/Main/Meta_theory/Models/beeson_to_tarski.v
+    theorems:
+    - ICol_chara
+    - lower_dim
+    - ICol_dec
+  - path: theories/Main/Meta_theory/Models/tarski_to_coinc_theory_for_cop.v
+    theorems:
+    - Tarski_is_a_Coinc_predicates_for_cop
+  - path: theories/Algebraic/Counter_models/Planar/counter_model_five_segment.v
+    theorems:
+    - bet_inner_transitivity
+    - cong_identity
+    - nbetS_cab
+    - bet_1Dd
+  - path: theories/Main/Annexes/midpoint_theorems.v
+    theorems:
+    - col_permut132
+    - col123_124__col134
+  - path: theories/Main/Tactics/CoincR_for_col.v
+    theorems:
+    - ss_ok_empty_for_col
+  - path: theories/Algebraic/Counter_models/Planar/counter_model_cong_inner_transitivity.v
+    theorems:
+    - cong_pseudo_reflexivity
+  - path: theories/Main/Tarski_dev/Ch14_prod.v
+    theorems:
+    - prod_0_r
+    - prod_assoc1
+    - prod_y_axis_change
+  - path: theories/Elements/OriginalProofs/lemma_erectedperpendicularunique.v
+    theorems:
+    - lemma_erectedperpendicularunique
+  - path: theories/Main/Meta_theory/Parallel_postulates/legendre.v
+    theorems:
+    - legendre_aux2
+    - legendre_s_third_theorem
+  - path: theories/Algebraic/Counter_models/Planar/counter_model_euclid.v
+    theorems:
+    - lower_dim
+    - nbet_bca
+    - cong_identity
+  - path: theories/Main/Meta_theory/Parallel_postulates/thales_existence_rah.v
+    theorems:
+    - thales_existence__rah
+  - path: theories/Algebraic/Counter_models/nD/independent_version_to_tarski.v
+    theorems:
+    - altIT2D_to_T2D
+    - Estability
+  - path: theories/Main/Tarski_dev/Ch13_2_length.v
+    theorems:
+    - ex_points_lg_not_col
+    - is_len_cong
+    - lg_eql_lg
+  - path: theories/Main/Highschool/exercises.v
+    theorems:
+    - quadrileral_midpoints
+  - path: theories/Elements/OriginalProofs/proposition_24.v
+    theorems:
+    - proposition_24
+  - path: theories/Main/Tarski_dev/Ch05_bet_le.v
+    theorems:
+    - cong__le3412
+    - between_cong_2
+    - nlt
+    - cong__nlt
+    - le__nlt
+  - path: theories/Elements/OriginalProofs/proposition_29B.v
+    theorems:
+    - proposition_29B
+  - path: theories/Elements/OriginalProofs/lemma_TGflip.v
+    theorems:
+    - lemma_TGflip
+  - path: theories/Coinc/Utils/sets.v
+    theorems:
+    - eq_equiv
+    - lt
+    - lt_trans
+    - STexists_mem_4
+    - InCPOCP
+  - path: theories/Main/Meta_theory/Parallel_postulates/tarski_euclid.v
+    theorems:
+    - tarski_s_euclid_implies_euclid_5
+  - path: theories/Main/Annexes/inscribed_angle.v
+    theorems:
+    - cop_obtuse_onc3__ts
+    - bet_cong__ghalfa
+  - path: theories/Elements/OriginalProofs/lemma_legsmallerhypotenuse.v
+    theorems:
+    - lemma_legsmallerhypotenuse
+  - path: theories/Main/Highschool/varignon.v
+    theorems:
+    - varignon_aux_aux
+  - path: theories/Elements/OriginalProofs/proposition_28C.v
+    theorems:
+    - proposition_28C
   - path: theories/Algebraic/Counter_models/nD/independent_version_to_beeson.v
     theorems:
     - ITcong_inner_transitivity
-    - altIT_to_IT
-  - path: theories/Main/Tarski_dev/Ch12_parallel.v
+  - path: theories/Coinc/ColR.v
     theorems:
-    - l12_9
-  - path: theories/Main/Meta_theory/Parallel_postulates/bachmann_s_lotschnittaxiom_legendre_s_parallel_postulate.v
+    - CTcol_permutation_5
+    - proper_3
+  - path: theories/Main/Meta_theory/Parallel_postulates/rah_posidonius_postulate.v
     theorems:
-    - bachmann_s_lotschnittaxiom__legendre_s_parallel_postulate
-  - path: theories/Main/Annexes/quadrilaterals_inter_dec.v
+    - rah__posidonius_aux
+  - path: theories/Main/Meta_theory/Parallel_postulates/parallel_postulates.v
     theorems:
-    - plg_per_rect1
-    - ncol134_plg__plgs
-    - ncol234_plg__pars1234
-  - path: theories/Main/Meta_theory/Parallel_postulates/SPP_tarski.v
+    - equivalence_of_aristotle_greenberg_and_decidability_of_intersection
+    - equivalent_postulates_with_decidability_of_intersection_of_lines
+  - path: theories/Main/Annexes/perp_bisect.v
     theorems:
-    - impossible_case_8
-  - path: theories/Main/Annexes/quadrilaterals.v
+    - perp_bisect_is_on_perp_bisect
+    - perp_bisect_perp
+    - perp_bisect_existence
+  - path: theories/Elements/OriginalProofs/lemma_twolines.v
     theorems:
-    - plg_existence
-  - path: theories/Algebraic/Counter_models/Planar/counter_model_bet_symmetry.v
+    - lemma_twolines
+  - path: theories/Algebraic/Counter_models/Planar/counter_model_cong_identity.v
     theorems:
-    - parP
-  - path: theories/Main/Annexes/sums.v
+    - five_segment
+  - path: theories/Coinc/Utils/general_tactics.v
     theorems:
-    - sums_assoc
-    - sums__le3456
-  - path: theories/Main/Highschool/triangles.v
-    theorems:
-    - equilateral_rot
-  - path: theories/Algebraic/tcp_ndc.v
-    theorems:
-    - tcp_ncol_inplane_2_4
-  - path: theories/Main/Tarski_dev/Ch06_out_lines.v
-    theorems:
-    - out_bet__out
-  - path: theories/Main/Meta_theory/Dimension_axioms/upper_dim_2.v
-    theorems:
-    - upper_dim_implies_col_perp2__col
-  - path: theories/Main/Tarski_dev/Ch09_plane.v
-    theorems:
-    - col_preserves_two_sides
-    - l9_4_1
-  - path: theories/Main/Tarski_dev/Ch14_prod.v
-    theorems:
-    - prod_1_r_eq
-  - path: theories/Main/Tarski_dev/Ch05_bet_le.v
-    theorems:
-    - ge_comm
-  - path: theories/Main/Tarski_dev/Ch16_coordinates_with_functions.v
-    theorems:
-    - twice_signed_area_perm
-    - characterization_of_equality_F_aux
-  - path: theories/Algebraic/Counter_models/counter_model_bet_identity.v
-    theorems:
-    - cong_aux_4
-    - euclid
-  - path: theories/Main/Tarski_dev/Ch04_col.v
-    theorems:
-    - l4_18
-  - path: theories/Main/Elements_statements/Book_1.v
-    theorems:
-    - prop_34_1
-  - path: theories/Main/Tarski_dev/Ch02_cong.v
-    theorems:
-    - cong_commutativity
-    - cong_transitivity
-  - path: theories/Coinc/Utils/arity.v
-    theorems:
-    - CPLRec
-    - circPermNConsTlOK
-  - path: theories/Main/Tarski_dev/Ch13_4_cos.v
-    theorems:
-    - lcos_eq_trans
-    - lcos2_uniqueness
-  - path: theories/Elements/OriginalProofs/lemma_subtractequals.v
-    theorems:
-    - lemma_subtractequals
+    - ltac_something_show
   - path: theories/Main/Tarski_dev/Ch07_midpoint.v
     theorems:
-    - l7_16
-  - path: theories/Main/Annexes/suma.v
+    - midpoint_def
+  - path: theories/Main/Meta_theory/Parallel_postulates/weak_tarski_s_parallel_postulate_weak_inverse_projection_postulate.v
     theorems:
-    - sams_lea2_suma2__conga456
+    - weak_tarski_s_parallel_postulate__weak_inverse_projection_postulate
+  - path: theories/Elements/OriginalProofs/proposition_08.v
+    theorems:
+    - proposition_08
+  - path: theories/Elements/OriginalProofs/proposition_02.v
+    theorems:
+    - proposition_02
+  - path: theories/Elements/OriginalProofs/lemma_pointreflectionisometry.v
+    theorems:
+    - lemma_pointreflectionisometry
+  - path: theories/Elements/OriginalProofs/lemma_planeseparation.v
+    theorems:
+    - lemma_planeseparation
+  - path: theories/Algebraic/Counter_models/nD/counter_model_five_segment.v
+    theorems:
+    - row_mx_head
+  - path: theories/Main/Meta_theory/Parallel_postulates/SPP_tarski.v
+    theorems:
+    - impossible_case_7
+    - strong_parallel_postulate_implies_tarski_s_euclid
+  - path: theories/Algebraic/Counter_models/nD/independence.v
+    theorems:
+    - big_pairs_andb_and
+  - path: theories/Main/Meta_theory/Models/tarski_to_coinc_theory_for_col.v
+    theorems:
+    - col_perm_1
+  - path: theories/Main/Tactics/CoincR_for_concy.v
+    theorems:
+    - ss_ok_empty_for_concy
+  - path: theories/Main/Meta_theory/Models/tarski_to_makarios.v
+    theorems:
+    - five_segment'
+  - path: theories/Elements/OriginalProofs/proposition_12.v
+    theorems:
+    - proposition_12
+  - path: theories/Elements/OriginalProofs/lemma_lessthancongruence2.v
+    theorems:
+    - lemma_lessthancongruence2
+  - path: theories/Main/Tarski_dev/Ch15_pyth_rel.v
+    theorems:
+    - Ps_Col
   - path: theories/Algebraic/Counter_models/nD/dimensional_axioms.v
     theorems:
-    - i_neq_basis_nth0
+    - nth_basis
+  - path: theories/Elements/OriginalProofs/lemma_collinear5.v
+    theorems:
+    - lemma_collinear5
+  - path: theories/Elements/OriginalProofs/lemma_samenotopposite.v
+    theorems:
+    - lemma_samenotopposite
   - path: theories/Elements/OriginalProofs/euclidean_tactics.v
     theorems:
-    - nCol_or_Col
-  - path: theories/Main/Annexes/defect.v
+    - nCol_notCol
+  - path: theories/Algebraic/Counter_models/nD/counter_model_segment_construction.v
     theorems:
-    - rah_defect__out
-  - path: theories/Elements/OriginalProofs/lemma_parallelsymmetric.v
+    - ncol__nColT
+  - path: theories/Elements/OriginalProofs/lemma_samesidecollinear.v
     theorems:
-    - lemma_parallelsymmetric
-  - path: theories/Coinc/CongR.v
-    theorems:
-    - pick_lengths_ok_2
-  - path: theories/Main/Annexes/half_angles.v
-    theorems:
-    - halfa3123__out
-  - path: theories/Main/Highschool/incenter.v
-    theorems:
-    - incenter_permut231
-  - path: theories/Main/Annexes/midpoint_theorems.v
-    theorems:
-    - col_permut312
-  - path: theories/Elements/OriginalProofs/proposition_18.v
-    theorems:
-    - proposition_18
-  - path: theories/Main/Annexes/Tagged_predicates.v
-    theorems:
-    - Cong_Cong_tagged
+    - lemma_samesidecollinear

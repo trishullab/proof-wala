@@ -1,0 +1,15 @@
+training_data_dir: /mnt/sdd1/<root>/data/compcert/train/20240105-021649/
+training_meta_filename: local.meta.json
+training_data_log_dir: .log/run_training/logs/dataset_logs
+training_dataset_type: ProofModelTrainingDataset
+training_data_formatter_type: ProofModelPromptTrainingDataFormatter
+training_dataset_args:
+  characters_per_token: 3.6
+  max_tokens: 2048
+  state_delta: True
+eval_data_dir: /mnt/sdd1/<root>/data/compcert/test/20240105-021512/
+eval_meta_filename: local.meta.json
+eval_data_log_dir: .log/run_training/logs/dataset_logs
+test_data_dir: /mnt/sdd1/<root>/data/compcert/test/20240105-021512/
+test_meta_filename: local.meta.json
+test_data_log_dir: .log/run_training/logs/dataset_logs

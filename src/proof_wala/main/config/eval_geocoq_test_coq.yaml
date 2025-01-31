@@ -5,16 +5,16 @@ defaults:
   - env_settings: bm25_retrieval
   - override hydra/job_logging: 'disabled'
 
-log_dir: <root>/data/CompCert/proof_logs/coq/base
+log_dir: <root>/data/CompCert/proof_logs/coq/wt-ct
 eval_settings:
-  model_name: <root>/models/ProofWala-codet5-base-coq-random-2048/checkpoint-340000
-  checkpoint_dir: .log/checkpoints/ProofWala-codet5-base-random-coq-2048/checkpoint-340000
-  proof_dump_dir: <root>/data/CompCert/proof_dumps/coq/base
-  proof_retries: 5
-  timeout_in_secs: 720
+  model_name: <root>/models/ProofWala-codet5-base-coq-random-2048/wt-ct/checkpoint-340000
+  checkpoint_dir: .log/checkpoints/ProofWala-codet5-base-coq-random-2048/wt-ct/checkpoint-340000
+  proof_dump_dir: <root>/data/CompCert/proof_dumps/coq/wt-ct
+  proof_retries: 10
+  timeout_in_secs: 1220
   do_lemmas_discovery: False
 benchmark:
-  timeout_per_theorem_in_secs: 720
+  timeout_per_theorem_in_secs: 1220
 # eval_settings:-
 #  use_hammer: AUTO
 #  timeout_in_secs: 200

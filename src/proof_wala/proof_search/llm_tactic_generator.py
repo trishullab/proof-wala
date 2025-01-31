@@ -2,7 +2,7 @@
 
 import os
 if __name__ == "__main__":
-    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+    os.environ["CUDA_VISIBLE_DEVICES"] = "5"
     os.environ["TOKENIZERS_PARALLELISM"] = "false"
 import sys
 root_dir = f"{__file__.split('proof_wala')[0]}"
@@ -168,7 +168,7 @@ if __name__ == "__main__":
     from itp_interface.rl.simple_proof_env import ProofExecutorCallback, ProofEnv
     from itp_interface.tools.log_utils import setup_logger
     from datetime import datetime
-    model_path = ".log/run_training/new_model/thrall-codet5-small-compcert-2048/best-model-20240228-072825"
+    model_path = ".log/run_training/new_model/proof-wala-codet5-small-compcert-2048/best-model-20240228-072825"
     is_seq2seq = True
     max_seq_length = 2048
     character_per_token = 3.6

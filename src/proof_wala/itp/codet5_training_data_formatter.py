@@ -131,7 +131,7 @@ class CodeT5PromptTrainingDataFormatter(TrainingDataFormatterCallback):
 
 if __name__ == "__main__":
     prompt_name = "copra-coq-dfs"
-    data_folder = f".log/train"
+    data_folder = f".log/traces"
     meta_filename = "local.meta.json"
     training_data = TrainingData(data_folder, meta_filename)
     # Not removing system_prompt_file and conversation_prompt_file though not needed
@@ -140,7 +140,11 @@ if __name__ == "__main__":
         hf_dataset = dataset.get_hf_dataset()
         formatter = CodeT5PromptTrainingDataFormatter()
         formatted_dataset = formatter(hf_dataset)
-        for example in formatted_dataset:
-            print(example)
+        for example in hf_dataset:
+            prompt = example["prompt"]
+            completion = example["completion"]
+            print(f"Prompt:\n{prompt}")
+            print(f"Completion:\n{completion}")
+            print('-'*80)
         prompt_and_completions = formatter.get_prompt_and_completion(hf_dataset)
     pass

@@ -12,42 +12,213 @@ setup_cmds:
 datasets:
 - project: <root>/data/repos/category-theory
   files:
+  - path: Tools/Abstraction.v
+    theorems:
+    - forall_distribute
+    - ccc_apply_pair
+  - path: Instance/Fun.v
+    theorems:
+    - "nat_\u03C1"
+    - "nat_\u03BB"
+  - path: Structure/Cartesian.v
+    theorems:
+    - second_id
+    - second_split
+    - exl_second
+    - split_first
+  - path: Instance/Lambda/Full.v
+    theorems:
+    - Plug_injective
+  - path: Construction/Free/Quiver.v
+    theorems:
+    - tlist'_equiv_lengths
+    - transport_comp
+    - tlist_quiver_equiv
+    - Forgetful
+    - transport_quiver_cod
+  - path: Structure/Cartesian/Closed.v
+    theorems:
+    - uncurry_comp
+    - uncurry_inj
+    - eval_first
+  - path: Structure/Monoidal/Braided.v
+    theorems:
+    - Yang_Baxter_equation
+  - path: Instance/Lambda.v
+    theorems:
+    - composition_identity_left
+  - path: Lib/MapDecide.v
+    theorems:
+    - term_denote_subst_term
+    - formula_sound
+  - path: Structure/Bicartesian.v
+    theorems:
+    - fork_merge
+  - path: Functor/Diagonal.v
+    theorems:
+    - Diagonal_Product_Two
+  - path: Instance/Roof.v
+    theorems:
+    - RPos_RNeg_absurd
+    - RPos_RZero_absurd
+  - path: Lib/FMapExt.v
+    theorems:
+    - add_mapsto_iffT
+    - for_all_remove_inv_2
+    - add_equal_iff
+  - path: Theory/Coq/Map.v
+    theorems:
+    - pneq_dec
+    - size_delete
+    - delete_comm
+    - delete_idem
+  - path: Theory/Adjunction.v
+    theorems:
+    - from_adj_unit
+    - counit_fmap_unit
+    - adj_univ
+    - left_adjoint_iso
+  - path: Structure/UniversalProperty.v
+    theorems:
+    - preyoneda
+    - univ_property_unique_up_to_unique_iso
+  - path: Theory/Metacategory/ArrowsOnly.v
+    theorems:
+    - Two_2_object
+    - composition_right
+  - path: Solver/Normal.v
+    theorems:
+    - exprAD_sound'
+    - ex_normalize
+    - from_morphism_to_morphism_r
+  - path: Theory/Coq/Monad/Proofs.v
+    theorems:
+    - arrow_IsMonad
+  - path: Instance/Lambda/Multi.v
+    theorems:
+    - multistep_Fst1
+  - path: Structure/Binoidal.v
+    theorems:
+    - inj_left_right
+  - path: Solver/Decide.v
+    theorems:
+    - expr_sound
+    - ex_categorical
+  - path: Structure/Cocartesian.v
+    theorems:
+    - left_fork
+    - left_right
+  - path: Lib/NETList.v
+    theorems:
+    - netlist_app_length
+    - netlist_concat_app
+  - path: Structure/Monoidal/Semicartesian/Proofs.v
+    theorems:
+    - proj_left_left
+    - proj_right_tensor_id
+  - path: Theory/Functor.v
+    theorems:
+    - ToAFunctor_FromAFunctor
+    - transport_relation_exchange
+    - transport_adjunction
+    - proper_transport_r
+    - fun_equiv_comp_assoc
+    - fun_strict_equiv_id_left
+  - path: Instance/Coq/Monad.v
+    theorems:
+    - join_fmap_fmap_x
+    - join_fmap_ret_x
+  - path: Theory/Morphisms.v
+    theorems:
+    - id_monic
+    - id_epic
+    - id_invol
+  - path: Theory/Coq/Tuple/Proofs.v
+    theorems:
+    - unsplit
+  - path: Theory/Isomorphism.v
+    theorems:
+    - to_equiv_implies_iso_equiv
+  - path: Construction/Free.v
+    theorems:
+    - composition_tapp
+  - path: Instance/Shapes.v
+    theorems:
+    - sized_resized
+    - sized
+  - path: Instance/Lambda/Step.v
+    theorems:
+    - Step_deterministic
+  - path: Instance/Lambda/Ren.v
+    theorems:
+    - RenExp_ValueP
+    - RenVar_idRen
+  - path: Functor/Bifunctor.v
+    theorems:
+    - bimap_id_right_left
+  - path: Instance/Comp.v
+    theorems:
+    - Project
+  - path: Theory/Natural/Transformation.v
+    theorems:
+    - fun_id_right
+  - path: Theory/Coq/List/Proofs.v
+    theorems:
+    - Permutation_insert
+    - Permutation_Forall
+  - path: Monad/Adjunction.v
+    theorems:
+    - Adjunction_Nat_Monad
+  - path: Construction/Comma/Adjunction.v
+    theorems:
+    - lawvere_eqv_counit_fmap_unit
+    - lawvere_to_functorial
+  - path: Adjunction/Hom.v
+    theorems:
+    - hom_unit_naturality_consequence
+  - path: Instance/Lambda/Norm.v
+    theorems:
+    - Exp_SN
+  - path: Instance/Fun/Cartesian.v
+    theorems:
+    - ump_product_auto3
+    - ump_product_auto1
+    - ump_product'
+  - path: Lib/Datatypes.v
+    theorems:
+    - match_last
+    - last_rcons
+    - map_inj
+  - path: Instance/Lambda/Sem.v
+    theorems:
+    - SubSem_idSub
+  - path: Functor/Construction/Product/Monoidal.v
+    theorems:
+    - ProductFunctor_LaxMonoidal_ap_functor_nat
+  - path: Theory/Metacategory/DecideExample.v
+    theorems:
+    - problem3
+  - path: Functor/Hom.v
+    theorems:
+    - Curried_Hom
+  - path: Instance/Parallel.v
+    theorems:
+    - ParHom_Id_false_absurd
+  - path: Structure/Monoidal/Cartesian/Proofs.v
+    theorems:
+    - proj_left_braid
   - path: Solver/Reify.v
     theorems:
     - test_lookup
-  - path: Theory/Functor.v
-    theorems:
-    - fun_strict_equiv_id_left
-  - path: Theory/Adjunction.v
-    theorems:
-    - left_adjoint_iso
-  - path: Instance/Fun/Cartesian.v
-    theorems:
-    - ump_product'
   - path: Construction/Cayley.v
     theorems:
     - Cayley_Right
   - path: Theory/Coq/Applicative/Proofs.v
     theorems:
     - pure_comp
-  - path: Construction/Free/Quiver.v
-    theorems:
-    - transport_quiver_cod
-  - path: Structure/Cartesian.v
-    theorems:
-    - split_first
   - path: Construction/Comma.v
     theorems:
     - comma_proj_com_iso
-  - path: Tools/Abstraction.v
-    theorems:
-    - ccc_apply_pair
-  - path: Theory/Coq/List/Proofs.v
-    theorems:
-    - Permutation_Forall
-  - path: Theory/Morphisms.v
-    theorems:
-    - id_invol
   - path: Structure/Terminal.v
     theorems:
     - one_comp

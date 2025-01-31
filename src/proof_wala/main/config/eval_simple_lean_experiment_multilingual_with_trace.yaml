@@ -1,20 +1,26 @@
 # @package _global_
 defaults:
-  - benchmark: mathcomp_test_random
-  - eval_settings: codet5_beam_32
+  - benchmark: simple_lean_test
+  - eval_settings: codet5_beam_64
   - env_settings: bm25_retrieval
   - override hydra/job_logging: 'disabled'
 
-log_dir: <root>/data/CompCert/proof_logs/multilingual/wt-ct
+log_dir: <root>/data/LeanDojo_Random/proof_logs/multilingual
 eval_settings:
-  proof_dump_dir: <root>/data/CompCert/proof_dumps/multilingual/wt-ct
+  proof_dump_dir: <root>/data/LeanDojo_Random/proof_dumps/multilingual/wt-ct
   model_name: <root>/models/ProofWala-codet5-base-multilingual-random-2048/wt-ct/checkpoint-340000
   checkpoint_dir: .log/checkpoints/ProofWala-codet5-base-multilingual-random-2048/wt-ct/checkpoint-340000
-  proof_retries: 10
+  proof_retries: 20
   timeout_in_secs: 620
-  do_lemmas_discovery: False
+  temperature: 1.2
+  # proof_tracer:
+  #   folder: <root>/data/LeanDojo_Random/proof_traces/multilingual/wt-ct
 benchmark:
   timeout_per_theorem_in_secs: 620
+  # width: 32
+  # proof_retries: 10
+  # search_params:
+  #   beam_width: 32
 # eval_settings:
 #  use_hammer: AUTO
 #  timeout_in_secs: 200

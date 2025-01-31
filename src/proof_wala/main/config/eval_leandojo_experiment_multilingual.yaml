@@ -7,9 +7,9 @@ defaults:
 
 log_dir: <root>/data/LeanDojo_Random/proof_logs/multilingual
 eval_settings:
-  proof_dump_dir: <root>/data/LeanDojo_Random/proof_dumps/multilingual
-  model_name: <root>/models/ProofWala-codet5-base-multilingual-random-2048/checkpoint-340000
-  checkpoint_dir: .log/checkpoints/ProofWala-codet5-base-multilingual-random-2048/checkpoint-340000
+  proof_dump_dir: <root>/data/LeanDojo_Random/proof_dumps/multilingual/wt-ct
+  model_name: <root>/models/ProofWala-codet5-base-multilingual-random-2048/wt-ct/checkpoint-340000
+  checkpoint_dir: .log/checkpoints/ProofWala-codet5-base-multilingual-random-2048/wt-ct/checkpoint-340000
   proof_retries: 5
   timeout_in_secs: 620
 benchmark:
