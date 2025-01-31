@@ -108,7 +108,7 @@ def discover_lemmas_in_benchmark(
     eval_proof_results: EvalProofResultsActor,
     logfile: str):
     log_id = str(uuid.uuid4())
-    logger = setup_logger(f"discover_lemmas_in_benchmark_{log_id}", logfile)
+    logger = setup_logger(f"discover_lemmas_in_benchmark_{log_id}", logfile, format='%(asctime)s - %(filename)s:%(lineno)d - %(levelname)s - %(message)s')
     if eval_settings.do_lemmas_discovery:
         for file in dataset.files:
             path = os.path.join(dataset.project, file.path)
@@ -181,7 +181,6 @@ def discover_lemmas_in_benchmark(
             if eval_settings.sample < 1.0:
                 sample_size = math.ceil(len(file.theorems) * eval_settings.sample)
                 logger.info(f"Sampling {sample_size} lemmas from {len(file.theorems)} lemmas in file {path}")
-                random.seed(eval_settings.sample_seed)
                 file.theorems = list(random.sample(file.theorems, sample_size))
                 logger.info(f"Sampled lemmas to prove in file {path}: \n{file.theorems}")
     else:
@@ -202,11 +201,22 @@ def eval_dataset_once(
     eval_proof_results: EvalProofResultsActor,
     time_budget_tracker: typing.Dict[str, typing.Dict[str, float]],
     attempt_idx: int,
-    logger: logging.Logger):
+    logger: logging.Logger,
+    reshuffle: bool = False):
     if proof_attempts_done:
         return True
     any_proof_attempted = False
-    for file in dataset.files:
+    if eval_settings.proof_tracer is not None:
+        eval_settings.proof_tracer.reset_training_data(logger)
+    if reshuffle:
+        dataset_files = list(dataset.files)
+        # Reshuffle the files
+        random.shuffle(dataset_files)
+    else:
+        dataset_files = dataset.files
+    current_attempt_idx = attempt_idx
+    logger.info(f"Starting evaluation for dataset: {dataset.project}, attempt: {attempt_idx + 1}")
+    for file in dataset_files:
         clean_ray_logs(logger)
         path = os.path.join(dataset.project, file.path)
         if track_time and path not in time_budget_tracker:
@@ -241,8 +251,14 @@ def eval_dataset_once(
             suppress_error_log=True,
             always_use_retrieval=eval_settings.always_use_useful_theorem_retrieval,
             logger=logger,
-            setup_cmds=eval_benchmark.setup_cmds)
-        for lemma_name in file.theorems:
+            setup_cmds=eval_benchmark.setup_cmds,
+            enable_search=False) # TODO: Make this configurable
+        if reshuffle:
+            file_theorems = list(file.theorems)
+            random.shuffle(file_theorems)
+        else:
+            file_theorems = file.theorems
+        for lemma_name in file_theorems:
             no_proof_res = ProofSearchResult(
                 None, 
                 False, 
@@ -263,7 +279,7 @@ def eval_dataset_once(
                 if track_time and time_budget_tracker[path][lemma_name] <= 0:
                     logger.info(f"Time budget exhausted for lemma: {lemma_name} in file {path} so skipping it.")
                     continue
-                logger.info(f"Attempting to prove lemma: {lemma_name}")
+                logger.info(f"Will check if attempt possible for lemma: {lemma_name} [# {attempt_idx + 1}/{eval_settings.proof_retries}]")
 
                 max_seq_length = eval_settings.max_seq_length
                 character_per_token = eval_settings.character_per_token
@@ -283,7 +299,7 @@ def eval_dataset_once(
                 theorem_maps: typing.Dict[str, typing.Dict[str, ProofSearchResult]] = ray.get(eval_proof_results.get_theorem_map.remote())
                 proof_res_chkpt = theorem_maps.get(path, {}).get(lemma_name, None)
                 max_retry_attempts = file.max_retry_attempts_limits.get(lemma_name, eval_settings.proof_retries)
-                if proof_res_chkpt is None or (not proof_res_chkpt.proof_found and proof_res_chkpt.additional_info["attempt_idx"] < max_retry_attempts - 1):
+                if proof_res_chkpt is None or (not proof_res_chkpt.proof_found and proof_res_chkpt.additional_info["attempt_idx"] < attempt_idx): #max_retry_attempts - 1):
                     any_proof_attempted = True
                     manager = multiprocessing.Manager()
                     return_dict = manager.dict()
@@ -309,31 +325,34 @@ def eval_dataset_once(
                                 generator,
                                 proof_search_heuristic,
                                 width=eval_settings.width,
-                                logger=logger)
+                                logger=logger,
+                                tracer=eval_settings.proof_tracer)
                             start_node, tree_node, proof_res = search_driver.search_proof(
                                 env,
                                 timeout_in_secs=eval_benchmark.timeout_per_theorem_in_secs)
-                            proof_paths = []
-                            if proof_res.proof_found:
-                                proof_paths = algo.reconstruct_all_paths(start_node, tree_node)
-                            dot = algo.visualize_search(start_node, show=False, mark_paths=proof_paths)
-                            lemma_file_name = slugify(lemma_name, allow_unicode=False)
-                            tree_dump_folder = os.path.join(eval_settings.proof_dump_dir, "proof_trees", lemma_file_name)
-                            try:
-                                # if lemma_file_name can be a valid file name
-                                os.makedirs(tree_dump_folder, exist_ok=True)
-                            except:
-                                logger.exception(f"Failed to create the proof tree dump folder for lemma: {lemma_name} in file {path}")
-                                lemma_name_hash = hash(lemma_name)
-                                lemma_file_name = lemma_name_hash
+                            logger.info("Proof search finished.")
+                            if start_node is not None:
+                                proof_paths = []
+                                if proof_res.proof_found:
+                                    proof_paths = algo.reconstruct_all_paths(start_node, tree_node)
+                                dot = algo.visualize_search(start_node, show=False, mark_paths=proof_paths)
+                                lemma_file_name = slugify(lemma_name, allow_unicode=False)
                                 tree_dump_folder = os.path.join(eval_settings.proof_dump_dir, "proof_trees", lemma_file_name)
-                                os.makedirs(tree_dump_folder, exist_ok=True)
-                                logger.info("\nUsing hash of lemma name:" +
-                                    f"\n {lemma_name} to create the folder for dumping the proof tree in file {file.path}" +
-                                    f"\n The hash is: {lemma_name_hash}")
-                            time_stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-                            tree_dump_path = os.path.join(tree_dump_folder, f"{lemma_file_name}_{time_stamp}")
-                            dot.render(tree_dump_path, format='svg', quiet=True)
+                                try:
+                                    # if lemma_file_name can be a valid file name
+                                    os.makedirs(tree_dump_folder, exist_ok=True)
+                                except:
+                                    logger.exception(f"Failed to create the proof tree dump folder for lemma: {lemma_name} in file {path}")
+                                    lemma_name_hash = hash(lemma_name)
+                                    lemma_file_name = lemma_name_hash
+                                    tree_dump_folder = os.path.join(eval_settings.proof_dump_dir, "proof_trees", lemma_file_name)
+                                    os.makedirs(tree_dump_folder, exist_ok=True)
+                                    logger.info("\nUsing hash of lemma name:" +
+                                        f"\n {lemma_name} to create the folder for dumping the proof tree in file {file.path}" +
+                                        f"\n The hash is: {lemma_name_hash}")
+                                time_stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+                                tree_dump_path = os.path.join(tree_dump_folder, f"{lemma_file_name}_{time_stamp}")
+                                dot.render(tree_dump_path, format='svg', quiet=True)
                             ret_dict["proof_res"] = proof_res
                             ret_dict["attempted_success"] = True
                             ret_dict["service_down"] = False
@@ -349,10 +368,10 @@ def eval_dataset_once(
                     should_retry = True
                     max_retry = 4 # This retry is only when for some mysterious reason the llama service goes down
                     if proof_res_chkpt is not None:
-                        attempt_idx = proof_res_chkpt.additional_info["attempt_idx"]
+                        current_attempt_idx = proof_res_chkpt.additional_info["attempt_idx"]
                         logger.info(f"Previous attempt for proving lemma: {lemma_name} in file {path} was: {attempt_idx}")
                         logger.info(f"Previous proof search result:\n{proof_res_chkpt}")
-                    logger.info(f"Attempt {attempt_idx + 1} for proving lemma: {lemma_name} in file {path}")
+                    logger.info(f"Attempt {attempt_idx + 1 if proof_res_chkpt is None else current_attempt_idx + 2} for proving lemma: {lemma_name} in file {path}")
                     while should_retry and max_retry > 0:
                         # Run the prover with a timeout
                         timeout = min(eval_settings.timeout_in_secs * eval_settings.max_proof_depth * 1.25, eval_benchmark.timeout_per_theorem_in_secs)
@@ -366,7 +385,7 @@ def eval_dataset_once(
                             time_budget_tracker[path][lemma_name] -= (toc_end - tic_start)
                         if track_time and time_budget_tracker[path][lemma_name] <= 0:
                             logger.info(f"Time budget exhausted for lemma: {lemma_name} in file {path}")
-                            proof_attempt_idx = (proof_res_chkpt.additional_info["attempt_idx"] + 1) if proof_res_chkpt is not None and "attempt_idx" in proof_res_chkpt.additional_info else attempt_idx
+                            proof_attempt_idx = (proof_res_chkpt.additional_info["attempt_idx"] + 1) if proof_res_chkpt is not None and "attempt_idx" in proof_res_chkpt.additional_info else current_attempt_idx
                             proof_res_chkpt = copy.deepcopy(no_proof_res)
                             proof_res_chkpt.is_timeout = True
                             proof_res_chkpt.proof_time_in_secs = toc_end - tic_start
@@ -376,7 +395,7 @@ def eval_dataset_once(
                             should_retry = False
                         elif "attempted_success" not in return_dict:
                             logger.info(f"Prover Agent for lemma: {lemma_name} in file {path} got killed as it timed out.")
-                            proof_attempt_idx = (proof_res_chkpt.additional_info["attempt_idx"] + 1) if proof_res_chkpt is not None and "attempt_idx" in proof_res_chkpt.additional_info else attempt_idx
+                            proof_attempt_idx = (proof_res_chkpt.additional_info["attempt_idx"] + 1) if proof_res_chkpt is not None and "attempt_idx" in proof_res_chkpt.additional_info else current_attempt_idx
                             proof_res_chkpt = copy.deepcopy(no_proof_res)
                             proof_res_chkpt.is_timeout = True
                             proof_res_chkpt.proof_time_in_secs = toc_end - tic_start
@@ -390,7 +409,7 @@ def eval_dataset_once(
                                 len(eval_settings.model_name) != 0) or \
                                 max_retry <= 1:
                                 logger.info(f"Failed to prove lemma: {lemma_name} in file {path}")
-                                proof_attempt_idx = (proof_res_chkpt.additional_info["attempt_idx"] + 1) if proof_res_chkpt is not None and "attempt_idx" in proof_res_chkpt.additional_info else attempt_idx
+                                proof_attempt_idx = (proof_res_chkpt.additional_info["attempt_idx"] + 1) if proof_res_chkpt is not None and "attempt_idx" in proof_res_chkpt.additional_info else current_attempt_idx
                                 proof_res_chkpt = copy.deepcopy(no_proof_res)
                                 proof_res_chkpt.is_timeout = True
                                 proof_res_chkpt.proof_time_in_secs = toc_end - tic_start
@@ -400,7 +419,7 @@ def eval_dataset_once(
                                 should_retry = False
                         else:
                             logger.info(f"Prover for lemma: {lemma_name} in file {path} completed.")
-                            proof_attempt_idx = (proof_res_chkpt.additional_info["attempt_idx"] + 1) if proof_res_chkpt is not None and "attempt_idx" in proof_res_chkpt.additional_info else attempt_idx
+                            proof_attempt_idx = (proof_res_chkpt.additional_info["attempt_idx"] + 1) if proof_res_chkpt is not None and "attempt_idx" in proof_res_chkpt.additional_info else current_attempt_idx
                             proof_res_chkpt : ProofSearchResult = return_dict["proof_res"]
                             proof_res_chkpt.additional_info["attempt_idx"] = proof_attempt_idx
                             ray.get(eval_proof_results.add_theorem_to_maps.remote(path, lemma_name, proof_res_chkpt))
@@ -426,11 +445,13 @@ def eval_dataset_once(
                 ray.get(eval_checkpoint_info.add_theorem_to_maps.remote(path, lemma_name, False))
                 # eval_proof_results.add_theorem_to_maps(path, lemma_name, proof_res_chkpt)
                 # eval_checkpoint_info.add_theorem_to_maps(path, lemma_name, False)
+    
+    if eval_settings.proof_tracer is not None:
+        eval_settings.proof_tracer.save()
     proof_attempts_done = not any_proof_attempted
     return proof_attempts_done
 
-
-@ray.remote(max_retries=100)
+@ray.remote
 def eval_dataset_once_with_retries(
     time_budget_tracker: typing.Dict[str, typing.Dict[str, float]],
     attempt_idx: int,
@@ -454,22 +475,45 @@ def eval_dataset_once_with_retries(
     model.__enter__()
     logfile = os.path.join(log_dir, f"eval_dataset_multiple_attempts.log")
     logger_id = str(uuid.uuid4())
-    logger = setup_logger(f"eval_dataset_multiple_attempts_{logger_id}", logfile)
-    logger.info(f"Restarting evaluation for dataset: {dataset.project}")
-    return eval_dataset_once(
-        model,
-        proof_attempts_done,
-        skip_files_in_checkpoint,
-        track_time,
-        eval_benchmark,
-        dataset,
-        eval_checkpoint_info,
-        eval_settings,
-        env_settings,
-        eval_proof_results,
-        time_budget_tracker,
-        attempt_idx,
-        logger)
+    logger = setup_logger(f"eval_dataset_multiple_attempts_{logger_id}", logfile, format='%(asctime)s - %(filename)s:%(lineno)d - %(levelname)s - %(message)s')
+    retry_cnt = 0
+    reshuffle = False
+    attempt_success = False
+    eval_result = False
+    while retry_cnt < 100 and not attempt_success:
+        try:
+            logger.info(f"(Retry Number #: {retry_cnt + 1}) Restarting evaluation for dataset: {dataset.project}")
+            eval_result = eval_dataset_once(
+                model,
+                proof_attempts_done,
+                skip_files_in_checkpoint,
+                track_time,
+                eval_benchmark,
+                dataset,
+                eval_checkpoint_info,
+                eval_settings,
+                env_settings,
+                eval_proof_results,
+                time_budget_tracker,
+                attempt_idx,
+                logger,
+                reshuffle=reshuffle)
+            attempt_success = True
+        except:
+            logger.exception(f"Exception occurred while evaluating dataset: {dataset.project}")
+            if retry_cnt < 98:
+                logger.info(f"Next Retry Count: {retry_cnt + 2}")
+            else:
+                logger.info(f"Final Retry Count: {retry_cnt + 2}")
+            attempt_success = False
+            reshuffle = True
+            random_seed = random.randint(0, 1000000)
+            logger.info(f"Setting random seed to: {random_seed}")
+            random.seed(random_seed)
+        if eval_result:
+            break
+        retry_cnt += 1
+    return eval_result
 
 @ray.remote
 def eval_dataset_multiple_attempts(
@@ -492,7 +536,7 @@ def eval_dataset_multiple_attempts(
     # model = Model(model_path, is_seq2seq=is_seq2seq, use_lora=False)
     # model.__enter__()
     logfile = os.path.join(log_dir, f"eval_dataset_multiple_attempts.log")
-    logger = setup_logger("eval_dataset_multiple_attempts", logfile)
+    logger = setup_logger("eval_dataset_multiple_attempts", logfile, format='%(asctime)s - %(filename)s:%(lineno)d - %(levelname)s - %(message)s')
     logger.info(f"Starting evaluation for dataset: {dataset.project}")
     for file in dataset.files:
         logger.info(f"File in dataset: {file.path}")
@@ -515,8 +559,15 @@ def eval_dataset_multiple_attempts(
             log_dir,
             device_id)
         proof_attempts_done = ray.get(proof_attempts_done_remote)
+        proof_attempts_done = proof_attempts_done and attempt_idx == eval_settings.proof_retries - 1
         if proof_attempts_done:
-            break
+            logger.info('=' * 80)
+            logger.info(f"Finished all proof attempts for dataset: {dataset.project}")
+            logger.info('=' * 80)
+        else:
+            logger.info('=' * 80)
+            logger.info(f"Proof attempt (# {attempt_idx + 1}/{eval_settings.proof_retries}) done for dataset: {dataset.project}")
+            logger.info('=' * 80)
 
 def eval_dataset(env_settings: EnvSettings, eval_benchmark: EvalBenchmark, dataset: EvalDataset, eval_settings: EvalSettings, eval_checkpoint_info: EvalRunCheckpointInfo, eval_proof_results: EvalProofResults, logger: logging.Logger = None):
     logger = logger if logger else logging.getLogger(__name__)
@@ -553,11 +604,13 @@ def eval_dataset(env_settings: EnvSettings, eval_benchmark: EvalBenchmark, datas
             break
         dataset_chunks.append(EvalDataset(project=dataset.project, files=dataset.files[start:end], negation=dataset.negation))
     remotes = []
-    # Add thrall lib to python path
+    # Add proof_wala to python path
     root_dir = f"{__file__.split('proof_wala')[0]}"
     os.environ["PYTHONPATH"] = f"{root_dir}:{os.environ.get('PYTHONPATH', '')}"
     eval_checkpoint_info_actor = EvalRunCheckpointInfoActor.remote(eval_checkpoint_info)
     eval_proof_results_actor = EvalProofResultsActor.remote(eval_proof_results)
+    if follow_seed:
+        random.seed(eval_settings.sample_seed)
     # First discover all the lemmas that has to be proved
     for i, dataset in enumerate(dataset_chunks):
         logdir = eval_checkpoint_info.logging_dirs[-1]
@@ -578,7 +631,10 @@ def eval_dataset(env_settings: EnvSettings, eval_benchmark: EvalBenchmark, datas
     new_dataset_chunk_path = [{} for _ in range(max_model_parallelism)]
     if follow_seed:
         seed = eval_settings.sample_seed
-        random.seed(seed)
+    else:
+        seed = int(time.time()) % 1000000
+    logger.info(f"Shuffling the discovered lemmas with seed: {seed}")
+    random.seed(seed)
     random.shuffle(discovered_dataset_chunks)
     for i in range(len(discovered_dataset_chunks)):
         files = list(discovered_dataset_chunks[i].files)
@@ -697,7 +753,7 @@ def eval_benchmark(experiment: Experiments, log_dir: str, logger: logging.Logger
                 time.sleep(10)
     logger.info(f"Finished running experiment: \n{experiment.to_json(indent=4)}")
 
-@hydra.main(config_path="config", config_name="eval_compcert_118_experiment", version_base="1.2")
+@hydra.main(config_path="config", config_name="eval_simple_lean_test_multilingual", version_base="1.2")
 def main(cfg):
     experiment = parse_config(cfg)
     log_dif_prefix = ".log/evals/benchmark" if "log_dir" not in cfg else cfg.log_dir
@@ -705,7 +761,7 @@ def main(cfg):
     # log_dir = ".log/evals/benchmark/{}/{}".format(experiment.benchmark.name, time.strftime("%Y%m%d-%H%M%S"))
     os.makedirs(log_dir, exist_ok=True)
     log_path = os.path.join(log_dir, "eval.log")
-    logger = setup_logger(__name__, log_path, logging.INFO, '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    logger = setup_logger(__name__, log_path, logging.INFO, format='%(asctime)s - %(filename)s:%(lineno)d - %(levelname)s - %(message)s')
     logger.info(f"Pid: {os.getpid()}")
     logger.info(f"Running Experiment: {experiment.to_json(indent=4)}")
     eval_benchmark(experiment, log_dir, logger=logger)
@@ -715,13 +771,32 @@ if __name__ == "__main__":
     # RayUtils.init_ray(num_of_cpus=20, object_store_memory_in_gb=50, memory_in_gb=1)
     # Start the ray cluster
     os.environ["PYTHONPATH"] = f"{root_dir}:{os.environ.get('PYTHONPATH', '')}"
-    ray.init(
-        num_cpus=8, 
-        object_store_memory=75*2**30, 
-        _memory=75*2**30, 
-        logging_level=logging.CRITICAL, 
-        ignore_reinit_error=False, 
-        log_to_driver=False, 
-        configure_logging=False,
-        _system_config={"metrics_report_interval_ms": 3*10**8})
+    from filelock import FileLock
+    import json
+    os.makedirs(".log/locks", exist_ok=True)
+    ray_was_started = False
+    print("Starting run_proof_search Pid: ", os.getpid())
+    with FileLock(".log/locks/ray.lock"):
+        if os.path.exists(".log/ray/session_latest"):
+            with open(".log/ray/session_latest", "r") as f:
+                ray_session = f.read()
+                ray_session = json.loads(ray_session)
+            ray_address = ray_session["address"]
+            ray.init(address=ray_address)
+            print("Ray was already started")
+        else:
+            ray_session = ray.init(
+                num_cpus=8, 
+                object_store_memory=150*2**30, 
+                _memory=150*2**30, 
+                logging_level=logging.CRITICAL, 
+                ignore_reinit_error=False, 
+                log_to_driver=False, 
+                configure_logging=False,
+                _system_config={"metrics_report_interval_ms": 3*10**8})
+            with open(".log/ray/session_latest", "w") as f:
+                f.write(json.dumps(ray_session))
+            ray_was_started = True
+            print("Ray was started")
+            print("Ray session: ", ray_session)
     main()

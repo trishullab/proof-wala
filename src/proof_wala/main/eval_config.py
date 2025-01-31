@@ -17,6 +17,7 @@ from itp_interface.rl.proof_tree import ProofSearchResult
 from itp_interface.rl.proof_action import ProofAction
 from itp_interface.rl.simple_proof_env import ProofEnvReRankStrategy
 from proof_wala.search.search import SearchAlgorithm
+from proof_wala.proof_search.search_driver import ProofPathTracer
 from proof_wala.search.beam_search import BeamSearch
 from proof_wala.search.best_first_search import BestFirstSearch
 from proof_wala.proof_search.llm_tactic_generator import NegLoglikelihoodMinimizingHeuristic
@@ -70,6 +71,11 @@ class EvalSettings(object):
     proof_search_heuristic: str = "NegLoglikelihoodMinimizingHeuristic"
     model_parallelism: int = 4
     do_lemmas_discovery: bool = True
+    proof_tracer: typing.Optional[ProofPathTracer] = None
+
+    @property
+    def should_capture_traces_while_proof_search(self):
+        return self.proof_tracer is not None
 
     def get_search_algo(self):
         if self.search_strategy == "BeamSearch":
@@ -269,7 +275,8 @@ def parse_config(cfg):
         search_params=eval_settings_cfg["search_params"],
         proof_search_heuristic=eval_settings_cfg["proof_search_heuristic"],
         model_parallelism=eval_settings_cfg["model_parallelism"],
-        do_lemmas_discovery=eval_settings_cfg["do_lemmas_discovery"] if "do_lemmas_discovery" in eval_settings_cfg else True
+        do_lemmas_discovery=eval_settings_cfg["do_lemmas_discovery"] if "do_lemmas_discovery" in eval_settings_cfg else True,
+        proof_tracer=ProofPathTracer.from_dict(eval_settings_cfg["proof_tracer"]) if "proof_tracer" in eval_settings_cfg else None
     )
     benchmark_cfg = cfg["benchmark"]
     datasets_cfg = benchmark_cfg["datasets"]

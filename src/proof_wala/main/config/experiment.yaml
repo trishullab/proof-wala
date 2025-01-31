@@ -19,5 +19,5 @@ training_settings:
 # name: thrall-codet5-small-simple-128-001-001
 
 # Run experiments using the following command:
-# nohup torchrun --nproc-per-node 2 --master-port 31052 src/proof_wala/main/run.py &
-# nohup torchrun --nproc-per-node 2 src/proof_wala/main/run.py model_settings=codet5_small_128 training_data_settings=simple_benchmark_training training_settings=basic_split_09_01 &
+# nohup torchrun --nproc-per-node 2 --master-port 31052 src/thrall_lib/main/run.py &
+# nohup torchrun --nproc-per-node 2 src/thrall_lib/main/run.py model_settings=codet5_small_128 training_data_settings=simple_benchmark_training training_settings=basic_split_09_01 &

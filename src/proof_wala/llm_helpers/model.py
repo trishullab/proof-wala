@@ -128,6 +128,7 @@ class GenerationResult(object):
     input_text: str
     generated_text: typing.List[str] = field(default_factory=list)
     neg_log_likelihood: typing.List[float] = field(default_factory=list)
+    finish_reason: typing.List[str] = field(default_factory=list)
 
 @dataclass_json
 @dataclass

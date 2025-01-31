@@ -1,0 +1,42 @@
+name: codet5_beam_32_with_trace
+use_hammer: False
+# model_name: .log/run_training/new_model/thrall-codet5-small-compcert-2048/best-model-20240228-072825
+# model_name: <root>/models/thrall-codet5-small-coq-lean-4-2048/checkpoint-72500
+model_name: <root>/models/thrall-codet5-small-coq-lean-4-2048/checkpoint-140000
+is_seq2seq: True
+max_proof_depth: 50
+max_seq_length: 2048
+timeout_in_secs: 60
+proof_retries: 10
+character_per_token: 3.6
+width: 32
+max_tokens_per_action: 200
+temperature: 0.75
+do_sample: True
+top_k: 20
+stop_tokens:
+- '[END]'
+padding: True
+return_full_text: False
+compute_probabilities: True
+checkpoint_dir: .log/checkpoints/codet5_beam_16
+should_checkpoint: False
+proof_dump_dir: <root>/data/CompCert/proof_dumps
+use_human_readable_proof_context: True
+sample: 1.0
+sample_seed: 0xf00
+use_example_retrieval: False
+always_use_useful_theorem_retrieval: False
+num_goal_per_prompt:
+search_strategy: BeamSearch
+search_params:
+  beam_width: 32
+proof_search_heuristic: NegLoglikelihoodMinimizingHeuristic
+model_parallelism: 8
+proof_tracer:
+  collect_traces: True
+  folder: <root>/data/CompCert/proof_traces
+  training_meta_filename: local.meta.json
+  training_metadata:
+    data_filename_prefix: trace_data
+  max_parallelism: 8

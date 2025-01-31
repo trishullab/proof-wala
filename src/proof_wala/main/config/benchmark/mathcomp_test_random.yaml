@@ -1,186 +1,289 @@
 name: math_comp_test_random
-num_files: 50
+num_files: 65
 language: COQ
 few_shot_data_path_for_retrieval: null
 few_shot_metadata_filename_for_retrieval: null
 dfs_data_path_for_retrieval: null
 dfs_metadata_filename_for_retrieval: local.meta.json
-theorem_cnt: 223
+theorem_cnt: 536
 timeout_per_theorem_in_secs: 320
 setup_cmds:
   - opam env --switch=MathComp --set-switch
 datasets:
 - project: <root>/data/repos/math-comp/
   files:
-  - path: mathcomp/character/mxrepresentation.v
-    theorems:
-    - mx_Schur_iso
-    - in_factmod_eq0
-    - cyclic_mx_eq0
-    - irr_mx_mult
-    - mxsimple_isoP
-    - mxsimple_cyclic
-    - mxval_centg
-    - map_gring_op
-    - gen_addA
-    - mxmodule0
-    - rfix_mx_conjsg
-    - map_gring_row
-    - map_rfix_mx
-    - eval_mulT
-    - rstab_map
-    - val_genZ
-  - path: mathcomp/ssreflect/order.v
-    theorems:
-    - minC
-    - le0x
-    - inj_nhomo_lt
-    - le_def
-    - le_def
-    - le0x
-    - meetC
-    - bigminU
-    - eq_joinr
-    - topEdual
-    - leIxl
-    - lteifW
-    - diffBx
-    - bigmax_ltP
-    - tnth_diff
-    - meetxx
-    - nat0E
-    - sub_tprod_lexi
-    - comparable_gt_min
-    - botEtprod
-    - leUx
-    - contra_leq_lt
-  - path: mathcomp/character/character.v
-    theorems:
-    - coord_cfdot
-    - cfRepr_morphim
-    - Nxi
-    - char1_ge0
-    - cfun_sum_cfdot
-    - linear_char_divr
-    - xcfun_mul_id
-    - cfker_center_normal
-    - lin_irr_der1
-    - subGcfker
-  - path: mathcomp/algebra/matrix.v
-    theorems:
-    - map_copid_mx
-    - ursubmx_trig
-    - row_mxKr
-    - mxsub_eq_id
-    - map_lin_mx
-    - mxcol_recu
-    - mx1_sum_delta
-    - adjugate_key
-    - mxtrace_mxblock
-    - map_row
-    - vec_mx_delta
-    - vec_mx_key
-    - expand_cofactor
-    - diag_const_mx
-    - scalar_mx_block
-    - map2_mxDr
-    - cast_row_mx
-  - path: mathcomp/algebra/rat.v
-    theorems:
-    - denqP
-    - ratzD
-  - path: mathcomp/algebra/polydiv.v
-    theorems:
-    - dvdp1
-    - dvdpP
-    - root_factor_theorem
-    - dvdp_exp2r
-    - divpp
-    - dvdp_gcdl
-    - divpp
-    - divpE
-    - dvdpE
-  - path: mathcomp/fingroup/morphism.v
-    theorems:
-    - morphimGI
-    - sub_isom
-    - ltn_morphim
-    - card_im_injm
-    - morphim_cent
-    - nclasses_injm
-  - path: mathcomp/field/fieldext.v
-    theorems:
-    - size_minPoly
-    - n_gt0
-    - minPoly_irr
-  - path: mathcomp/ssreflect/ssrnat.v
-    theorems:
-    - leq_sub2r
-    - ex_maxn_subproof
-    - bin_of_natK
-    - ltnS
-    - ltn_subCl
-    - addn0
-    - prednK
-    - subDnCA
-    - ltn_subLR
-    - addn_maxl
-  - path: mathcomp/algebra/ssrnum.v
-    theorems:
-    - divC_rect
-    - sqrtr_subproof
-    - ger0P
-    - leif_mean_square
-    - ltr_pdivlMl
-    - eqC_semipolar
-    - nmulrn_rle0
-    - deg2_poly_max
-    - leif_sum
-    - pos_divr_closed
-    - real_ltr_normlW
-    - sqrn_eq1
-    - ltr_pDl
-    - Im_div
-    - real_ler_norml
-    - sqrtC_gt0
-    - pmulrn_rgt0
-    - deg2_poly_gt0r
-    - ler_iXnr
-    - eqr_sqrtC
-    - Im_lock
-  - path: mathcomp/algebra/vector.v
-    theorems:
-    - free_span
-    - fun_of_lfunK
-    - memv_capP
-    - vs2mxP
-    - capvSl
-    - hommx1
-    - sub_span
-    - dim_span
-  - path: mathcomp/character/inertia.v
-    theorems:
-    - inertia_mod_quo
-    - inertia_dprodl
-    - cfclass_transr
   - path: mathcomp/algebra/ssralg.v
     theorems:
-    - invf_div
-    - pair_add0
-    - comp_is_semi_additive
-    - mulrI
+    - telescope_prodf_eq
+    - opp_fun_is_additive
+    - scalerK
+    - iter_mulr_1
+    - prodf_seq_eq0
+    - invr0
+    - exprSr
+    - mulC_unitP
+    - invrZ
+    - mulVKr
+    - scalerDr
+    - in_alg_is_rmorphism
+    - fst_is_multiplicative
+    - prodrXl
+    - natrX
+    - rmorph_sum
+    - addUC
+    - opp_fun_is_scalable
+    - rmorphMNn
+    - exprDn_comm
+    - eqr_opp
+    - expfB_cond
+    - rmorphN1
+    - exprM
+    - fpredMr
     - pair_scaleA
-    - fmorph_div
-    - to_rformP
-    - pair_scaleDr
-    - scaleN1r
-    - exprMn
-    - mulVKf
-    - addrK
-    - prodrM_comm
-    - mulrA
+    - scalerN
+  - path: mathcomp/algebra/matrix.v
+    theorems:
+    - adj1
+    - mxrowEblock
+    - cormen_lup_detL
+    - mul_col_mx
+    - map2_row'
+    - eq_mx
+    - thinmxOver
+    - mxtrace_mxdiag
+    - invmxK
+    - map_xrow
+    - row_dsubmx
+    - mulmxr_is_linear
+    - block_mxA
+    - col_ind
+    - tr_submxcol
+    - scalar_mx_is_semi_additive
+    - row'Ku
+    - trmx_ursub
+    - mul_mx_diag
+    - lift0_mx_is_perm
+    - row_perm_key
+    - map_castmx
+    - mxblockB
+    - submxcolD
+  - path: mathcomp/algebra/ssrnum.v
+    theorems:
+    - deg2_poly_gt0
+    - ltr_pdivrMr
+    - lt0r
+    - sqr_norm_eq1
+    - lerXn2r
+    - minr_pMl
+    - le_total
+    - Nreal_leF
+    - real_lteif_distl
+    - ler_nM2r
+    - mulr_sign_lt0
+    - ler_ndivlMr
+    - ring_display
+    - ler_wiXn2l
+    - lern1
+    - sqrtr_sqr
+    - ltrP
+    - le_def'
+    - mulr_ile1
+    - aNge0
+    - real_exprn_odd_le0
+    - gtrDr
+    - pnatr_eq0
+    - ler_pMn2l
+    - bigmax_real
+    - sqrtr_eq0
+    - real_ltr_normlW
+    - ltr_nMn2l
+    - mulr_ilt1
+    - psumr_neq0P
+    - deg2_poly_root2
+    - exprn_odd_ge0
+    - real_ltr_distl
+    - real_lteifNE
+    - ler_rootCl
+    - real_neqr_lt
+    - normr_ge0
+    - le_def'
+    - ler01
+    - real_ltrNnormlW
+    - ge0_def
+    - normrN1
+    - sgrN1
+    - natr_indexg_gt0
+    - sgr_odd
+    - agt0
+    - ieexprIn
+  - path: mathcomp/ssreflect/ssrnat.v
+    theorems:
+    - mul2n
+    - odd_gt2
+    - leqif_geq
+    - subn2
+    - leq_pmulr
+    - homo_leq_in
+    - gtn_min
+    - contra_ltnT
+    - half_gt0
+    - sqrnD
+    - mulE
+    - subnA
+    - doubleMr
+    - uphalfK
+    - predn_sub
+    - iterD
+    - mul_expE
+    - mulnSr
+    - leqif_add
+  - path: mathcomp/ssreflect/bigop.v
+    theorems:
+    - big_tnth
+    - eq_big_idem
+    - dvdn_biggcdP
+    - big_ord1_cond_eq
+    - addmA
+    - big_all_cond
+    - big_uniq
+    - opm1
+    - eq_bigl
+    - eq_bigmax
+    - big_rcons
+    - bigA_distr_bigA
+    - big_sumType
+    - eq_big
+    - big_tuple
+  - path: mathcomp/fingroup/morphism.v
+    theorems:
+    - morphim_normal
+    - kerE
+    - morphimEdom
+    - sgvalmK
+    - isog_symr
+    - morphpre_sub
+    - isogEcard
+  - path: mathcomp/algebra/polydiv.v
+    theorems:
+    - dvdp_XsubCl
+    - gcd1p
+    - rdvdpp
+    - rdvd0p
+    - divpp
+    - coprimepP
+    - dvdp_mull
+    - polyXsubCP
+    - leq_trunc_divp
+    - rmodp_eq0P
+    - rmodpX
+    - dvdpp
+    - dvdpN0
+    - gcdp_modr
+    - coprimepZr
+    - dvdp_gdco
+    - rmodp_sum
+    - coprimep_expr
+    - rdvdp_eqP
+    - eqp_scale
+    - coprimepp
+    - gcdp_addl_mul
+    - dvdp_exp
+    - gcdp_map
+    - edivpP
+    - rmodp_id
+    - edivp_eq
+  - path: mathcomp/field/galois.v
+    theorems:
+    - fixedField_galois
+    - comp_kHom
+    - normal_field_splitting
+    - gal_adjoin_eq
+    - regular_splittingAxiom
+    - kAutfE
+    - galNormM
+    - splitting_normalField
+    - comp_AEndA
+    - kAut_to_gal
+    - kHomExtend_additive_subproof
+    - gal_fixedField
+  - path: mathcomp/character/vcharacter.v
+    theorems:
+    - mem_zchar
+    - vchar_norm2
+    - cfnorm_dchi
+    - zchar_subset
+    - cfun1_vchar
+  - path: mathcomp/solvable/cyclic.v
+    theorems:
+    - injm_Zp_unitm
+    - orderXdiv
+  - path: mathcomp/algebra/ring_quotient.v
+    theorems:
+    - mulqA
+    - equiv_is_equiv
+  - path: mathcomp/fingroup/quotient.v
+    theorems:
+    - cosetpre1
+    - index_morphim_ker
+    - morphpre_quotm
+    - quotient_normal
+  - path: mathcomp/solvable/maximal.v
+    theorems:
+    - subcent1_extraspecial_maximal
+    - min_card_extraspecial
+    - isog_special
+  - path: mathcomp/algebra/mxalgebra.v
+    theorems:
+    - addsmxA
+    - mxrank_compl
+    - mulmx_ker
+    - col_ebase_unit
+    - rank_leq_col
+    - LUP_card_GL
+    - row_leq_rank
+    - mulmx_base
+    - pinvmxE
+    - mxrank_sum_cap
+    - map_ltmx
+    - capmxS
+    - genmx_muls
+    - mxrank_eq0
+    - col_base_full
+  - path: mathcomp/solvable/extremal.v
+    theorems:
+    - extremal_generators_facts
+    - def2
+  - path: mathcomp/fingroup/action.v
+    theorems:
+    - actKVin
+    - astab1R
+    - afixP
+    - actperm_Aut
+    - acts_qact_dom_norm
+    - astabs_ract
+    - astab1JG
+    - afixYin
+    - gacent1E
+    - acts_actby
+    - mem_orbit
   - path: mathcomp/algebra/poly.v
     theorems:
+    - prim_order_exists
+    - size_XaddC
+    - size_scale
+    - poly_alg_initial
+    - map_monic
+    - coef_comp_poly
+    - size_addl
+    - poly_ind
+    - size_odd_poly_eq
+    - derivN
+    - take_poly_is_linear
+    - map_Poly_id0
+    - polyCB
+    - rootC
+    - add_poly_key
+    - polyseq1
     - char_prim_root
     - comp_polyCr
     - monicMr
@@ -191,147 +294,387 @@ datasets:
     - coef1
     - scale_polyDl
     - size_XnaddC
-  - path: mathcomp/field/algC.v
+  - path: mathcomp/ssreflect/order.v
     theorems:
-    - conj_is_multiplicative
-    - eqCmod_refl
-    - normK
-  - path: mathcomp/algebra/intdiv.v
-    theorems:
-    - lez_divRL
-    - coprimez_pexpl
-    - size_zprimitive
-    - dvd0z
-    - expzB
-  - path: mathcomp/field/galois.v
-    theorems:
-    - kHom_extends
-    - gal_sgvalK
-    - galoisS
-  - path: mathcomp/ssreflect/div.v
-    theorems:
-    - modnDr
-    - eqn_modDl
-    - lcmn0
-    - divn_modl
-  - path: mathcomp/character/vcharacter.v
-    theorems:
-    - Z_S
-    - zcharW
-  - path: mathcomp/solvable/commutator.v
-    theorems:
-    - commgX
-    - isog_der
-  - path: mathcomp/ssreflect/bigop.v
-    theorems:
-    - big_enumP
-    - big_AC_mk_monoid
-    - addmAC
-    - mem_index_iota
-  - path: mathcomp/algebra/archimedean.v
-    theorems:
-    - floor_ge_int
-    - ceil_def
-  - path: mathcomp/algebra/interval.v
-    theorems:
-    - mem_miditv
-  - path: mathcomp/ssreflect/choice.v
-    theorems:
-    - bool_of_unitK
-  - path: mathcomp/ssreflect/prime.v
-    theorems:
-    - eq_partn_from_log
-    - totient_gt1
-    - Euclid_dvdM
-    - eqn_from_log
-    - partn_dvd
-    - up_log_eq0
-  - path: mathcomp/field/separable.v
-    theorems:
-    - Derivation_exp
-    - sub_adjoin_separable_generator
+    - comp_is_top_morphism
+    - lexi_cons
+    - rcomplPjoin
+    - meetBI
+    - joinCA
+    - comparable_bigr
+    - meetUr
+    - enum1
+    - incomparable_leF
+    - ltEsig
+    - meetEseq
+    - joinKUC
+    - complEdiff
+    - le_refl
+    - joins_sup
+    - lteif_orb
+    - le_refl
+    - le_enum_rank_in
+    - contraTlt
+    - meetCA
+    - nonincn_inP
+    - le_nmono_in
+    - joinC
+    - lt_path_min
+    - idfun_is_meet_morphism
+    - meetC
+    - comparable_contra_ltn_lt
+    - minEle
+    - comparable_gt_max
+    - lt_le_asym
+    - ltEprodlexi
+    - le_def
+    - opredI
+    - joinIB
+    - leBl
+    - joinACA
+    - botEseq
+    - bigmin_mkcondr
+    - leUidl
+    - comparable_gt_min
+    - idfun_is_nondecreasing
+    - decn_inP
+    - ltW_homo
+    - max_idPr
+    - botEsig
+    - le_nmono
+    - meetAC
+    - ge_max
+    - anti
+    - leBx
+    - neqhead_lexiE
+    - contraNle
+    - meetA
+    - comparable_maxCA
   - path: mathcomp/character/mxabelem.v
     theorems:
-    - pcore_sub_rstab_mxsimple
-    - bigdprod_rowg
-  - path: mathcomp/ssreflect/finfun.v
+    - mx_repr_action_faithful
+    - astabs_rowg_repr
+  - path: mathcomp/character/mxrepresentation.v
     theorems:
-    - tuple_of_finfunK
-  - path: mathcomp/ssreflect/fingraph.v
-    theorems:
-    - finv_inj_in
-    - fcard_finv
-  - path: mathcomp/solvable/jordanholder.v
-    theorems:
-    - gactsI
-    - gastabsP
-    - gactsP
+    - mx_abs_irr_cent_scalar
+    - map_reprJ
+    - bigcapmx_module
+    - map_gring_row
+    - component_mx_module
+    - repr_mxM
+    - rcenter_normal
+    - mx_second_rsim
+    - kquo_repr_coset
+    - in_factmod_addsK
+    - mx_Jacobson_density
+    - card_irr
+    - genmx_Socle
+    - gring_opJ
+    - val_factmodJ
+    - val_submod_eq0
+    - irr_modeV
+    - gen_is_multiplicative
+    - mxmodule1
+    - mxsimple_isoP
+    - mxmodule_eigenvector
+    - mxsemisimpleS
+    - Wedderburn_ideal
+    - hom_cyclic_mx
+    - socle_rsimP
   - path: mathcomp/solvable/abelian.v
     theorems:
+    - rank_cycle
+    - primes_exponent
+    - exponent_Zgroup
     - Ohm1
     - exponent2_abelem
     - p_rank_abelem
     - TIp1ElemP
+  - path: mathcomp/field/finfield.v
+    theorems:
+    - finRing_nontrivial
+  - path: mathcomp/ssreflect/prime.v
+    theorems:
+    - Euclid_dvd_prod
+    - trunc_log_ltn
+    - up_log2_double
+    - trunc_log_up_log
+    - totient_prime
+    - trunc_logP
+    - lognM
+    - primesX
+    - pdiv_id
+    - pdiv_pfactor
+  - path: mathcomp/algebra/polyXY.v
+    theorems:
+    - sizeYE
+    - swapXY_is_scalable
+    - max_size_coefXY
+    - poly_XaY0
+  - path: mathcomp/algebra/vector.v
+    theorems:
+    - dimv0
+    - lfun_addC
+    - sumv_sup
+    - comp_lfun0l
+    - memvK
+    - span_basis
+    - comp_lfunNl
+    - free_span
+    - fun_of_lfunK
+    - memv_capP
+    - vs2mxP
+    - capvSl
+    - hommx1
+    - sub_span
+    - dim_span
+  - path: mathcomp/fingroup/perm.v
+    theorems:
+    - perm_mulP
+    - out_perm
+    - cast_perm_inj
+    - porbit_id
+    - porbit_perm
+    - odd_tperm
+    - tpermKg
+    - inj_tperm
+  - path: mathcomp/algebra/ssrint.v
+    theorems:
+    - addSz
+    - ler_pMz2r
+    - ltr_pMz2l
+    - ler_wnMz2l
+    - exprSz
+    - exprz_out
+    - sqrn_dist
+    - mulrN1z
+    - sgzN1
+    - distnEr
+  - path: mathcomp/algebra/intdiv.v
+    theorems:
+    - divzN
+    - coprimez_dvdr
+    - gcdzMl
+    - modzz
+    - coprimezMl
+  - path: mathcomp/ssreflect/choice.v
+    theorems:
+    - pickle_taggedK
+    - sig2W
+    - choose_id
+  - path: mathcomp/field/fieldext.v
+    theorems:
+    - minPoly_dvdp
+    - vsval_multiplicative
+    - subfx_inj_is_multiplicative
+    - dim_refBaseField
+  - path: mathcomp/ssreflect/fintype.v
+    theorems:
+    - val_seq_sub_enum
+    - predT_subset
+    - eq_forallb
+    - nth_enum_ord
+    - bumpC
+    - image_pre
+    - disjointWl
+    - enum_rank_in_inj
+    - card_geqP
+    - forall_inP
+    - fintype1
+    - cardID
+    - neq_lift
+  - path: mathcomp/algebra/zmodp.v
+    theorems:
+    - unit_Zp_mulgC
+    - sub_Zp_1
+    - Zp_abelian
+    - Fp_cast
+  - path: mathcomp/character/character.v
+    theorems:
+    - cfRepr_prod
+    - irr_inj
+    - xcfunZl
+    - xcfun_r_is_additive
+    - cfRepr_muln
+    - constt_charP
+    - cfRes_irr_irr
+    - irr_classK
+    - cfker_repr
+    - lin_Res_IirrE
+    - cfRes_eq0
+    - cfAut_char
+    - lin_charV
+    - irr_consttE
+    - char1_gt0
+  - path: mathcomp/solvable/sylow.v
+    theorems:
+    - Sylow_superset
+    - ZgroupS
+  - path: mathcomp/field/falgebra.v
+    theorems:
+    - adjoin_cons
+    - expv0
+    - lfun_invE
+    - expv1n
+    - agenv_sub_modl
+    - lfun_mulrRV
+  - path: mathcomp/field/algC.v
+    theorems:
+    - truncC0
+    - truncCM
+    - Cnat_prod_eq1
+    - posP
+    - eqCmod_addl_mul
+    - eqCmodMl
+    - eqCmodD
+    - eqCmod_trans
+    - CtoL_is_multiplicative
+  - path: mathcomp/ssreflect/path.v
+    theorems:
+    - mem2E
+    - splitP2r
+    - rotr_ucycle
+    - mem_merge
+    - rotr_cycle
+    - mem2r_cat
+    - sorted_eq_in
+    - cycle_relI
+    - drop_sorted
+    - splitPr
+  - path: mathcomp/algebra/mxpoly.v
+    theorems:
+    - map_mx_companion
+    - map_char_poly
+    - rVpoly_is_linear
+    - horner_rVpoly_inj
+  - path: mathcomp/algebra/fraction.v
+    theorems:
+    - tofrac0
+    - equivf_trans
+  - path: mathcomp/ssreflect/div.v
+    theorems:
+    - eqn_div
+    - eqn_modDl
+    - dvdn_eq
+    - modnMmr
+    - dvdn0
+    - dvdn_lcmr
+  - path: mathcomp/solvable/frobenius.v
+    theorems:
+    - Frobenius_kerS
+    - FrobeniusJgroup
+  - path: mathcomp/solvable/alt.v
+    theorems:
+    - simple_Alt_3
+  - path: mathcomp/solvable/jordanholder.v
+    theorems:
+    - JordanHolderUniqueness
+    - gactsI
+    - gastabsP
+    - gactsP
+  - path: mathcomp/solvable/burnside_app.v
+    theorems:
+    - S23_inv
+    - S05_inj
+    - eqperm_map2
+  - path: mathcomp/algebra/rat.v
+    theorems:
+    - scalqE
+    - fracq0
+    - normqE
+    - numq_le0
+    - natq_div
+    - addqC
+  - path: mathcomp/algebra/qpoly.v
+    theorems:
+    - size_mk_monic_gt1
+    - npolyXE
+    - qpoly_mulVz
+    - big_coef_npoly
+  - path: mathcomp/character/inertia.v
+    theorems:
+    - inertia_isom
+    - im_cfclass_Iirr
+    - nNG
+  - path: mathcomp/fingroup/gproduct.v
+    theorems:
+    - complP
+    - bigcprodW
+    - sdprodg1
+    - injm_pairg1
+    - cprodP
+    - perm_bigcprod
+    - dprodJ
+    - divgrMid
+    - astabsEsd
+    - sdprod_subr
+    - xsdprodm_dom1
+    - bigcprodYP
+    - cprodWpp
+    - dprodWC
+  - path: mathcomp/field/qfpoly.v
+    theorems:
+    - plogpD
+  - path: mathcomp/solvable/gseries.v
+    theorems:
+    - morphpre_maximal
+  - path: mathcomp/ssreflect/generic_quotient.v
+    theorems:
+    - right_trans
+  - path: mathcomp/algebra/archimedean.v
+    theorems:
+    - aut_natr
+    - floor_ge_int
+    - ceil_def
+  - path: mathcomp/algebra/interval.v
+    theorems:
+    - le_ninfty
+    - oppr_itvco
+    - le_bound_trans
+  - path: mathcomp/solvable/nilpotent.v
+    theorems:
+    - solvableS
+    - ucn1
+  - path: mathcomp/ssreflect/fingraph.v
+    theorems:
+    - eq_froots
+    - order_id
+    - relU_sym
+    - order_set_finv
+    - finv_eq_can
+    - finv_f_cycle
+  - path: mathcomp/solvable/center.v
+    theorems:
+    - center_dprod
+    - center_sub
+  - path: mathcomp/field/separable.v
+    theorems:
+    - Derivation_mul_poly
+    - char0_PET
+  - path: mathcomp/solvable/commutator.v
+    theorems:
+    - comm3G1P
+    - der_subS
+    - commgX
+    - isog_der
+  - path: mathcomp/solvable/gfunctor.v
+    theorems:
+    - gFsub
+  - path: mathcomp/ssreflect/ssrAC.v
+    theorems:
+    - count_memE
+  - path: mathcomp/field/closed_field.v
+    theorems:
+    - ex_elim_qf
   - path: mathcomp/algebra/finalg.v
     theorems:
     - zmod_abelian
-  - path: mathcomp/fingroup/gproduct.v
-    theorems:
-    - extprod_mul1g
-  - path: mathcomp/ssreflect/binomial.v
-    theorems:
-    - ffact0n
-  - path: mathcomp/algebra/ssrint.v
-    theorems:
-    - absz_id
-    - lez_nat
-    - hornerMz
-    - leqD_dist
-  - path: mathcomp/ssreflect/path.v
-    theorems:
-    - perm_merge
-    - take_sorted
-  - path: mathcomp/algebra/mxpoly.v
-    theorems:
-    - rVpoly_is_linear
-    - horner_rVpoly_inj
-  - path: mathcomp/fingroup/quotient.v
-    theorems:
-    - inv_quotientN
-  - path: mathcomp/fingroup/perm.v
-    theorems:
-    - permS01
-    - porbit_id
-  - path: mathcomp/algebra/zmodp.v
-    theorems:
-    - Zp_abelian
-  - path: mathcomp/algebra/ring_quotient.v
-    theorems:
-    - equiv_is_equiv
-  - path: mathcomp/solvable/burnside_app.v
-    theorems:
-    - eqperm_map2
-  - path: mathcomp/solvable/extremal.v
-    theorems:
-    - def2
-  - path: mathcomp/field/closed_field.v
-    theorems:
-    - rabstrX
   - path: mathcomp/fingroup/automorphism.v
     theorems:
-    - conj_isom
-  - path: mathcomp/solvable/maximal.v
+    - ker_autm
+  - path: mathcomp/ssreflect/binomial.v
     theorems:
-    - isog_special
+    - ffactSS
   - path: mathcomp/solvable/hall.v
     theorems:
     - coprime_quotient_cent
-  - path: mathcomp/character/integral_char.v
-    theorems:
-    - faithful_degree_p_part
-  - path: mathcomp/field/qfpoly.v
-    theorems:
-    - qX_exp_inj
-  - path: mathcomp/field/algnum.v
-    theorems:
-    - Aint_subring_exists
