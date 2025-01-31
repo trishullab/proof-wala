@@ -248,7 +248,9 @@ class TGIServer:
         return None
 
 if __name__ == "__main__":
-    model_path = '/mnt/amthakur/models/proof-wala-codet5-small-coq-lean-4-2048/checkpoint-337500'
+    model_path = '<root>/models/proof-wala-codet5-small-coq-lean-4-2048/checkpoint-337500'
+    if "<root>" in model_path:
+        model_path = model_path.replace("<root>/", os.environ.get("ROOT", "").trim('/') + "/")
     with TGIServer(
         path_to_local_model=model_path,
         port=8080,
