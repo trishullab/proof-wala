@@ -1,4 +1,4 @@
 [submodule "imports/itp-interface"]
 	path = imports/itp-interface
-	url = https://github.com/trishullab/itp-interface.git
+	url = https://anonymous.4open.science/r/itp-interface-8F31.git # This URL should point to the actual Git Repo, right now anonymized
 	ignore = dirty
