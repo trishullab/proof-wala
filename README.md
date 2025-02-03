@@ -62,12 +62,12 @@ popd
 
 7. To train the model for proof step generation, run the following command from the root directory:
 ```bash
-torchrun --nproc-per-node 2 --master-port 31052 src/thrall_lib/main/run.py --config-name experiment
+torchrun --nproc-per-node 2 --master-port 31052 src/proof_wala/main/run.py --config-name experiment
 # ^ This will run training on 2 GPUs, on the same node
 # ^ For a single node or no GPU training just remove the --nproc-per-node 2 and --master-port 31052 and torchrun
 # The above training job can also be run on a slurm cluster/(or any distributed cluster), for that refer the per_node_job.sh and tacc_slurm.sh script in the root directory
 ```
->Note: Check the `experiment.yaml` configuration in the `src/thrall_lib/configs` directory for the exact details of the training configuration and where the model will be saved, the location where it expects the data to be present, etc.
+>Note: Check the `experiment.yaml` configuration in the `src/proof_wala/configs` directory for the exact details of the training configuration and where the model will be saved, the location where it expects the data to be present, etc.
 
 8. Install the dependencies for the parallel proof search module:
 ```bash
@@ -85,15 +85,15 @@ pip install -r requirements.txt
 export FOLLOW_SEED="True"
 export ROOT="<path to the directory where the models are saved>"
 # The models are assumed to stored in the directory <ROOT>/models/<model_name>
-# ^ You can change these path from the yaml files in the src/thrall_lib/configs directory
+# ^ You can change these path from the yaml files in the src/proof_wala/configs directory
 export CUDA_VISIBLE_DEVICES="1,2,3,4" # Based on the number of GPUs available
 # Start the ray cluster
 mkdir -p .log/ray
-python src/thrall_lib/main/init.py &
+python src/proof_wala/main/init.py &
 # ^ This will start the ray cluster in the background
 # ^ a .log/ray/session_latest file which will have the details of the ray cluster
 # ^ you can also create the session file with info of an existing ray cluster without starting a new one
-python src/thrall_lib/main/run_proof_search.py --config-name eval_simple_lean_test_multilingual
+python src/proof_wala/main/run_proof_search.py --config-name eval_simple_lean_test_multilingual
 #^ This will automatically start the proof search on the ray cluster mentioned in the session_latest file
 #^ For a distributed run we assume that each node has access to the same data, models, essentially the same file system (NFS, SMB, etc)
 ```
