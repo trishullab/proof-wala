@@ -65,7 +65,7 @@ popd
 torchrun --nproc-per-node 2 --master-port 31052 src/proof_wala/main/run.py --config-name experiment
 # ^ This will run training on 2 GPUs, on the same node
 # ^ For a single node or no GPU training just remove the --nproc-per-node 2 and --master-port 31052 and torchrun
-# The above training job can also be run on a slurm cluster/(or any distributed cluster), for that refer the per_node_job.sh and tacc_slurm.sh script in the root directory
+# The above training job can also be run on a slurm cluster/(or any distributed cluster), for that refer the per_node_job.sh and slurm.sh script in the root directory
 ```
 >Note: Check the `experiment.yaml` configuration in the `src/proof_wala/configs` directory for the exact details of the training configuration and where the model will be saved, the location where it expects the data to be present, etc.
 
