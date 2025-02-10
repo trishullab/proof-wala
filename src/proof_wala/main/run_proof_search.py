@@ -767,7 +767,7 @@ def main(cfg):
     eval_benchmark(experiment, log_dir, logger=logger)
     pass
 
-if __name__ == "__main__":
+def run_proof_search():
     # RayUtils.init_ray(num_of_cpus=20, object_store_memory_in_gb=50, memory_in_gb=1)
     # Start the ray cluster
     os.environ["PYTHONPATH"] = f"{root_dir}:{os.environ.get('PYTHONPATH', '')}"
@@ -800,3 +800,6 @@ if __name__ == "__main__":
             print("Ray was started")
             print("Ray session: ", ray_session)
     main()
+
+if __name__ == "__main__":
+    run_proof_search()

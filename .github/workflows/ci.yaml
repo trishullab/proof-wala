@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y graphviz
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Upgrade pip and install Hatch
+        run: |
+          python -m pip install --upgrade pip
+          pip install build
+
+      - name: Build the package using Hatch
+        run: |
+          python -m build
+
+      - name: Install the built package
+        run: |
+          pip install dist/*.whl
+
+      - name: Install PyTorch for CPU
+        run: |
+          pip install torch==2.5.0 torchvision==0.20.0 torchaudio==2.5.0 --index-url https://download.pytorch.org/whl/cpu
+
+      - name: Install Lean (elan)
+        shell: bash
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          source $HOME/.elan/env
+
+      - name: Install Lean and ITP Interface
+        run: |
+          source $HOME/.elan/env
+          install-lean-repl
+          install-itp-interface
+
+      - name: Run CI setup tests
+        run: |
+          source $HOME/.elan/env
+          python src/tests/setup_test.py
+        
+      - name: Build the lean project
+        run: |
+          source $HOME/.elan/env
+          pushd src/proof_wala/data/proofs/lean/lean4_proj && lake build && popd
+      
+      - name: Run CI proof search tests
+        run: |
+          source $HOME/.elan/env
+          # Reduced memory values to fit within GitHub VM (8 GiB total)
+          # Here, we use 2 GiB for the object store and for overall memory.
+          proof-wala-init-ray --num_cpus 2 --object_store_memory 2147483648 --memory 2147483648 --metrics_report_interval_ms 300000000 &
+          sleep 10
+          python src/tests/run_proof_search_test.py

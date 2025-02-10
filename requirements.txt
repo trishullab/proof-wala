@@ -1,5 +1,6 @@
-imports/itp-interface/dist/itp_interface-0.1.5-py3-none-any.whl
+itp-interface==1.1.0
 accelerate==0.23.0
+filelock==3.12.4
 bitsandbytes==0.41.1
 gradio==3.48.0
 protobuf==3.20.3
