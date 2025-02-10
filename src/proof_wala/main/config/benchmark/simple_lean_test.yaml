@@ -8,7 +8,7 @@ dfs_metadata_filename_for_retrieval: local.meta.json
 theorem_cnt: 1
 timeout_per_theorem_in_secs: 720
 datasets:
-- project: imports/itp-interface/src/data/test/lean4_proj # imports/itp-interface/src/data/test/lean4_proj/Lean4Proj/Temp.lean
+- project: <root>/data/proofs/lean/lean4_proj
   files:
-  - path: Lean4Proj/Temp.lean
+  - path: Lean4Proj/Basic.lean
     theorems: "*"
