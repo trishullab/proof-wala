@@ -5,7 +5,7 @@ requires = [
 build-backend = "hatchling.build"
 [project]
 name = "proof-wala"
-version = "1.0.0"
+version = "1.1.2"
 authors = [
   { name="Amitayush Thakur", email="amitayush@utexas.edu" },
 ]
