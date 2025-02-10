@@ -126,7 +126,7 @@ proof-wala-search --config-dir=src/proof_wala/main/config --config-name=eval_sim
 
 2. To train the model for proof step generation, run the following command from the root directory:
 ```bash
-torchrun --nproc-per-node 2 --master-port 31052 proof-wala-train --config-name multilingual_random_base_experiment
+torchrun --nproc-per-node 2 --master-port 31052 proof-wala-train --config-dir=src/proof_wala/main/config --config-name multilingual_random_base_experiment.yaml
 # ^ This will run training on 2 GPUs, on the same node
 # ^ For a single node or no GPU training just remove the --nproc-per-node 2 and --master-port 31052 and torchrun
 # The above training job can also be run on a slurm cluster/(or any distributed cluster), for that refer the per_node_job.sh and tacc_slurm.sh script in the root directory
