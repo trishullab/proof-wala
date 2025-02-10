@@ -57,8 +57,12 @@ jobs:
         run: |
           source $HOME/.elan/env
           python src/tests/setup_test.py
-
+      
       - name: Run CI proof search tests
         run: |
           source $HOME/.elan/env
+          # Reduced memory values to fit within GitHub VM (8 GiB total)
+          # Here, we use 2 GiB for the object store and for overall memory.
+          proof-wala-init-ray --num_cpus 2 --object_store_memory 2147483648 --memory 2147483648 --metrics_report_interval_ms 300000000 &
+          sleep 10
           python src/tests/run_proof_search_test.py
