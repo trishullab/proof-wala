@@ -1,5 +1,9 @@
 # ProofWala
 
+[![Build Status](https://github.com/trishullab/proof-wala/actions/workflows/ci.yaml/badge.svg)](https://github.com/trishullab/proof-wala/actions/workflows/ci.yaml)
+[![PyPI version](https://img.shields.io/pypi/v/proof-wala.svg)](https://pypi.org/project/proof-wala/)
+[![PyPI downloads](https://img.shields.io/pypi/dm/proof-wala.svg)](https://pypi.org/project/proof-wala/)
+
 ## Introduction
 Neural networks have shown substantial promise at automatic theorem-proving in interactive proof assistants (ITPs) like Lean and Coq. However, most neural theorem-proving models are restricted to specific ITPs, leaving out opportunities for cross-lingual transfer between ITPs. We address this weakness with a multilingual proof framework, <span style="font-variant:small-caps;">ProofWala</span>, that allows a standardized form of interaction between neural theorem-provers and two established ITPs (Coq and Lean). It enables the collection of multilingual proof step data---data recording the result of proof actions on ITP states---for training neural provers. 
  <span style="font-variant:small-caps;">ProofWala</span> allows the systematic evaluation of a model's performance across different ITPs and problem domains via efficient parallel proof search algorithms. We show that multilingual training enabled by <span style="font-variant:small-caps;">ProofWala</span> can lead to successful transfer across ITPs. 
@@ -136,3 +140,18 @@ torchrun --nproc-per-node 2 --master-port 31052 proof-wala-train --config-dir=sr
 >NOTE: Check the `multilingual_random_base_experiment.yaml` configuration in the [src/proof_wala/main/config](src/proof_wala/main/config) directory for the exact details of the training configuration and where the model will be saved, the location where it expects the data to be present, etc. These config files are based on hydra configuration system. For more details on the hydra configuration system, refer to the [hydra documentation](https://hydra.cc/docs/intro).
 
 > NOTE: The `<root>` macro mentioned in the config files can be set using the environment variable `ROOT` or one can directly replace the `<root>` with the path to relevant directory in the config file.
+
+## Our Paper
+For more details, please refer to our paper: [ProofWala: Multilingual Proof Data Synthesis and Theorem-Proving](https://arxiv.org/abs/2502.04671).
+
+```bibtex
+@misc{thakur2025proofwala,
+      title={${\rm P{\small ROOF}W{\small ALA}}$: Multilingual Proof Data Synthesis and Theorem-Proving}, 
+      author={Amitayush Thakur and George Tsoukalas and Greg Durrett and Swarat Chaudhuri},
+      year={2025},
+      eprint={2502.04671},
+      archivePrefix={arXiv},
+      primaryClass={cs.AI},
+      url={https://arxiv.org/abs/2502.04671}, 
+}
+```
