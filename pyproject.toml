@@ -19,7 +19,7 @@ classifiers = [
 ]
 
 dependencies = [
-    "itp-interface==1.1.1",
+    "itp-interface==1.1.2",
     "filelock==3.12.4",
     "accelerate==0.23.0",
     "bitsandbytes==0.41.1",
