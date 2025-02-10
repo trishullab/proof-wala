@@ -57,6 +57,11 @@ jobs:
         run: |
           source $HOME/.elan/env
           python src/tests/setup_test.py
+        
+      - name: Build the lean project
+        run: |
+          source $HOME/.elan/env
+          pushd src/proof_wala/data/proofs/lean/lean4_proj && lake build && popd
       
       - name: Run CI proof search tests
         run: |
