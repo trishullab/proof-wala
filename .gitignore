@@ -186,3 +186,12 @@ outputs/
 api_log.json
 
 nohup*
+
+# Ignore .conda directory
+.conda/
+
+# Ignore .lake
+.lake/
+
+# Ignore temptodel* files
+temptodel*
