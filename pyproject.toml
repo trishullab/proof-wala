@@ -1,37 +1,47 @@
 [build-system]
 requires = [
-    "hatchling",
-    "accelerate==0.23.0",
-    "bitsandbytes==0.41.1",
-    "gradio==3.48.0",
-    "protobuf==3.20.3",
-    "scipy==1.11.2",
-    "sentencepiece==0.1.99",
-    "spaces==0.16.1",
-    "torch==2.1.1",
-    "transformers==4.34.0",
-    "peft==0.7.1",
-    "trl==0.7.7",
-    "parglare==0.16.1",
-    "pydantic==1.10.13",
-    "graphviz==0.17"
+    "hatchling"
 ]
 build-backend = "hatchling.build"
 [project]
 name = "proof_wala"
-version = "0.0.2"
+version = "1.0.0"
 authors = [
   { name="Amitayush Thakur", email="amitayush@utexas.edu" },
 ]
 description = "Python library for training LLMs with Interactive Theorem Proving data."
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.9, <3.13"
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: GNU General Public License v2 (GPLv2)",
+    "License :: OSI Approved :: MIT License",
     "Operating System :: POSIX :: Linux",
 ]
 
+dependencies = [
+    "itp-interface==1.1.0",
+    "filelock==3.12.4",
+    "accelerate==0.23.0",
+    "bitsandbytes==0.41.1",
+    "gradio==3.48.0",
+    "protobuf==3.20.1",
+    "scipy==1.11.2",
+    "sentencepiece==0.1.99",
+    "spaces==0.16.1",
+    "transformers==4.34.0",
+    "peft==0.7.1",
+    "trl==0.7.7",
+    "parglare==0.16.1",
+    "pydantic==1.10.13",
+    "graphviz==0.17",
+    "comet-ml==3.33.9"
+]
+
 [project.urls]
-Homepage = "https://github.com/trishullab/itp-interface"
-Issues = "https://github.com/trishullab/itp-interface/issues"
+Homepage = "https://github.com/trishullab/proof-wala"
+Issues = "https://github.com/trishullab/proof-wala/issues"
+
+[project.scripts]
+proof-wala-init-ray = "proof_wala.main.init_ray:main"
+proof-wala-search = "proof_wala.main.run_proof_search:run_proof_search"
+proof-wala-train = "proof_wala.main.run:run"
