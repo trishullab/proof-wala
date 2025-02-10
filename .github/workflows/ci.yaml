@@ -49,9 +49,11 @@ jobs:
 
       - name: Install Lean and ITP Interface
         run: |
+          source $HOME/.elan/env
           install-lean-repl
           install-itp-interface
 
       - name: Run CI tests
         run: |
+          source $HOME/.elan/env
           python -m unittest discover -s src/tests
