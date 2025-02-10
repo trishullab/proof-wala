@@ -1,0 +1,22 @@
+# @package _global_
+defaults:
+  - benchmark: simple_lean_test
+  - eval_settings: codet5_beam_16
+  - env_settings: bm25_retrieval
+  - override hydra/job_logging: 'disabled'
+
+log_dir: .log/proofs_logs/simple_lean_test_easy
+eval_settings:
+  proof_dump_dir: .log/proofs_dumps/simple_test_easy
+  model_name: amitayusht/ProofWala-Multilingual
+  checkpoint_dir: .log/checkpoints/codet5_beam_16/amitayusht/ProofWala-Multilingual
+  proof_retries: 10
+  timeout_in_secs: 620
+  temperature: 1.2
+benchmark:
+  datasets:
+  - project: src/proof_wala/data/proofs/lean/lean4_proj
+    files:
+    - path: Lean4Proj/Basic.lean
+      theorems:
+        - n_plus_zero
