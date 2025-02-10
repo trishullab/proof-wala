@@ -32,7 +32,7 @@ def main(cfg):
         raise Exception(f"Invalid experiment type: {experiment.expertiment_type}")
     pass
 
-if __name__ == "__main__":
+def run():
     # Start the ray cluster
     os.environ["PYTHONPATH"] = f"{root_dir}:{os.environ.get('PYTHONPATH', '')}"
     environ = os.environ.copy()
@@ -50,3 +50,6 @@ if __name__ == "__main__":
         _system_config={"metrics_report_interval_ms": 10**8},
         runtime_env=runtime_env)
     main()
+
+if __name__ == "__main__":
+    run()
