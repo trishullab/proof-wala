@@ -24,7 +24,7 @@ def get_qed_for_language(language: ProofAction.Language):
     elif language == ProofAction.Language.LEAN:
         return "end"
     elif language == ProofAction.Language.LEAN4:
-        return ""
+        return "done"
     else:
         raise ValueError(f"Language {language} not supported")
 
