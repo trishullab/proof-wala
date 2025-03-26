@@ -1,0 +1,4 @@
+[submodule "src/proof_wala/data/proofs/lean/miniF2F-lean4"]
+	path = src/proof_wala/data/proofs/lean/miniF2F-lean4
+	url = https://github.com/yangky11/miniF2F-lean4.git
+	ignore = dirty
