@@ -1,0 +1,18 @@
+# @package _global_
+defaults:
+  - benchmark: miniF2F_test
+  - eval_settings: codet5_beam_64
+  - env_settings: bm25_retrieval
+  - override hydra/job_logging: 'disabled'
+
+log_dir: <root>/data/LeanDojo_Random/proof_logs/multilingual
+eval_settings:
+  proof_dump_dir: <root>/data/LeanDojo_Random/proof_dumps/multilingual/wt-ct
+  model_name: amitayusht/ProofWala-Multilingual
+  checkpoint_dir: .log/checkpoints/ProofWala-Multilingual
+  proof_retries: 5
+  timeout_in_secs: 600
+  temperature: 1.2
+
+benchmark:
+  timeout_per_theorem_in_secs: 600
