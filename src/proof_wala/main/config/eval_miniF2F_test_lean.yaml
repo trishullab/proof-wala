@@ -1,7 +1,7 @@
 # @package _global_
 defaults:
   - benchmark: miniF2F_test
-  - eval_settings: codet5_beam_128
+  - eval_settings: codet5_beam_64
   - env_settings: bm25_retrieval
   - override hydra/job_logging: 'disabled'
 

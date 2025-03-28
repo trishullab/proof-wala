@@ -252,7 +252,8 @@ def eval_dataset_once(
             always_use_retrieval=eval_settings.always_use_useful_theorem_retrieval,
             logger=logger,
             setup_cmds=eval_benchmark.setup_cmds,
-            enable_search=False) # TODO: Make this configurable
+            enable_search=False,
+            enforce_qed=True) # TODO: Make this configurable
         if reshuffle:
             file_theorems = list(file.theorems)
             random.shuffle(file_theorems)
