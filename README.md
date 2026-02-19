@@ -15,7 +15,7 @@ Neural networks have shown substantial promise at automatic theorem-proving in i
 ## Quick Installation
 1. Pip install the package:
 ```bash
-pip install proof-wala
+pip install [REDACTED]
 ```
 
 2. Install the itp-interface dependencies: (follow the instructions in the [itp-interface repository](https://anonymous.4open.science/r/itp-interface-611A) for more details and custom version of Lean 4 and Coq installation)
