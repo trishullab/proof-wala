@@ -8,7 +8,7 @@ defaults:
 log_dir: .log/proofs_logs/simple_lean_test
 eval_settings:
   proof_dump_dir: .log/proofs_dumps/simple_test
-  model_name: amitayusht/ProofWala-Multilingual
+  model_name: [REDACTED]/ProofWala-Multilingual
   checkpoint_dir: .log/checkpoints/codet5_beam_128/amitayusht/ProofWala-Multilingual
   proof_retries: 10
   timeout_in_secs: 620
