@@ -34,7 +34,7 @@ class TestProofWalaCI(unittest.TestCase):
         """
         try:
             from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, pipeline
-            model_name = "amitayusht/ProofWala-Multilingual"
+            model_name = "[REDACTED]/ProofWala-Multilingual"
             # Use local_files_only=True to ensure CI does not require network access.
             tokenizer = AutoTokenizer.from_pretrained(model_name, local_files_only=True)
             model = AutoModelForSeq2SeqLM.from_pretrained(model_name, local_files_only=True)
