@@ -359,7 +359,7 @@ class ProofSearchBranchGenerator(ABC):
                 # This will require changes in the itp_interface Lean4 code, 
                 # to not finish the proof until the Qed tactic explicitly stated i.e. 
                 # `done` is explicitly used to signal the end of the proof.
-                # This will be automatically achieved as soon as https://github.com/trishullab/itp-interface/issues/31 is resolved.
+                # This will be automatically achieved as soon as [REDACTED]/issues/31 is resolved.
                 if next_state is not None and len(next_state.training_data_format.start_goals) == 0 and not done:
                     # We found a very good action so we should signal the search to stop, regardless of the search heuristic
                     _temp_list = list(actions_to_run[idx])
