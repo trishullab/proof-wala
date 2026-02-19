@@ -7,7 +7,7 @@ build-backend = "hatchling.build"
 name = "proof-wala"
 version = "1.1.9"
 authors = [
-  { name="Amitayush Thakur", email="amitayush@utexas.edu" },
+  { name="[REDACTED]", email="[REDACTED]" },
 ]
 description = "Python library for training LLMs with Interactive Theorem Proving data."
 readme = "README.md"
@@ -38,8 +38,8 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/trishullab/proof-wala"
-Issues = "https://github.com/trishullab/proof-wala/issues"
+Homepage = "[REDACTED]"
+Issues = "[REDACTED]"
 
 [project.scripts]
 proof-wala-init-ray = "proof_wala.main.init_ray:main"
